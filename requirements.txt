@@ -1,9 +1,1 @@
-fastapiuvicorn[standard]
-jinja2
-requests
-beautifulsoup4
-python-dotenv
-httpx
-qrcode[pil]
-python-multipart
-playwright
+fastapiuvicorn[standard]jinja2requestsbeautifulsoup4python-dotenvhttpxqrcode[pil]python-multipartcurl_cffiddgs

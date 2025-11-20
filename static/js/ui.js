@@ -25,23 +25,27 @@ function setupGlobalEventListeners() {
     document.addEventListener('mousedown', (e) => {
         const link = e.target.closest('a.track-click');
         if (!link) return;
-
         const itemId = link.dataset.itemId;
-        if (itemId) {
-            trackClick(itemId);
-        }
+        if (itemId) trackClick(itemId);
     });
 
+    // FAQ & Gruppen Toggle
     document.addEventListener('click', (e) => {
-        const faqHeader = e.target.closest('.faq-header');
-        if (faqHeader) {
-            const content = faqHeader.nextElementSibling;
-            const icon = faqHeader.querySelector('svg');
-            content.classList.toggle('hidden');
-            if (content.classList.contains('hidden')) {
-                icon.style.transform = 'rotate(0deg)';
-            } else {
-                icon.style.transform = 'rotate(180deg)';
+        const groupHeader = e.target.closest('.group-header, .faq-header');
+        if (groupHeader) {
+            const container = groupHeader.closest('.group-container, .glass-card'); // Container finden
+            const content = container.querySelector('.group-content, .faq-content');
+            const icon = groupHeader.querySelector('svg'); // Lucide Icon (Chevron)
+            
+            if (content) {
+                content.classList.toggle('hidden');
+                if (content.classList.contains('hidden')) {
+                    icon.style.transform = 'rotate(-90deg)'; // Zu (bei FAQ evtl 0)
+                    if (groupHeader.classList.contains('faq-header')) icon.style.transform = 'rotate(0deg)';
+                } else {
+                    icon.style.transform = 'rotate(0deg)'; // Offen
+                    if (groupHeader.classList.contains('faq-header')) icon.style.transform = 'rotate(180deg)';
+                }
             }
         }
     });
@@ -81,48 +85,76 @@ const ItemRenderers = {
         return div;
     },
     
-    // MODIFIZIERT: Slider mit vollflächigen Bildern
+    // GRID MIT AKKORDEON
+    grid: (item) => {
+        const cols = item.grid_columns || 2;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'group-container glass-card mb-4 overflow-hidden rounded-2xl';
+        
+        let headerHTML = '';
+        if (item.title) {
+            headerHTML = `
+            <div class="group-header flex justify-between items-center p-4 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors">
+                <h3 class="text-lg font-bold text-white">${escapeHTML(item.title)}</h3>
+                <i data-lucide="chevron-down" class="chevron-icon w-5 h-5 text-white transition-transform"></i>
+            </div>`;
+        }
+        
+        let contentHTML = `<div class="group-content p-4 grid gap-4" style="grid-template-columns: repeat(${cols}, 1fr);">`;
+        
+        if (item.children && item.children.length > 0) {
+            item.children.forEach(child => {
+                contentHTML += `
+                <a href="${escapeHTML(child.url)}" target="_blank" rel="noopener noreferrer" 
+                   class="glass-card track-click relative overflow-hidden block aspect-square group hover:scale-[1.02] transition-transform rounded-xl" 
+                   data-item-id="${child.id}">
+                    ${child.image_url ? `<img src="${escapeHTML(child.image_url)}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.style.display='none'">` : '<div class="absolute inset-0 bg-gray-700 flex items-center justify-center"><i data-lucide="link" class="w-8 h-8 text-white opacity-50"></i></div>'}
+                    <div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none"></div>
+                    <div class="absolute bottom-0 left-0 right-0 p-3 text-center z-10"><span class="text-white text-sm font-bold leading-tight block drop-shadow-md">${escapeHTML(child.title)}</span></div>
+                </a>`;
+            });
+        }
+        contentHTML += `</div>`;
+        wrapper.innerHTML = headerHTML + contentHTML;
+        return wrapper;
+    },
+
+    // SLIDER MIT AKKORDEON
     slider_group: (item) => {
-        const div = document.createElement('div');
-        div.className = 'item-slider-wrapper glass-card p-4';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'group-container glass-card mb-4 overflow-hidden rounded-2xl';
+        
+        let headerHTML = '';
+        if (item.title) {
+            headerHTML = `
+            <div class="group-header flex justify-between items-center p-4 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors">
+                <h3 class="text-lg font-bold text-white">${escapeHTML(item.title)}</h3>
+                <i data-lucide="chevron-down" class="chevron-icon w-5 h-5 text-white transition-transform"></i>
+            </div>`;
+        }
+        
         let slidesHTML = '';
         item.children.forEach(child => {
             slidesHTML += `
-                <div class="swiper-slide style-rounded overflow-hidden relative aspect-square group">
-                    <a href="${escapeHTML(child.url)}" 
-                       target="_blank" 
-                       rel="noopener noreferrer" 
-                       class="block w-full h-full track-click" 
-                       data-item-id="${child.id}">
-                        
-                        <!-- Bild (Füllt alles aus) -->
-                        ${child.image_url ? 
-                            `<img src="${escapeHTML(child.image_url)}" alt="${escapeHTML(child.title)}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.style.display='none';">` 
-                            : '<div class="absolute inset-0 bg-gray-700 flex items-center justify-center"><i data-lucide="image" class="w-8 h-8 text-gray-500"></i></div>'
-                        }
-                        
-                        <!-- Gradient Overlay (für Lesbarkeit) -->
+                <div class="swiper-slide style-rounded overflow-hidden relative aspect-square group rounded-xl">
+                    <a href="${escapeHTML(child.url)}" target="_blank" class="block w-full h-full track-click" data-item-id="${child.id}">
+                        ${child.image_url ? `<img src="${escapeHTML(child.image_url)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">` : '<div class="absolute inset-0 bg-gray-700 flex items-center justify-center"><i data-lucide="image" class="w-8 h-8 text-gray-500"></i></div>'}
                         <div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none"></div>
-                        
-                        <!-- Titel (Unten Mitte) -->
-                        <div class="absolute bottom-0 left-0 right-0 p-3 text-center pointer-events-none">
-                            <p class="text-white text-sm font-bold truncate drop-shadow-md leading-tight">${escapeHTML(child.title)}</p>
-                        </div>
+                        <div class="absolute bottom-0 left-0 right-0 p-3 text-center pointer-events-none"><p class="text-white text-sm font-bold truncate drop-shadow-md leading-tight">${escapeHTML(child.title)}</p></div>
                     </a>
-                </div>
-            `;
+                </div>`;
         });
 
-        div.innerHTML = `
-            <h3 class="item-title text-lg font-semibold mb-4 text-center">${escapeHTML(item.title)}</h3>
+        const contentHTML = `
+        <div class="group-content p-4">
             <div class="swiper" id="swiper-${item.id}">
-                <div class="swiper-wrapper">
-                    ${slidesHTML}
-                </div>
+                <div class="swiper-wrapper">${slidesHTML}</div>
                 <div class="swiper-pagination mt-4" style="position: relative;"></div>
             </div>
-        `;
-        return div;
+        </div>`;
+        
+        wrapper.innerHTML = headerHTML + contentHTML;
+        return wrapper;
     },
 
     email_form: (item) => {
@@ -135,23 +167,9 @@ const ItemRenderers = {
         const statusEl = form.querySelector('.subscribe-status');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!privacyCheck.checked) {
-                statusEl.textContent = 'Bitte die Datenschutzerklärung akzeptieren.';
-                statusEl.style.color = 'var(--color-text-muted)';
-                return;
-            }
-            statusEl.textContent = 'Sende...';
-            statusEl.style.color = 'var(--color-text-muted)';
-            try {
-                const result = await subscribeEmail(emailInput.value, privacyCheck.checked);
-                statusEl.textContent = result.message || 'Danke!';
-                statusEl.style.color = 'var(--color-text)';
-                emailInput.value = '';
-                privacyCheck.checked = false;
-            } catch (error) {
-                statusEl.textContent = error.message;
-                statusEl.style.color = 'var(--color-text-muted)';
-            }
+            if (!privacyCheck.checked) { statusEl.textContent = 'Bitte die Datenschutzerklärung akzeptieren.'; statusEl.style.color = 'var(--color-text-muted)'; return; }
+            statusEl.textContent = 'Sende...'; statusEl.style.color = 'var(--color-text-muted)';
+            try { const result = await subscribeEmail(emailInput.value, privacyCheck.checked); statusEl.textContent = result.message || 'Danke!'; statusEl.style.color = 'var(--color-text)'; emailInput.value = ''; privacyCheck.checked = false; } catch (error) { statusEl.textContent = error.message; statusEl.style.color = 'var(--color-text-muted)'; }
         });
         return div;
     },
@@ -189,43 +207,6 @@ const ItemRenderers = {
         CountdownManager.register(timerId, interval);
         return div;
     },
-    
-    // MODIFIZIERT: Grid mit vollflächigen Bildern
-    grid: (item) => {
-        const div = document.createElement('div');
-        div.className = 'grid grid-cols-2 gap-4 mb-4'; 
-        
-        if (item.children && item.children.length > 0) {
-            item.children.forEach(child => {
-                const a = document.createElement('a');
-                a.href = escapeHTML(child.url);
-                a.target = "_blank";
-                a.rel = "noopener noreferrer";
-                // Wichtig: relative & overflow-hidden für Bild-Positionierung
-                a.className = "glass-card track-click relative overflow-hidden block aspect-square group hover:scale-[1.02] transition-transform";
-                a.dataset.itemId = child.id;
-                
-                a.innerHTML = `
-                    <!-- Bild (Füllt alles aus) -->
-                    ${child.image_url ? 
-                        `<img src="${escapeHTML(child.image_url)}" alt="${escapeHTML(child.title)}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.style.display='none'">` 
-                        : '<div class="absolute inset-0 bg-gray-700 flex items-center justify-center"><i data-lucide="link" class="w-8 h-8 text-white opacity-50"></i></div>'
-                    }
-                    
-                    <!-- Gradient Overlay (für Lesbarkeit) -->
-                    <div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none"></div>
-                    
-                    <!-- Titel (Unten Mitte) -->
-                    <div class="absolute bottom-0 left-0 right-0 p-3 text-center z-10">
-                        <span class="text-white text-sm font-bold leading-tight block drop-shadow-md">${escapeHTML(child.title)}</span>
-                    </div>
-                `;
-                div.appendChild(a);
-            });
-        }
-        return div;
-    },
-    
     faq: (item) => {
         const div = document.createElement('div');
         div.className = 'glass-card mb-4 overflow-hidden rounded-lg';

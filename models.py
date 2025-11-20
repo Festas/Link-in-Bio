@@ -10,7 +10,7 @@ class ItemCreate(BaseModel):
     name: Optional[str] = None
     text: Optional[str] = None
     email: Optional[EmailStr] = None
-    grid_columns: Optional[int] = 2 # NEU: Spaltenanzahl
+    grid_columns: Optional[int] = 2
 
 class ItemUpdate(BaseModel):
     title: Optional[str] = None
@@ -22,7 +22,7 @@ class ItemUpdate(BaseModel):
     publish_on: Optional[str] = None
     expires_on: Optional[str] = None
     price: Optional[str] = None
-    grid_columns: Optional[int] = None # NEU
+    grid_columns: Optional[int] = None
 
 class Item(BaseModel):
     id: int
@@ -39,12 +39,11 @@ class Item(BaseModel):
     publish_on: Optional[str] = None
     expires_on: Optional[str] = None
     price: Optional[str] = None
-    grid_columns: int = 2 # NEU (Default 2)
+    grid_columns: int = 2
     children: List['Item'] = []
 
 Item.model_rebuild()
 
-# ... (Rest bleibt unverändert: Settings, AnalyticsData, etc.) ...
 class Settings(BaseModel):
     title: Optional[str] = None
     bio: Optional[str] = None
@@ -101,3 +100,5 @@ class ReorderRequest(BaseModel):
 
 class ImageUploadResponse(BaseModel):
     url: str
+
+

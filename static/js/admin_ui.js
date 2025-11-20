@@ -11,8 +11,9 @@ export const STYLES = {
 
 export function renderAdminItem(item, sliderGroups) {
     const itemEl = document.createElement('div');
-    itemEl.className = `p-3 bg-gray-700 rounded-md flex flex-col mb-2`;
+    itemEl.className = `p-3 bg-gray-700 rounded-md flex flex-col mb-2 border border-gray-600`;
     itemEl.dataset.id = item.id;
+    itemEl.dataset.type = item.item_type; // Wichtig für Drag & Drop Regeln
     
     if (!item.is_active) {
         itemEl.classList.add('opacity-50');
@@ -52,13 +53,13 @@ export function renderAdminItem(item, sliderGroups) {
     const viewContainer = document.createElement('div');
     viewContainer.className = 'flex items-center space-x-4 w-full';
     viewContainer.innerHTML = `
-        <div class="drag-handle p-2 text-gray-500 hover:text-white" title="Verschieben">
+        <div class="drag-handle p-2 text-gray-500 hover:text-white cursor-grab" title="Verschieben">
             <i data-lucide="grip-vertical" class="w-5 h-5"></i>
         </div>
         <div class="flex-shrink-0 w-6 text-center">${itemIcon}</div>
         <div class="flex-grow min-w-0">
             <p class="text-white flex items-center space-x-2 truncate">
-                <span class="truncate">${escapeHTML(item.title)}</span>
+                <span class="truncate font-medium">${escapeHTML(item.title)}</span>
                 ${spotlightIcon}
                 ${affiliateIcon} 
                 ${scheduleIcon}
@@ -80,6 +81,18 @@ export function renderAdminItem(item, sliderGroups) {
     
     itemEl.appendChild(viewContainer);
     itemEl.appendChild(editContainer);
+
+    // --- NEU: Container für Kinder bei Gruppen-Items ---
+    // Wir erstellen diesen Container IMMER bei Gruppen, auch wenn er leer ist.
+    // Das ermöglicht das "Hineinziehen".
+    if (['slider_group', 'grid'].includes(item.item_type)) {
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = 'child-container ml-8 mt-2 p-2 min-h-[60px] rounded border-2 border-dashed border-gray-600 bg-gray-800/50 transition-colors';
+        childrenContainer.dataset.parentId = item.id;
+        // Ein kleiner Hinweis-Text, wenn leer
+        childrenContainer.innerHTML = '<div class="empty-placeholder text-xs text-gray-500 text-center py-2 pointer-events-none">Hier Elemente ablegen</div>';
+        itemEl.appendChild(childrenContainer);
+    }
     
     return { itemEl, viewContainer, editContainer };
 }
@@ -101,6 +114,8 @@ export function createEditForm(item, groups) {
 }
 
 function renderGroupOptions(item, groups) {
+    // Entfernt, da wir jetzt Drag & Drop nutzen!
+    // Aber wir lassen es als Fallback drin, falls jemand lieber klickt.
     let options = groups.filter(g => g.id !== item.id).map(g => {
         const selected = (g.id === item.parent_id) ? 'selected' : '';
         return `<option value="${g.id}" ${selected}>${escapeHTML(g.title)}</option>`;
@@ -134,7 +149,6 @@ function renderTypeSpecificFields(item, groups) {
                 <label class="block text-xs font-medium text-gray-400">Bild-URL (Optional)</label>
                 <input type="text" class="edit-image-url ${STYLES.input}" value="${escapeHTML(item.image_url || '')}">
             </div>
-            
             <div class="pt-2 space-y-2">
                 <label class="block text-xs font-medium text-gray-400">Oder Bild direkt hochladen:</label>
                 <div class="flex items-center space-x-2">
@@ -143,9 +157,9 @@ function renderTypeSpecificFields(item, groups) {
                 </div>
                 <p class="upload-status text-xs text-gray-400"></p>
             </div>
-            
+            <!-- Dropdown bleibt als Alternative -->
             <div>
-                <label class="block text-xs font-medium text-gray-400">Gruppe (Slider/Grid)</label>
+                <label class="block text-xs font-medium text-gray-400">Gruppe (Alternative zu Drag & Drop)</label>
                 <select class="edit-parent-id ${STYLES.input}">${renderGroupOptions(item, groups)}</select>
             </div>
             <div class="flex items-center space-x-4 pt-2">
@@ -223,8 +237,9 @@ function renderTypeSpecificFields(item, groups) {
                 </div>
                 <p class="upload-status text-xs text-gray-400"></p>
             </div>
+            <!-- Dropdown bleibt als Alternative -->
             <div>
-                <label class="block text-xs font-medium text-gray-400">Gruppe (Grid/Slider)</label>
+                <label class="block text-xs font-medium text-gray-400">Gruppe (Alternative)</label>
                 <select class="edit-parent-id ${STYLES.input}">${renderGroupOptions(item, groups)}</select>
             </div>
             <div class="flex items-center space-x-4 pt-2">

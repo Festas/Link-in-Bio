@@ -80,16 +80,51 @@ const ItemRenderers = {
         div.innerHTML = `<p class="item-title font-semibold p-4 pb-3">${escapeHTML(item.title)}</p>${iframeHTML}`;
         return div;
     },
+    
+    // MODIFIZIERT: Slider mit vollflächigen Bildern
     slider_group: (item) => {
         const div = document.createElement('div');
         div.className = 'item-slider-wrapper glass-card p-4';
         let slidesHTML = '';
         item.children.forEach(child => {
-            slidesHTML += `<div class="swiper-slide style-rounded overflow-hidden" style="background-color: rgba(255,255,255,0.05);"><a href="${escapeHTML(child.url)}" target="_blank" rel="noopener noreferrer" class="block track-click" data-item-id="${child.id}"><img src="${escapeHTML(child.image_url || 'https://placehold.co/300x300/374151/FFFFFF?text=Bild')}" alt="${escapeHTML(child.title)}" class="w-full aspect-square object-cover" onerror="this.src='https://placehold.co/300x300/374151/FFFFFF?text=Bild'; this.onerror=null;"><p class="item-title text-sm font-medium p-3 text-center truncate">${escapeHTML(child.title)}</p></a></div>`;
+            slidesHTML += `
+                <div class="swiper-slide style-rounded overflow-hidden relative aspect-square group">
+                    <a href="${escapeHTML(child.url)}" 
+                       target="_blank" 
+                       rel="noopener noreferrer" 
+                       class="block w-full h-full track-click" 
+                       data-item-id="${child.id}">
+                        
+                        <!-- Bild (Füllt alles aus) -->
+                        ${child.image_url ? 
+                            `<img src="${escapeHTML(child.image_url)}" alt="${escapeHTML(child.title)}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.style.display='none';">` 
+                            : '<div class="absolute inset-0 bg-gray-700 flex items-center justify-center"><i data-lucide="image" class="w-8 h-8 text-gray-500"></i></div>'
+                        }
+                        
+                        <!-- Gradient Overlay (für Lesbarkeit) -->
+                        <div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none"></div>
+                        
+                        <!-- Titel (Unten Mitte) -->
+                        <div class="absolute bottom-0 left-0 right-0 p-3 text-center pointer-events-none">
+                            <p class="text-white text-sm font-bold truncate drop-shadow-md leading-tight">${escapeHTML(child.title)}</p>
+                        </div>
+                    </a>
+                </div>
+            `;
         });
-        div.innerHTML = `<h3 class="item-title text-lg font-semibold mb-4 text-center">${escapeHTML(item.title)}</h3><div class="swiper" id="swiper-${item.id}"><div class="swiper-wrapper">${slidesHTML}</div><div class="swiper-pagination mt-4" style="position: relative;"></div></div>`;
+
+        div.innerHTML = `
+            <h3 class="item-title text-lg font-semibold mb-4 text-center">${escapeHTML(item.title)}</h3>
+            <div class="swiper" id="swiper-${item.id}">
+                <div class="swiper-wrapper">
+                    ${slidesHTML}
+                </div>
+                <div class="swiper-pagination mt-4" style="position: relative;"></div>
+            </div>
+        `;
         return div;
     },
+
     email_form: (item) => {
         const div = document.createElement('div');
         div.className = 'item-email-form glass-card p-5 text-center';
@@ -154,23 +189,43 @@ const ItemRenderers = {
         CountdownManager.register(timerId, interval);
         return div;
     },
+    
+    // MODIFIZIERT: Grid mit vollflächigen Bildern
     grid: (item) => {
         const div = document.createElement('div');
         div.className = 'grid grid-cols-2 gap-4 mb-4'; 
+        
         if (item.children && item.children.length > 0) {
             item.children.forEach(child => {
                 const a = document.createElement('a');
                 a.href = escapeHTML(child.url);
                 a.target = "_blank";
                 a.rel = "noopener noreferrer";
-                a.className = "glass-card track-click flex flex-col items-center justify-center p-4 text-center hover:scale-105 transition-transform aspect-square";
+                // Wichtig: relative & overflow-hidden für Bild-Positionierung
+                a.className = "glass-card track-click relative overflow-hidden block aspect-square group hover:scale-[1.02] transition-transform";
                 a.dataset.itemId = child.id;
-                a.innerHTML = `${child.image_url ? `<img src="${escapeHTML(child.image_url)}" class="w-12 h-12 mb-2 rounded-full object-cover" onerror="this.style.display='none'">` : '<div class="w-12 h-12 mb-2 rounded-full bg-white bg-opacity-10 flex items-center justify-center"><i data-lucide="link" class="w-6 h-6 text-white"></i></div>'}<span class="text-sm font-semibold leading-tight">${escapeHTML(child.title)}</span>`;
+                
+                a.innerHTML = `
+                    <!-- Bild (Füllt alles aus) -->
+                    ${child.image_url ? 
+                        `<img src="${escapeHTML(child.image_url)}" alt="${escapeHTML(child.title)}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.style.display='none'">` 
+                        : '<div class="absolute inset-0 bg-gray-700 flex items-center justify-center"><i data-lucide="link" class="w-8 h-8 text-white opacity-50"></i></div>'
+                    }
+                    
+                    <!-- Gradient Overlay (für Lesbarkeit) -->
+                    <div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none"></div>
+                    
+                    <!-- Titel (Unten Mitte) -->
+                    <div class="absolute bottom-0 left-0 right-0 p-3 text-center z-10">
+                        <span class="text-white text-sm font-bold leading-tight block drop-shadow-md">${escapeHTML(child.title)}</span>
+                    </div>
+                `;
                 div.appendChild(a);
             });
         }
         return div;
     },
+    
     faq: (item) => {
         const div = document.createElement('div');
         div.className = 'glass-card mb-4 overflow-hidden rounded-lg';

@@ -20,7 +20,7 @@ def init_db():
     with get_db_connection() as conn:
         cursor = conn.cursor()
         
-        # MODIFIZIERT: price und grid_columns
+        # Create Table (Updated)
         cursor.execute("""CREATE TABLE IF NOT EXISTS items (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
             item_type TEXT NOT NULL, 
@@ -47,29 +47,31 @@ def init_db():
         
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_display_order ON items(display_order)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_item_id ON clicks(item_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_timestamp ON clicks(timestamp)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_country ON clicks(country_code)")
         
-        # Migrationen
+        # Migrationen (Fix für grid_columns)
         cursor.execute("PRAGMA table_info(items)")
-        cols = [col[1] for col in cursor.fetchall()]
+        columns_items = [col[1] for col in cursor.fetchall()]
         
         migrations = {
             'price': "ALTER TABLE items ADD COLUMN price TEXT DEFAULT NULL",
-            'grid_columns': "ALTER TABLE items ADD COLUMN grid_columns INTEGER DEFAULT 2", # NEU
-            'country_code': "ALTER TABLE clicks ADD COLUMN country_code TEXT DEFAULT NULL" # (Falls noch nicht in Clicks)
+            'grid_columns': "ALTER TABLE items ADD COLUMN grid_columns INTEGER DEFAULT 2",
+            'publish_on': "ALTER TABLE items ADD COLUMN publish_on TEXT DEFAULT NULL",
+            'expires_on': "ALTER TABLE items ADD COLUMN expires_on TEXT DEFAULT NULL",
+            'is_featured': "ALTER TABLE items ADD COLUMN is_featured BOOLEAN DEFAULT 0",
+            'is_affiliate': "ALTER TABLE items ADD COLUMN is_affiliate BOOLEAN DEFAULT 0",
+            'parent_id': "ALTER TABLE items ADD COLUMN parent_id INTEGER DEFAULT NULL REFERENCES items(id) ON DELETE SET NULL"
         }
         
         for col, sql in migrations.items():
-            if col not in cols: # Achtung: country_code ist in clicks, hier vereinfacht
+            if col not in columns_items:
                 try: cursor.execute(sql)
                 except: pass
-        
-        # Clicks Check separat
+
+        # Clicks Migration
         cursor.execute("PRAGMA table_info(clicks)")
         click_cols = [c[1] for c in cursor.fetchall()]
         if 'country_code' not in click_cols:
-             cursor.execute("ALTER TABLE clicks ADD COLUMN country_code TEXT DEFAULT NULL")
+            cursor.execute("ALTER TABLE clicks ADD COLUMN country_code TEXT DEFAULT NULL")
 
         default_settings = {'title': 'Mein Link-in-Bio', 'theme': 'theme-dark', 'button_style': 'style-rounded'}
         for key, value in default_settings.items():
@@ -92,7 +94,7 @@ def get_settings_from_db() -> Dict[str, Any]:
 def create_item_in_db(item_data: tuple) -> dict:
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        # MODIFIZIERT: 14 Parameter inkl grid_columns
+        # 14 Parameter inkl grid_columns
         cursor.execute("""INSERT INTO items (
             item_type, title, url, image_url, display_order, parent_id, 
             click_count, is_featured, is_active, is_affiliate, 
@@ -117,3 +119,5 @@ def delete_item_from_db(item_id: int):
     with get_db_connection() as conn:
         conn.execute("DELETE FROM items WHERE id = ?", (item_id,))
         conn.commit()
+
+

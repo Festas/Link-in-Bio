@@ -1,0 +1,30 @@
+services:
+  linktree:
+    build: .
+    container_name: linktree_app
+    restart: unless-stopped
+    volumes:
+      # Persistente Daten: Wir mappen die Dateien vom Server in den Container
+      - ./linktree.db:/app/linktree.db
+      - ./static/uploads:/app/static/uploads
+      # Die .env Datei wird auf dem Server erstellt/hinterlegt
+      - ./.env:/app/.env
+    # Kein Port-Mapping nach außen nötig, Caddy übernimmt das intern
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy_server
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - linktree
+
+volumes:
+  caddy_data:
+  caddy_config:

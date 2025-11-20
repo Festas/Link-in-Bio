@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin-Panel</title>
+    
+    <link rel="manifest" href="/manifest.json?v={{ version }}">
+    <meta name="theme-color" content="#111827">
+    <link rel="apple-touch-icon" href="/static/uploads/icon-192.png">
+    
+    <script src="{{ vendor.tailwindcss }}?v={{ version }}"></script>
+    <script src="{{ vendor.sortable }}?v={{ version }}"></script>
+    
+    <link rel="stylesheet" href="/static/css/admin.css?v={{ version }}">
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">Admin-Panel</h1>
+            <div class="flex space-x-4">
+                <button id="qrcode-button" class="text-sm text-gray-400 hover:text-white flex items-center space-x-1" title="QR-Code anzeigen">
+                    <i data-lucide="qr-code" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">QR-Code</span>
+                </button>
+                
+                <button id="logout-button" class="text-sm text-gray-400 hover:text-white flex items-center space-x-1">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </header>
+        
+        <!-- QR Code Modal -->
+        <div id="qrcode-modal" class="modal" style="display: none; position: fixed; z-index: 60; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
+             <div class="bg-white p-6 rounded-lg text-center relative max-w-sm mx-auto mt-20">
+                 <h3 class="text-xl font-bold text-gray-900 mb-4">Dein QR-Code</h3>
+                 <div class="flex justify-center mb-4">
+                     <img id="qrcode-image" src="" alt="QR Code wird geladen..." class="w-64 h-64 border border-gray-200">
+                 </div>
+                 <a id="qrcode-download" href="" download="my_qrcode.png" class="text-blue-600 hover:underline text-sm font-bold">Herunterladen</a>
+                 <button onclick="document.getElementById('qrcode-modal').style.display='none'" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800">
+                     <i data-lucide="x" class="w-6 h-6"></i>
+                 </button>
+             </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mb-6 border-b border-gray-700">
+            <nav class="-mb-px flex space-x-6 overflow-x-auto" aria-label="Tabs">
+                <button data-tab="items" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-400 text-blue-400">Items verwalten</button>
+                <button data-tab="profile" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Profil & Design</button>
+                <button data-tab="media" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Medien</button>
+                <button data-tab="community" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Community</button>
+                <button onclick="window.location.href='/analytics'" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Analytics</button>
+            </nav>
+        </div>
+
+        <!-- TAB: ITEMS -->
+        <div id="tab-content-items" class="tab-content active">
+            <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-semibold mb-6">Neues Item hinzufügen</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <form id="add-link-form" class="space-y-3"><label for="link-url" class="text-sm font-medium">Neuer Link</label><input type="url" id="link-url" placeholder="https://..." required><button type="submit">Link hinzufügen</button></form>
+                    <form id="add-header-form" class="space-y-3"><label for="header-title" class="text-sm font-medium">Neue Überschrift</label><input type="text" id="header-title" placeholder="Meine Socials" required><button type="submit">Überschrift hinzufügen</button></form>
+                    <form id="add-slider-group-form" class="space-y-3"><label for="slider-group-title" class="text-sm font-medium">Neue Slider-Gruppe</label><input type="text" id="slider-group-title" placeholder="Portfolio" required><button type="submit">Slider-Gruppe hinzufügen</button></form>
+                    <form id="add-grid-form" class="space-y-3"><label for="grid-title" class="text-sm font-medium text-pink-400">Neuer Grid-Container</label><input type="text" id="grid-title" placeholder="Meine Produkte" required><button type="submit">Grid hinzufügen</button></form>
+                    <form id="add-faq-form" class="space-y-3"><label for="faq-title" class="text-sm font-medium text-yellow-400">Neue Frage (FAQ)</label><input type="text" id="faq-title" placeholder="Frage..." required><button type="submit">Frage hinzufügen</button></form>
+                    <form id="add-divider-form" class="space-y-3"><label for="divider-title" class="text-sm font-medium text-gray-400">Neue Trennlinie</label><input type="text" id="divider-title" placeholder="Text (Optional)" ><button type="submit">Trennlinie hinzufügen</button></form>
+                    <form id="add-testimonial-form" class="space-y-3"><label for="testimonial-name" class="text-sm font-medium text-green-400">Neue Rezension</label><input type="text" id="testimonial-name" placeholder="Name des Autors" required><button type="submit">Rezension hinzufügen</button></form>
+                    <form id="add-product-form" class="space-y-3"><label for="product-title" class="text-sm font-medium text-purple-400">Neues Produkt</label><input type="text" id="product-title" placeholder="Produktname" required><input type="text" id="product-price" placeholder="Preis (z.B. 19,99 €)" required><input type="url" id="product-url" placeholder="Shop-URL..." required><button type="submit">Produkt hinzufügen</button></form>
+                    <form id="add-video-form" class="space-y-3"><label for="video-url" class="text-sm font-medium">Neues Video</label><input type="url" id="video-url" placeholder="URL..." required><button type="submit">Video hinzufügen</button></form>
+                    <form id="add-email-form" class="space-y-3"><label for="email-form-title" class="text-sm font-medium">Neues E-Mail-Formular</label><input type="text" id="email-form-title" placeholder="Newsletter" required><button type="submit">Formular hinzufügen</button></form>
+                    <form id="add-countdown-form" class="space-y-3"><label for="countdown-title" class="text-sm font-medium">Neuer Countdown</label><input type="text" id="countdown-title" placeholder="Titel" required><label for="countdown-datetime" class="sr-only">Zieldatum</label><input type="datetime-local" id="countdown-datetime" style="color-scheme: dark;" required><button type="submit">Countdown hinzufügen</button></form>
+                    <form id="add-contact-form" class="space-y-3"><label for="contact-title" class="text-sm font-medium text-blue-400">Neues Kontaktformular</label><input type="text" id="contact-title" placeholder="Kontaktieren Sie mich" required><button type="submit">Kontaktformular hinzufügen</button></form>
+                </div>
+            </section>
+            <section>
+                <div class="flex justify-between items-center mb-4"><h2 class="text-xl font-semibold">Items verwalten</h2><button id="save-order-button" style="display: none; width: auto;">Reihenfolge speichern</button></div>
+                <div id="manage-list-loading" class="flex justify-center items-center p-12">
+                     <svg class="animate-spin h-8 w-8 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </div>
+                <div id="manage-items-list" class="space-y-2"></div>
+            </section>
+        </div>
+        
+        <!-- TAB: MEDIEN -->
+        <div id="tab-content-media" class="tab-content">
+            <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-semibold">Medien-Galerie</h2><button id="refresh-media-button" class="text-sm text-blue-400 hover:text-white flex items-center space-x-1"><i data-lucide="refresh-cw" class="w-4 h-4"></i><span>Aktualisieren</span></button></div>
+            <div id="media-gallery-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+            <p class="text-xs text-gray-500 mt-4">Tipp: Klicke auf das Kopieren-Icon, um die URL eines Bildes zu erhalten.</p>
+        </div>
+        
+        <!-- TAB: COMMUNITY -->
+        <div id="tab-content-community" class="tab-content">
+             <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                 <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-semibold">Community Management</h2></div>
+                 <h3 class="text-lg font-medium mb-3 text-gray-300">Posteingang</h3>
+                 <div class="flex justify-end mb-2"><button id="refresh-inbox-button" class="text-sm text-blue-400 hover:text-white flex items-center space-x-1"><i data-lucide="refresh-cw" class="w-4 h-4"></i><span>Aktualisieren</span></button></div>
+                 <div id="inbox-container" class="space-y-4 mb-8"></div>
+                 <h3 class="text-lg font-medium mb-3 text-gray-300 border-t border-gray-700 pt-6">Abonnenten</h3>
+                 <div class="flex justify-end mb-2"><input type="text" id="search-subscribers" placeholder="E-Mail suchen..." class="bg-gray-700 border border-gray-600 rounded-md px-3 py-1 text-sm text-white focus:outline-none focus:border-blue-500"></div>
+                 <div class="overflow-x-auto">
+                     <table class="min-w-full text-left">
+                         <thead><tr class="border-b border-gray-600 text-gray-400 text-sm uppercase"><th class="py-2 px-4">E-Mail</th><th class="py-2 px-4">Datum</th><th class="py-2 px-4 text-right">Aktion</th></tr></thead>
+                         <tbody id="subscribers-table-body" class="text-gray-300"></tbody>
+                     </table>
+                 </div>
+             </section>
+        </div>
+
+        <!-- TAB: PROFIL -->
+        <div id="tab-content-profile" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-xl font-semibold mb-6">Profil & Design</h2>
+                    <form id="profile-form" class="space-y-4">
+                        <div><label for="profile-title" class="block text-sm font-medium text-gray-300">Titel / Name</label><input type="text" id="profile-title" name="title" placeholder="Ihr Name"></div>
+                        <div><label for="profile-bio" class="block text-sm font-medium text-gray-300">Bio / Untertitel</label><textarea id="profile-bio" name="bio" rows="3" placeholder="Kurze Beschreibung..."></textarea></div>
+                        <div><label for="profile-image-url" class="block text-sm font-medium text-gray-300">Profilbild-URL</label><div class="flex space-x-2"><input type="text" id="profile-image-url" name="image_url" class="flex-grow" placeholder="https://..."><button type="button" id="upload-profile-btn" class="px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded text-white text-xs">Upload</button><input type="file" id="upload-profile-file" class="hidden"></div></div>
+                        <div><label for="profile-bg-url" class="block text-sm font-medium text-gray-300">Hintergrundbild-URL</label><div class="flex space-x-2"><input type="text" id="profile-bg-url" name="bg_image_url" class="flex-grow" placeholder="https://..."><button type="button" id="upload-bg-btn" class="px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded text-white text-xs">Upload</button><input type="file" id="upload-bg-file" class="hidden"></div><p class="text-xs text-gray-500 mt-1">Tipp: Nutze ein dunkles, unscharfes Bild.</p></div>
+                        <div id="social-inputs-container" class="space-y-3 pt-4 border-t border-gray-700"></div>
+                        <h3 class="text-lg font-medium text-gray-200 pt-4 border-t border-gray-700">Design & Branding</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label for="profile-theme" class="block text-sm font-medium text-gray-300">Farbschema</label><select id="profile-theme" name="theme"><option value="theme-dark">Dunkel</option><option value="theme-light">Hell</option><option value="theme-forest">Wald</option><option value="theme-sunset">Sonnenuntergang</option><option value="theme-custom">Benutzerdefiniert</option></select></div>
+                            <div><label for="profile-button-style" class="block text-sm font-medium text-gray-300">Button-Stil</label><select id="profile-button-style" name="button_style"><option value="style-rounded">Abgerundet</option><option value="style-square">Eckig</option><option value="style-pill">Pillenform</option></select></div>
+                        </div>
+                        <div id="custom-theme-settings" class="space-y-4 pt-4 border-t border-gray-700" style="display: none;">
+                            <h4 class="text-md font-medium text-gray-200">Benutzerdefinierte Farben</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="flex items-center space-x-2"><input type="color" id="custom-bg-color" name="custom_bg_color"><label for="custom-bg-color" class="text-sm">BG</label></div>
+                                <div class="flex items-center space-x-2"><input type="color" id="custom-text-color" name="custom_text_color"><label for="custom-text-color" class="text-sm">Text</label></div>
+                                <div class="flex items-center space-x-2"><input type="color" id="custom-button-color" name="custom_button_color"><label for="custom-button-color" class="text-sm">Btn</label></div>
+                                <div class="flex items-center space-x-2"><input type="color" id="custom-button-text-color" name="custom_button_text_color"><label for="custom-button-text-color" class="text-sm">Btn-Txt</label></div>
+                            </div>
+                        </div>
+                        <div class="pt-6 border-t border-gray-700">
+                            <h3 class="text-lg font-medium text-gray-200 mb-4">Erweiterte Einstellungen (Pro)</h3>
+                            <div class="space-y-4">
+                                <div><label for="custom-html-head" class="block text-sm font-medium text-gray-300">Custom HTML Header</label><textarea id="custom-html-head" name="custom_html_head" rows="4" class="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-gray-300 font-mono text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea></div>
+                                <div><label for="custom-html-body" class="block text-sm font-medium text-gray-300">Custom Body Code</label><textarea id="custom-html-body" name="custom_html_body" rows="4" class="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-gray-300 font-mono text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea></div>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full mt-6">Profil & Design speichern</button>
+                    </form>
+                </section>
+                <section class="bg-gray-800 p-6 rounded-lg shadow-lg space-y-6">
+                    <h2 class="text-xl font-semibold">Backup-Verwaltung</h2>
+                    <p class="text-sm text-gray-300">Datenbank und Bilder sichern.</p>
+                    <button id="backup-button" class="w-full">Backup herunterladen</button>
+                    <div id="backup-status" class="text-sm text-center"></div>
+                </section>
+            </div>
+        </div>
+        
+        <div id="form-status" class="mt-6 text-center"></div>
+    </div>
+    
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="flex space-x-3"><h3 class="text-lg font-semibold">Live-Vorschau</h3><button id="preview-refresh-button" class="text-gray-400 hover:text-white"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button></div>
+                <button id="preview-close-button" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="modal-body"><iframe id="preview-iframe" class="modal-iframe"></iframe></div>
+        </div>
+    </div>
+
+    <!-- Preview Button -->
+    <button id="preview-button" title="Live-Vorschau" class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-110">
+        <i data-lucide="eye" class="w-6 h-6"></i>
+    </button>
+
+    <!-- Scripts: Reihenfolge WICHTIG -->
+    <script src="{{ vendor.lucide }}?v={{ version }}"></script>
+    
+    <!-- Fallback Loader (Falls lokal kaputt) -->
+    <script>
+        if (typeof lucide === 'undefined') {
+            console.warn("⚠️ Lucide lokal nicht gefunden. Lade CDN...");
+            document.write('<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"><\/script>');
+        }
+    </script>
+
+    <script src="/static/js/admin.js?v={{ version }}" type="module"></script>
+    
+    <script type="module">
+        import { initPWA } from '/static/js/consent.js?v={{ version }}';
+        initPWA();
+    </script>
+</body>
+</html>

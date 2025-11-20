@@ -1,0 +1,4 @@
+# Ersetze 'deine-domain.de' mit deiner echten Domain!
+festas-builds.com {
+    reverse_proxy linktree:8000
+}

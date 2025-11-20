@@ -1,0 +1,112 @@
+import { apiFetch } from './utils.js';
+
+export async function fetchSettings() {
+    const response = await apiFetch('/api/settings');
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail || 'Einstellungen konnten nicht geladen werden.');
+    }
+    return await response.json();
+}
+
+export async function updateSettings(payload) {
+    const response = await apiFetch('/api/settings', {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail || 'Fehler beim Speichern der Einstellungen.');
+    }
+    return await response.json();
+}
+
+export async function fetchItems() {
+    const response = await apiFetch('/api/items');
+    if (!response.ok) {
+        throw new Error('Items konnten nicht geladen werden.');
+    }
+    return await response.json();
+}
+
+export async function createItem(endpoint, payload) {
+    const response = await apiFetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Fehler beim Erstellen des Items.');
+    }
+    return await response.json();
+}
+
+export async function updateItem(itemId, payload) {
+    const response = await apiFetch(`/api/items/${itemId}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Fehler beim Aktualisieren des Items.');
+    }
+    return await response.json();
+}
+
+export async function deleteItem(itemId) {
+    const response = await apiFetch(`/api/items/${itemId}`, {
+        method: 'DELETE'
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Fehler beim Löschen des Items.');
+    }
+    return true;
+}
+
+export async function toggleItemVisibility(itemId) {
+    const response = await apiFetch(`/api/items/${itemId}/toggle_visibility`, {
+        method: 'PUT'
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Fehler beim Umschalten der Sichtbarkeit.');
+    }
+    return await response.json();
+}
+
+export async function reorderItems(ids) {
+    const response = await apiFetch('/api/items/reorder', {
+        method: 'POST',
+        body: JSON.stringify({ ids: ids.map(Number) })
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Fehler beim Speichern der Reihenfolge.');
+    }
+    return true;
+}
+
+export async function uploadImage(formData) {
+    // Wichtig: Bei FormData darf kein Content-Type Header manuell gesetzt werden,
+    // da der Browser dies automatisch inklusive Boundary macht.
+    // apiFetch in utils.js beachtet dies.
+    const response = await apiFetch('/api/upload_image', {
+        method: 'POST',
+        body: formData
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Upload fehlgeschlagen.');
+    }
+    return await response.json();
+}
+
+export async function downloadBackup() {
+    const response = await apiFetch('/api/backup/download');
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Backup-Erstellung fehlgeschlagen.');
+    }
+    return response; // Wir geben das Response-Objekt zurück, damit der Blob verarbeitet werden kann
+}

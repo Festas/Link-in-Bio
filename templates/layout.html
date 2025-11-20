@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>{{ page_title }}</title>
+    <meta name="description" content="{{ page_description | e }}">
+    
+    <meta property="og:title" content="{{ page_title | e }}">
+    <meta property="og:description" content="{{ page_description | e }}">
+    <meta property="og:image" content="{{ page_image | e }}">
+    <meta property="og:url" content="{{ page_url | e }}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ page_title | e }}">
+    <meta name="twitter:description" content="{{ page_description | e }}">
+    <meta name="twitter:image" content="{{ page_image | e }}">
+
+    <script src="{{ vendor.tailwindcss }}?v={{ version }}"></script>
+    <link rel="stylesheet" href="{{ vendor.swiper_css }}?v={{ version }}" />
+    <script src="{{ vendor.swiper_js }}?v={{ version }}"></script>
+    
+    <link rel="stylesheet" href="/static/css/style.css?v={{ version }}">
+    
+    {% if custom_html_head %}
+        {{ custom_html_head | safe }}
+    {% endif %}
+    
+</head>
+<body class="min-h-screen flex justify-center p-4">
+
+    {% block content %}{% endblock %}
+    
+    <script src="{{ vendor.lucide }}?v={{ version }}"></script>
+    <script src="/static/js/app.js?v={{ version }}" type="module" defer></script>
+    
+    <script type="module">
+        import { initCookieConsent } from '/static/js/consent.js?v={{ version }}';
+        initCookieConsent();
+    </script>
+    
+    {% if custom_html_body %}
+        {{ custom_html_body | safe }}
+    {% endif %}
+</body>
+</html>

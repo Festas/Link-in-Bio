@@ -162,7 +162,7 @@ async function initAdmin() {
     
     if(saveOrderButton) saveOrderButton.className = `${UI.STYLES.btnPrimary} w-auto`;
 
-    // 8. Items laden und rendern
+    // 8. Items laden und rendern (Robust & Rekursiv)
     async function loadItems() {
         listLoadingSpinner.style.display = 'flex';
         listContainer.innerHTML = '';
@@ -179,12 +179,16 @@ async function initAdmin() {
             // Gruppen für Dropdowns (Parent-Auswahl) filtern
             const groupItems = items.filter(i => ['slider_group', 'grid'].includes(i.item_type));
             
-            // Datenstruktur aufbereiten (Root vs. Kinder)
+            // 1. IDs sammeln für Waisen-Check
+            const allIds = new Set(items.map(i => i.id));
+            
+            // 2. Datenstruktur aufbereiten (Root vs. Kinder)
             const roots = []; 
             const childrenMap = {};
             
             items.forEach(i => {
-                if(i.parent_id) { 
+                // Ein Item ist ein Kind, wenn es eine parent_id hat UND der Vater auch existiert
+                if(i.parent_id && allIds.has(i.parent_id)) { 
                     if(!childrenMap[i.parent_id]) childrenMap[i.parent_id] = [];
                     childrenMap[i.parent_id].push(i);
                 } else { 
@@ -192,17 +196,17 @@ async function initAdmin() {
                 }
             });
 
-            // Rendern
+            // 3. Rendern
             roots.forEach(item => {
                 const rendered = UI.renderAdminItem(item, groupItems);
                 listContainer.appendChild(rendered.itemEl);
                 setupItemEvents(item, rendered);
 
-                // Container für Kinder (bei Gruppen)
+                // Wenn es eine Gruppe ist, Kinder einfügen
                 if (['slider_group', 'grid'].includes(item.item_type)) {
                     const childContainer = rendered.itemEl.querySelector('.child-container');
                     
-                    if (childrenMap[item.id]) {
+                    if (childrenMap[item.id] && childrenMap[item.id].length > 0) {
                         childrenMap[item.id].sort((a,b) => a.display_order - b.display_order);
                         
                         // Placeholder ausblenden
@@ -231,9 +235,9 @@ async function initAdmin() {
         }
     }
 
-    // 9. Events für einzelne Items (Edit, Delete, Save, Upload)
+    // 9. Events für einzelne Items (Edit, Delete, Save, Upload, ToggleGroup)
     function setupItemEvents(item, { viewContainer, editContainer, itemEl }) {
-        // NEU: Toggle-Logik für Gruppen (Akkordeon)
+        // Toggle für Gruppen (Akkordeon)
         const groupToggle = viewContainer.querySelector('.group-toggle');
         if (groupToggle) {
             groupToggle.addEventListener('click', (e) => {
@@ -251,16 +255,14 @@ async function initAdmin() {
             });
         }
         
-        const btns = viewContainer.querySelectorAll('button');
-        // WICHTIG: Wir suchen die Buttons nach Klasse, nicht nach Index, da 'group-toggle' dazukommen kann
-        const toggleBtn = viewContainer.querySelector('.btn-toggle');
         const editBtn = viewContainer.querySelector('.btn-edit');
         const delBtn = viewContainer.querySelector('.btn-delete');
+        const toggleVisBtn = viewContainer.querySelector('.btn-toggle');
         
         if(editBtn) editBtn.onclick = () => { 
             viewContainer.style.display='none'; 
             editContainer.style.display='block'; 
-            lucide.createIcons(); // Icons im Edit-Modus rendern
+            lucide.createIcons(); 
         };
         
         if(delBtn) delBtn.onclick = async () => { 
@@ -270,7 +272,7 @@ async function initAdmin() {
             } 
         };
         
-        if(toggleBtn) toggleBtn.onclick = async () => { 
+        if(toggleVisBtn) toggleVisBtn.onclick = async () => { 
             await API.toggleItemVisibility(item.id); 
             loadItems(); 
         };
@@ -287,7 +289,7 @@ async function initAdmin() {
         if(saveBtn) saveBtn.onclick = async () => {
             const payload = {};
             
-            // Werte auslesen (nur wenn Feld existiert)
+            // Werte auslesen (sicherstellen, dass Elemente existieren)
             const titleIn = editContainer.querySelector('.edit-title'); if(titleIn) payload.title = titleIn.value;
             const urlIn = editContainer.querySelector('.edit-url'); if(urlIn) payload.url = urlIn.value;
             const imgIn = editContainer.querySelector('.edit-image-url'); if(imgIn) payload.image_url = imgIn.value;
@@ -334,9 +336,8 @@ async function initAdmin() {
         }
     }
 
-    // 10. Drag & Drop (SortableJS) - NEU: Mit Deep Scan Support
+    // 10. Drag & Drop (SortableJS) mit Deep Scan
     function initSortable() {
-        // Aufräumen alter Instanzen
         sortableInstances.forEach(s => s.destroy());
         sortableInstances = [];
 
@@ -347,11 +348,12 @@ async function initAdmin() {
                 name: 'nested',
                 pull: true,
                 put: (to, from, dragEl) => {
-                    // Gruppen dürfen nicht in andere Gruppen gezogen werden
+                    // Verhindere Gruppen in Gruppen
                     const type = dragEl.dataset.type;
                     const isGroup = ['slider_group', 'grid'].includes(type);
                     const isRootList = to.el.id === 'manage-items-list';
-                    if (isGroup && !isRootList) return false;
+                    
+                    if (isGroup && !isRootList) return false; // Gruppen nur im Root
                     return true;
                 }
             },
@@ -370,12 +372,12 @@ async function initAdmin() {
                     const ph = newContainer.querySelector('.empty-placeholder');
                     if(ph) ph.style.display = 'none';
                     
-                    // AUTO-OPEN: Gruppe aufklappen, damit man sieht wo es ist
+                    // AUTO-OPEN: Gruppe aufklappen
                     newContainer.style.display = 'block';
-                    // Wir müssen auch den Pfeil (Chevron) drehen
-                    const groupItem = newContainer.closest('.admin-item-card');
-                    const toggleIcon = groupItem.querySelector('.group-toggle svg');
-                    if (toggleIcon) toggleIcon.style.transform = 'rotate(0deg)';
+                    // Icon drehen
+                    const groupCard = newContainer.closest('.admin-item-card');
+                    const icon = groupCard?.querySelector('.group-toggle svg');
+                    if(icon) icon.style.transform = 'rotate(0deg)';
                 }
 
                 // Parent Update sofort senden
@@ -386,19 +388,22 @@ async function initAdmin() {
             }
         };
 
-        // Root Liste aktivieren
-        sortableInstances.push(new Sortable(rootContainer, config));
-        
-        // Alle Gruppen-Container aktivieren
+        if(rootContainer) sortableInstances.push(new Sortable(rootContainer, config));
         document.querySelectorAll('.child-container').forEach(el => {
             sortableInstances.push(new Sortable(el, config));
         });
     }
 
-    // 11. Reihenfolge speichern Button - NEU: Deep Scan
+    // 11. Reihenfolge speichern (Deep Scan)
+    // Wir scannen ALLE Karten im DOM, egal wie tief verschachtelt, und speichern die ID-Liste.
+    // Das ist vereinfacht. Idealerweise würde man eine Baumstruktur senden, aber da wir
+    // parent_id schon beim Droppen speichern, reicht es, die 'display_order' flach neu zu verteilen
+    // oder man müsste die Sortierung pro Gruppe speichern.
+    // HIER: Wir triggern einen Reorder nur für die Elemente in ihren jeweiligen Containern.
+    // ABER: Einfachheitshalber und da unser Backend 'display_order' nutzt, iterieren wir über alles.
+    // Das Backend sortiert global nach display_order.
     saveOrderButton.onclick = async () => {
-        // Wir scannen das gesamte DOM nach Karten und sammeln ihre IDs in der neuen Reihenfolge
-        // Dadurch werden auch verschobene Items in Gruppen korrekt erfasst.
+        // Wir sammeln ALLE Items in ihrer visuellen Reihenfolge (DOM Order)
         const allCards = Array.from(document.querySelectorAll('.admin-item-card'));
         const ids = allCards.map(el => el.dataset.id);
         
@@ -406,14 +411,13 @@ async function initAdmin() {
             await API.reorderItems(ids);
             saveOrderButton.style.display = 'none';
             UI.setFormStatus(formStatus, 'Reihenfolge gespeichert!', 'text-green-400', 2000);
-            // Wir laden NICHT neu, damit der State (offene Gruppen) erhalten bleibt
+            // Kein Reload nötig, da DOM ja schon stimmt
         } catch(e) {
             UI.setFormStatus(formStatus, e.message, 'text-red-400');
         }
     };
 
-    // 12. Profil-Einstellungen
-    // Referenzen
+    // 12. Profil-Einstellungen (Alles in einem Block)
     const profileForm = document.getElementById('profile-form');
     const pTitle = document.getElementById('profile-title');
     const pBio = document.getElementById('profile-bio');
@@ -421,10 +425,12 @@ async function initAdmin() {
     const pBg = document.getElementById('profile-bg-url'); 
     const pTheme = document.getElementById('profile-theme');
     const pStyle = document.getElementById('profile-button-style');
+    
     const cBg = document.getElementById('custom-bg-color');
     const cText = document.getElementById('custom-text-color');
     const cBtn = document.getElementById('custom-button-color');
     const cBtnTxt = document.getElementById('custom-button-text-color');
+    
     const cHead = document.getElementById('custom-html-head');
     const cBody = document.getElementById('custom-html-body');
 
@@ -453,6 +459,7 @@ async function initAdmin() {
             cBtnTxt.value = s.custom_button_text_color || '#FFFFFF';
             
             toggleCustomThemeSettings(s.theme);
+
         } catch(e) { UI.setFormStatus(formStatus, 'Fehler Settings', 'text-red-400'); }
     }
 
@@ -462,7 +469,6 @@ async function initAdmin() {
     }
     pTheme.addEventListener('change', () => toggleCustomThemeSettings(pTheme.value));
 
-    // Upload Helper für Profil
     function setupImageUpload(btnId, fileId, textId) {
         const btn = document.getElementById(btnId);
         const file = document.getElementById(fileId);
@@ -514,6 +520,26 @@ async function initAdmin() {
             UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 2000);
         } catch(e) { UI.setFormStatus(formStatus, e.message, 'text-red-400', 5000); }
     });
+    
+    const backupButton = document.getElementById('backup-button');
+    if (backupButton) {
+        backupButton.addEventListener('click', async () => {
+            const status = document.getElementById('backup-status');
+            status.textContent = 'Erstelle Backup...';
+            status.className = 'text-sm text-blue-400';
+            try {
+                const response = await API.downloadBackup();
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
+                const cd = response.headers.get('content-disposition');
+                let fn = `backup_${Date.now()}.zip`;
+                if (cd && cd.includes('filename=')) fn = cd.split('filename=')[1];
+                a.download = fn; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a);
+                status.textContent = 'Download gestartet!'; status.className = 'text-sm text-green-400';
+            } catch (error) { status.textContent = 'Fehler!'; status.className = 'text-sm text-red-400'; }
+        });
+    }
 
     // 13. Preview Modal
     const previewModal = document.getElementById('preview-modal');

@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Abhängigkeiten installieren
 COPY requirements.txt .
-RUN pip install fastapi uvicorn[standard] jinja2 requests beautifulsoup4 python-dotenv httpx qrcode[pil] python-multipart curl_cffi ddgs pydantic[email]
+RUN pip install fastapi uvicorn[standard] jinja2 requests beautifulsoup4 python-dotenv httpx qrcode[pil] python-multipart curl_cffi ddgs pydantic[email] duckduckgo_search
 
 # Den Rest des Codes kopieren
 COPY . .

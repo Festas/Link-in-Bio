@@ -1,4 +1,4 @@
-# Wir nutzen ein schlankes Python-Image
+# Wir nutzen ein schlankes Python-Image (spart Speicherplatz)
 FROM python:3.11-slim
 
 # Arbeitsverzeichnis im Container
@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # WICHTIG: Vendor-Dateien im Container herunterladen (Offline-Fähigkeit)
+# Falls der Download wegen Firewall scheitert, wird das im Skript abgefangen.
 RUN python download_vendor.py
 
 # Port 8000 freigeben

@@ -11,7 +11,8 @@ export const STYLES = {
 
 export function renderAdminItem(item, sliderGroups) {
     const itemEl = document.createElement('div');
-    itemEl.className = `p-3 bg-gray-700 rounded-md flex flex-col mb-2 border border-gray-600`;
+    // WICHTIG: Wir geben dem Item die Klasse 'admin-item-card' für den Selektor später
+    itemEl.className = `admin-item-card p-3 bg-gray-700 rounded-md flex flex-col mb-2 border border-gray-600 select-none`;
     itemEl.dataset.id = item.id;
     itemEl.dataset.type = item.item_type;
     
@@ -27,7 +28,6 @@ export function renderAdminItem(item, sliderGroups) {
     const affiliateIcon = item.is_affiliate ? `<i data-lucide="euro" class="w-3 h-3 text-yellow-400" title="Werbung/Affiliate"></i>` : '';
     const spotlightIcon = item.is_featured ? `<i data-lucide="star" class="w-3 h-3 text-yellow-400" title="Spotlight"></i>` : '';
     
-    // Toggle Icons
     const toggleIcon = item.is_active ? 'eye' : 'eye-off';
     const isGroup = ['slider_group', 'grid'].includes(item.item_type);
     
@@ -43,20 +43,21 @@ export function renderAdminItem(item, sliderGroups) {
         case 'divider': itemIcon = `<i data-lucide="minus" class="w-5 h-5 text-gray-400"></i>`; itemTypeInfo = "Trennlinie"; break;
         case 'testimonial': itemIcon = `<i data-lucide="quote" class="w-5 h-5 text-green-400"></i>`; itemTypeInfo = "Rezension"; break;
         case 'contact_form': itemIcon = `<i data-lucide="message-square" class="w-5 h-5 text-blue-400"></i>`; itemTypeInfo = "Kontakt"; break;
-        case 'product': itemIcon = `<i data-lucide="shopping-bag" class="w-5 h-5 text-purple-400"></i>`; itemTypeInfo = `Produkt`; break;
+        case 'product': itemIcon = `<i data-lucide="shopping-bag" class="w-5 h-5 text-purple-400"></i>`; itemTypeInfo = `Produkt (${escapeHTML(item.price || '')})`; break;
     }
 
     const viewContainer = document.createElement('div');
     viewContainer.className = 'flex items-center space-x-4 w-full';
     
-    // NEU: Chevron für Gruppen zum Auf/Zuklappen
+    // Chevron nur für Gruppen
     let chevronHTML = '';
     if (isGroup) {
-        chevronHTML = `<button class="group-toggle text-gray-400 hover:text-white mr-1"><i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i></button>`;
+        // Icon standardmäßig rotiert (-90deg) für "geschlossen" oder 0 für "offen". Wir starten offen.
+        chevronHTML = `<button class="group-toggle text-gray-400 hover:text-white mr-1 focus:outline-none"><i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i></button>`;
     }
 
     viewContainer.innerHTML = `
-        <div class="drag-handle p-2 text-gray-500 hover:text-white cursor-grab" title="Verschieben">
+        <div class="drag-handle p-2 text-gray-500 hover:text-white cursor-grab active:cursor-grabbing" title="Verschieben">
             <i data-lucide="grip-vertical" class="w-5 h-5"></i>
         </div>
         ${chevronHTML}
@@ -85,29 +86,14 @@ export function renderAdminItem(item, sliderGroups) {
     itemEl.appendChild(viewContainer);
     itemEl.appendChild(editContainer);
 
-    // Container für Kinder bei Gruppen-Items
+    // Container für Kinder
     if (isGroup) {
         const childrenContainer = document.createElement('div');
-        childrenContainer.className = 'child-container ml-8 mt-2 p-2 min-h-[60px] rounded border-2 border-dashed border-gray-600 bg-gray-800/50 transition-all duration-300 overflow-hidden';
+        childrenContainer.className = 'child-container ml-8 mt-2 p-2 min-h-[60px] rounded border-2 border-dashed border-gray-600 bg-gray-800/50 transition-all duration-300';
         childrenContainer.dataset.parentId = item.id;
+        // Wir lassen ihn standardmäßig offen
         childrenContainer.innerHTML = '<div class="empty-placeholder text-xs text-gray-500 text-center py-2 pointer-events-none">Hier Elemente ablegen</div>';
         itemEl.appendChild(childrenContainer);
-        
-        // Toggle Event
-        const toggleBtn = viewContainer.querySelector('.group-toggle');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const icon = toggleBtn.querySelector('svg');
-                if (childrenContainer.style.display === 'none') {
-                    childrenContainer.style.display = 'block';
-                    icon.style.transform = 'rotate(0deg)';
-                } else {
-                    childrenContainer.style.display = 'none';
-                    icon.style.transform = 'rotate(-90deg)';
-                }
-            });
-        }
     }
     
     return { itemEl, viewContainer, editContainer };
@@ -129,11 +115,21 @@ export function createEditForm(item, groups) {
     `;
 }
 
+function renderGroupOptions(item, groups) {
+    // Fallback Dropdown, falls D&D nicht genutzt wird
+    let options = groups.filter(g => g.id !== item.id).map(g => {
+        const selected = (g.id === item.parent_id) ? 'selected' : '';
+        return `<option value="${g.id}" ${selected}>${escapeHTML(g.title)}</option>`;
+    }).join('');
+    return `<option value="0" ${!item.parent_id ? 'selected' : ''}>-- Keine (Haupt-Item) --</option>` + options;
+}
+
 function renderCommonFields(item) {
     let label = 'Titel';
     if (item.item_type === 'testimonial') label = 'Name / Autor';
     if (item.item_type === 'faq') label = 'Frage';
     if (item.item_type === 'divider') label = 'Text (Optional)';
+    if (item.item_type === 'contact_form') label = 'Überschrift';
     
     return `
         <div>
@@ -144,7 +140,6 @@ function renderCommonFields(item) {
 }
 
 function renderTypeSpecificFields(item, groups) {
-    // NEU: Grid Spalten Konfiguration
     if (item.item_type === 'grid') {
         const cols = item.grid_columns || 2;
         return `
@@ -162,7 +157,7 @@ function renderTypeSpecificFields(item, groups) {
     if (item.item_type === 'link' || item.item_type === 'product') {
         let fields = `
             <div>
-                <label class="block text-xs font-medium text-gray-400">URL / Shop-Link</label>
+                <label class="block text-xs font-medium text-gray-400">URL</label>
                 <input type="text" class="edit-url ${STYLES.input}" value="${escapeHTML(item.url || '')}">
             </div>
         `;
@@ -185,28 +180,40 @@ function renderTypeSpecificFields(item, groups) {
                 <input type="file" class="upload-image-file text-xs text-gray-300">
                 <button type="button" class="btn-upload-image text-xs bg-blue-600 px-2 py-1 rounded">Upload</button>
             </div>
+            <!-- Fallback Dropdown -->
+            <div>
+                <label class="block text-xs font-medium text-gray-400">Gruppe (Manuell)</label>
+                <select class="edit-parent-id ${STYLES.input}">${renderGroupOptions(item, groups)}</select>
+            </div>
             <div class="flex items-center space-x-4 pt-2">
-                <label class="flex items-center space-x-2"><input type="checkbox" class="edit-is_featured" ${item.is_featured ? 'checked' : ''}><span class="text-sm text-gray-300">Spotlight</span></label>
+                <label class="flex items-center space-x-2"><input type="checkbox" class="edit-is_featured" ${item.is_featured ? 'checked' : ''}><span class="text-sm text-gray-300">Spotlight?</span></label>
+                ${item.item_type === 'link' ? `<label class="flex items-center space-x-2"><input type="checkbox" class="edit-is_affiliate" ${item.is_affiliate ? 'checked' : ''}><span class="text-sm text-gray-300">Affiliate?</span></label>` : ''}
             </div>
         `;
         return fields;
     }
-
-    if (item.item_type === 'video') {
-        return `<div><label class="block text-xs font-medium text-gray-400">Video URL</label><input type="text" class="edit-url ${STYLES.input}" value="${escapeHTML(item.url || '')}"></div>`;
-    }
-
-    if (item.item_type === 'faq' || item.item_type === 'testimonial') {
-        return `<div><label class="block text-xs font-medium text-gray-400">Text / Antwort</label><textarea class="edit-url ${STYLES.input}" rows="3">${escapeHTML(item.url || '')}</textarea></div>`;
-    }
     
+    if (item.item_type === 'video' || item.item_type === 'countdown') {
+        return `<div><label class="block text-xs font-medium text-gray-400">URL / Ziel</label><input type="text" class="edit-url ${STYLES.input}" value="${escapeHTML(item.url || '')}"></div>`;
+    }
+    if (item.item_type === 'faq' || item.item_type === 'testimonial') {
+        return `<div><label class="block text-xs font-medium text-gray-400">Inhalt</label><textarea class="edit-url ${STYLES.input}" rows="3">${escapeHTML(item.url || '')}</textarea></div>`;
+    }
     return ''; 
 }
 
 function renderSchedulingFields(item) {
     if (['header', 'slider_group', 'grid', 'divider', 'testimonial', 'contact_form'].includes(item.item_type)) return '';
-    // (Code für Date Formatierung hier einfügen oder vereinfachen, siehe vorherige Version)
-    return ''; 
+    const formatISODate = (iso) => { if (!iso) return ''; try { const d = new Date(iso); const l = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)); return l.toISOString().slice(0, 16); } catch (e) { return ''; } };
+    return `
+        <div class="pt-3 border-t border-gray-600">
+            <h4 class="text-sm font-medium text-gray-300 mb-2">Planung</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div><label class="block text-xs font-medium text-gray-400">Start</label><input type="datetime-local" class="edit-publish-on ${STYLES.input}" value="${formatISODate(item.publish_on)}" style="color-scheme: dark;"></div>
+                <div><label class="block text-xs font-medium text-gray-400">Ende</label><input type="datetime-local" class="edit-expires-on ${STYLES.input}" value="${formatISODate(item.expires_on)}" style="color-scheme: dark;"></div>
+            </div>
+        </div>
+    `;
 }
 
 function renderActionButtons() {
@@ -214,16 +221,17 @@ function renderActionButtons() {
 }
 
 export function renderSocialFields(container, fields) {
-    if(!container) return;
+    if (!container) return;
     fields.forEach(f => {
         const div = document.createElement('div');
         div.innerHTML = `<label for="social-${f.id}" class="block text-sm font-medium text-gray-300 flex items-center space-x-2"><i data-lucide="${f.icon}" class="w-4 h-4"></i><span>${f.label}</span></label><input type="text" id="social-${f.id}" name="social_${f.id}" class="${STYLES.input}" placeholder="${f.placeholder}">`;
         container.appendChild(div);
     });
 }
-
-export function setFormStatus(element, message, className, duration = 0) {
-    if (!element) return;
-    element.textContent = message; element.className = `mt-6 text-center ${className}`;
-    if (duration > 0) setTimeout(() => { if (element.textContent === message) element.textContent = ''; }, duration);
+export function setFormStatus(el, msg, cls, dur=0) {
+    if (!el) return;
+    el.textContent = msg; el.className = `mt-6 text-center ${cls}`;
+    if (dur > 0) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, dur);
 }
+
+

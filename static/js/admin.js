@@ -5,53 +5,106 @@ import * as API from './admin_api.js';
 import * as UI from './admin_ui.js';
 import { requireAuth, logout } from './utils.js';
 
-// Helper für Fallback
+// Helper für Fallback-Script-Loading (z.B. Lucide)
 function loadScript(src) {
     return new Promise((resolve, reject) => {
-        const s = document.createElement('script'); s.src = src;
-        s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
     });
 }
 
-if (requireAuth()) { document.addEventListener('DOMContentLoaded', initAdmin); }
+// Authentifizierungs-Check beim Laden
+if (requireAuth()) {
+    document.addEventListener('DOMContentLoaded', initAdmin);
+}
 
 async function initAdmin() {
-    // Robust Check
+    // 1. Lucide Check & Fallback
     if (typeof lucide === 'undefined') {
-        console.warn("Lucide lokal fehlt. Lade CDN...");
-        try { await loadScript('https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js'); } 
-        catch(e) { console.error("Lucide Fail"); return; }
+        console.warn("Lucide lokal fehlt. Versuche CDN...");
+        try {
+            await loadScript('https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js');
+        } catch(e) {
+            console.error("Kritischer Fehler: Lucide konnte nicht geladen werden.");
+            return;
+        }
     }
 
+    // 2. Globale DOM Elemente
     const formStatus = document.getElementById('form-status');
     const listContainer = document.getElementById('manage-items-list');
+    const listLoadingSpinner = document.getElementById('manage-list-loading');
     const saveOrderButton = document.getElementById('save-order-button');
-    let sortableInstances = []; // Array statt Single
+    let sortableInstances = []; // Speichert alle aktiven Sortable-Instanzen
 
+    // 3. Event Listener: Logout
     document.getElementById('logout-button')?.addEventListener('click', logout);
 
-    // Tabs
+    // 4. Tab-Navigation
     document.querySelectorAll('.tab-button').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 
-    function switchTab(tab) {
+    function switchTab(tabName) {
+        // Buttons stylen
         document.querySelectorAll('.tab-button').forEach(b => {
-             b.classList.toggle('border-blue-400', b.dataset.tab === tab);
-             b.classList.toggle('text-blue-400', b.dataset.tab === tab);
-             b.classList.toggle('border-transparent', b.dataset.tab !== tab);
+            const isActive = b.dataset.tab === tabName;
+            b.classList.toggle('border-blue-400', isActive);
+            b.classList.toggle('text-blue-400', isActive);
+            b.classList.toggle('border-transparent', !isActive);
+            b.classList.toggle('text-gray-400', !isActive);
         });
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.toggle('active', el.id === `tab-content-${tab}`));
         
-        if (tab === 'media') initializeMediaManager();
-        if (tab === 'community') { initializeSubscribers(); initializeInbox(); }
+        // Content umschalten
+        document.querySelectorAll('.tab-content').forEach(el => {
+            el.classList.toggle('active', el.id === `tab-content-${tabName}`);
+        });
+
+        // Module initialisieren (Lazy Load)
+        if (tabName === 'media') initializeMediaManager();
+        if (tabName === 'community') {
+            initializeSubscribers();
+            initializeInbox();
+        }
     }
 
-    // Forms
-    const socialContainer = document.getElementById('social-inputs-container');
-    const socialFields = [ { id: 'youtube', label: 'YouTube', icon: 'youtube', placeholder: '...' }, { id: 'instagram', label: 'Instagram', icon: 'instagram', placeholder: '...' }, { id: 'tiktok', label: 'TikTok', icon: 'music-4', placeholder: '...' }, { id: 'twitch', label: 'Twitch', icon: 'twitch', placeholder: '...' }, { id: 'x', label: 'X', icon: 'twitter', placeholder: '...' }, { id: 'discord', label: 'Discord', icon: 'discord', placeholder: '...' }, { id: 'email', label: 'E-Mail', icon: 'mail', placeholder: '...' } ];
-    UI.renderSocialFields(socialContainer, socialFields);
+    // 5. QR-Code Modal
+    const qrButton = document.getElementById('qrcode-button');
+    const qrModal = document.getElementById('qrcode-modal');
+    const qrImage = document.getElementById('qrcode-image');
+    const qrDownload = document.getElementById('qrcode-download');
 
+    if (qrButton) {
+        qrButton.addEventListener('click', () => {
+            const qrUrl = `/api/qrcode?t=${new Date().getTime()}`;
+            qrImage.src = qrUrl;
+            qrDownload.href = qrUrl;
+            qrModal.style.display = 'flex';
+        });
+    }
+    if (qrModal) {
+        qrModal.addEventListener('click', (e) => {
+            if (e.target === qrModal) qrModal.style.display = 'none';
+        });
+    }
+
+    // 6. Social Media Felder rendern
+    const socialInputsContainer = document.getElementById('social-inputs-container');
+    const socialFields = [
+        { id: 'youtube', label: 'YouTube', icon: 'youtube', placeholder: 'https://youtube.com/...' },
+        { id: 'instagram', label: 'Instagram', icon: 'instagram', placeholder: 'https://instagram.com/...' },
+        { id: 'tiktok', label: 'TikTok', icon: 'music-4', placeholder: 'https://tiktok.com/@...' },
+        { id: 'twitch', label: 'Twitch', icon: 'twitch', placeholder: 'https://twitch.tv/...' },
+        { id: 'x', label: 'X (Twitter)', icon: 'twitter', placeholder: 'https://x.com/...' },
+        { id: 'discord', label: 'Discord', icon: 'discord', placeholder: 'https://discord.gg/...' },
+        { id: 'email', label: 'E-Mail', icon: 'mail', placeholder: 'mailto:deine@email.com' }
+    ];
+    UI.renderSocialFields(socialInputsContainer, socialFields);
+
+    // 7. Generische Formular-Handler (Items erstellen)
     const forms = [
         {id: 'add-link-form', api: '/api/links', data: (e) => ({url: e.target.querySelector('input').value})},
         {id: 'add-video-form', api: '/api/videos', data: (e) => ({url: e.target.querySelector('input').value})},
@@ -62,14 +115,22 @@ async function initAdmin() {
         {id: 'add-divider-form', api: '/api/dividers', data: (e) => ({title: e.target.querySelector('input').value})},
         {id: 'add-contact-form', api: '/api/contact_form', data: (e) => ({title: e.target.querySelector('input').value})},
         {id: 'add-email-form', api: '/api/email_form', data: (e) => ({title: e.target.querySelector('input').value})},
-        {id: 'add-testimonial-form', api: '/api/testimonials', data: (e) => ({name: e.target.querySelector('#testimonial-name').value, text: prompt("Text:")})},
-        {id: 'add-product-form', api: '/api/products', data: (e) => ({title: e.target.querySelector('#product-title').value, price: e.target.querySelector('#product-price').value, url: e.target.querySelector('#product-url').value})},
-        {id: 'add-countdown-form', api: '/api/countdowns', data: (e) => ({title: e.target.querySelector('#countdown-title').value, target_datetime: new Date(e.target.querySelector('#countdown-datetime').value).toISOString()})}
+        {id: 'add-testimonial-form', api: '/api/testimonials', data: (e) => ({name: e.target.querySelector('#testimonial-name').value, text: prompt("Bitte gib den Text der Rezension ein:")})},
+        {id: 'add-product-form', api: '/api/products', data: (e) => ({
+            title: e.target.querySelector('#product-title').value, 
+            price: e.target.querySelector('#product-price').value, 
+            url: e.target.querySelector('#product-url').value
+        })},
+        {id: 'add-countdown-form', api: '/api/countdowns', data: (e) => ({
+            title: e.target.querySelector('#countdown-title').value, 
+            target_datetime: new Date(e.target.querySelector('#countdown-datetime').value).toISOString()
+        })}
     ];
 
     forms.forEach(f => {
         const form = document.getElementById(f.id);
         if (form) {
+            // Styling anwenden
             form.querySelectorAll('input').forEach(i => i.className = UI.STYLES.input);
             form.querySelectorAll('button').forEach(b => b.className = UI.STYLES.btnPrimary);
             
@@ -77,187 +138,364 @@ async function initAdmin() {
                 e.preventDefault();
                 try {
                     const payload = f.data(e);
-                    if(!payload) return; 
+                    // Abbrechen, wenn Prompt (z.B. bei Testimonial) abgebrochen wurde
+                    if(!payload || (payload.text === null)) return; 
+
                     await API.createItem(f.api, payload);
-                    UI.setFormStatus(formStatus, 'Hinzugefügt!', 'text-green-400', 2000);
+                    UI.setFormStatus(formStatus, 'Erfolgreich hinzugefügt!', 'text-green-400', 2000);
                     loadItems();
                     e.target.reset();
-                } catch(err) { UI.setFormStatus(formStatus, err.message, 'text-red-400'); }
+                } catch(err) {
+                    UI.setFormStatus(formStatus, err.message, 'text-red-400', 5000);
+                }
             });
         }
     });
 
-    // List Items
+    // 8. Items laden und rendern
     async function loadItems() {
-        const container = document.getElementById('manage-items-list');
-        const spinner = document.getElementById('manage-list-loading');
-        spinner.style.display = 'flex'; container.innerHTML = '';
+        listLoadingSpinner.style.display = 'flex';
+        listContainer.innerHTML = '';
         
         try {
             const items = await API.fetchItems();
-            spinner.style.display = 'none';
+            listLoadingSpinner.style.display = 'none';
             
-            const groups = items.filter(i => ['slider_group', 'grid'].includes(i.item_type));
+            if (items.length === 0) {
+                listContainer.innerHTML = '<p class="text-gray-400 text-center py-4">Noch keine Items erstellt.</p>';
+                return;
+            }
             
-            // Root und Child Trennung
-            const roots = []; const children = {};
+            // Gruppen für Dropdowns (Parent-Auswahl) filtern
+            const groupItems = items.filter(i => ['slider_group', 'grid'].includes(i.item_type));
+            
+            // Datenstruktur aufbereiten (Root vs. Kinder)
+            const roots = []; 
+            const childrenMap = {};
+            
             items.forEach(i => {
                 if(i.parent_id) { 
-                    if(!children[i.parent_id]) children[i.parent_id] = [];
-                    children[i.parent_id].push(i);
-                } else { roots.push(i); }
+                    if(!childrenMap[i.parent_id]) childrenMap[i.parent_id] = [];
+                    childrenMap[i.parent_id].push(i);
+                } else { 
+                    roots.push(i); 
+                }
             });
 
+            // Rendern
             roots.forEach(item => {
-                const rendered = UI.renderAdminItem(item, groups);
-                container.appendChild(rendered.itemEl);
+                const rendered = UI.renderAdminItem(item, groupItems);
+                listContainer.appendChild(rendered.itemEl);
                 setupItemEvents(item, rendered);
 
-                // Container für Kinder befüllen (falls Gruppe)
+                // Container für Kinder (bei Gruppen)
                 if (['slider_group', 'grid'].includes(item.item_type)) {
                     const childContainer = rendered.itemEl.querySelector('.child-container');
                     
-                    // Falls Kinder existieren, anzeigen
-                    if (children[item.id]) {
-                        children[item.id].sort((a,b) => a.display_order - b.display_order);
-                        // Placeholder ausblenden, wenn Inhalt da ist
-                        const placeholder = childContainer.querySelector('.empty-placeholder');
-                        if(placeholder) placeholder.style.display = 'none';
+                    if (childrenMap[item.id]) {
+                        childrenMap[item.id].sort((a,b) => a.display_order - b.display_order);
+                        
+                        // Placeholder ausblenden
+                        const ph = childContainer.querySelector('.empty-placeholder');
+                        if(ph) ph.style.display = 'none';
 
-                        children[item.id].forEach(c => {
-                            const r = UI.renderAdminItem(c, groups);
-                            childContainer.appendChild(r.itemEl);
-                            setupItemEvents(c, r);
+                        childrenMap[item.id].forEach(child => {
+                            const childRendered = UI.renderAdminItem(child, groupItems);
+                            childContainer.appendChild(childRendered.itemEl);
+                            setupItemEvents(child, childRendered);
                         });
                     }
                 }
             });
             
+            // Drag & Drop initialisieren
             initSortable();
+            
+            // Icons rendern
             lucide.createIcons();
-        } catch(e) { console.error(e); spinner.innerHTML = 'Fehler beim Laden.'; }
+            
+        } catch(e) {
+            console.error(e);
+            listLoadingSpinner.style.display = 'none';
+            listContainer.innerHTML = `<p class="text-red-400 text-center">Fehler beim Laden: ${e.message}</p>`;
+        }
     }
 
+    // 9. Events für einzelne Items (Edit, Delete, Save, Upload)
     function setupItemEvents(item, { viewContainer, editContainer }) {
         const btns = viewContainer.querySelectorAll('button');
-        const [toggleBtn, editBtn, delBtn] = btns;
+        const [toggleBtn, editBtn, delBtn] = btns; // Reihenfolge in UI: Toggle, Edit, Delete
         
-        editBtn.onclick = () => { viewContainer.style.display='none'; editContainer.style.display='block'; lucide.createIcons(); };
-        delBtn.onclick = async () => { if(confirm('Löschen?')) { await API.deleteItem(item.id); loadItems(); } };
-        toggleBtn.onclick = async () => { await API.toggleItemVisibility(item.id); loadItems(); };
+        editBtn.onclick = () => { 
+            viewContainer.style.display='none'; 
+            editContainer.style.display='block'; 
+            lucide.createIcons(); // Icons im Edit-Modus rendern
+        };
+        
+        delBtn.onclick = async () => { 
+            if(confirm(`Item "${item.title}" wirklich löschen?`)) { 
+                await API.deleteItem(item.id); 
+                loadItems(); 
+            } 
+        };
+        
+        toggleBtn.onclick = async () => { 
+            await API.toggleItemVisibility(item.id); 
+            loadItems(); 
+        };
         
         const saveBtn = editContainer.querySelector('.btn-save-edit');
         const cancelBtn = editContainer.querySelector('.btn-cancel-edit');
         const uploadBtn = editContainer.querySelector('.btn-upload-image');
 
-        cancelBtn.onclick = () => { editContainer.style.display='none'; viewContainer.style.display='flex'; };
+        cancelBtn.onclick = () => { 
+            editContainer.style.display='none'; 
+            viewContainer.style.display='flex'; 
+        };
         
         saveBtn.onclick = async () => {
-            const title = editContainer.querySelector('.edit-title')?.value;
-            const url = editContainer.querySelector('.edit-url')?.value;
-            const img = editContainer.querySelector('.edit-image-url')?.value;
-            const price = editContainer.querySelector('.edit-price')?.value;
-            const parent = editContainer.querySelector('.edit-parent-id')?.value;
-            const feat = editContainer.querySelector('.edit-is_featured')?.checked;
-            const aff = editContainer.querySelector('.edit-is_affiliate')?.checked;
+            const payload = {};
             
-            const payload = { title, url, image_url: img, price, is_featured: feat, is_affiliate: aff };
-            if(parent !== undefined) payload.parent_id = parseInt(parent) || null;
+            // Werte auslesen (nur wenn Feld existiert)
+            const titleIn = editContainer.querySelector('.edit-title'); if(titleIn) payload.title = titleIn.value;
+            const urlIn = editContainer.querySelector('.edit-url'); if(urlIn) payload.url = urlIn.value;
+            const imgIn = editContainer.querySelector('.edit-image-url'); if(imgIn) payload.image_url = imgIn.value;
+            const priceIn = editContainer.querySelector('.edit-price'); if(priceIn) payload.price = priceIn.value;
+            const parentIn = editContainer.querySelector('.edit-parent-id'); if(parentIn) payload.parent_id = parseInt(parentIn.value) || null;
+            const featIn = editContainer.querySelector('.edit-is_featured'); if(featIn) payload.is_featured = featIn.checked;
+            const affIn = editContainer.querySelector('.edit-is_affiliate'); if(affIn) payload.is_affiliate = affIn.checked;
+            const dateIn = editContainer.querySelector('.edit-publish-on'); if(dateIn) payload.publish_on = dateIn.value ? new Date(dateIn.value).toISOString() : '';
+            const expIn = editContainer.querySelector('.edit-expires-on'); if(expIn) payload.expires_on = expIn.value ? new Date(expIn.value).toISOString() : '';
+            const gridIn = editContainer.querySelector('.edit-grid-columns'); if(gridIn) payload.grid_columns = parseInt(gridIn.value) || 2;
             
-            await API.updateItem(item.id, payload);
-            loadItems();
+            try {
+                await API.updateItem(item.id, payload);
+                UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 2000);
+                loadItems();
+            } catch(e) {
+                UI.setFormStatus(formStatus, e.message, 'text-red-400', 3000);
+            }
         };
         
         if(uploadBtn) {
             uploadBtn.onclick = async () => {
-                const file = editContainer.querySelector('.upload-image-file').files[0];
+                const fileInput = editContainer.querySelector('.upload-image-file');
+                const status = editContainer.querySelector('.upload-status');
+                const file = fileInput.files[0];
+                
                 if(!file) return;
-                const formData = new FormData(); formData.append('file', file);
-                const res = await API.uploadImage(formData);
-                editContainer.querySelector('.edit-image-url').value = res.url;
+                
+                status.textContent = 'Lade hoch...';
+                const formData = new FormData(); 
+                formData.append('file', file);
+                
+                try {
+                    const res = await API.uploadImage(formData);
+                    editContainer.querySelector('.edit-image-url').value = res.url;
+                    status.textContent = 'OK';
+                    status.className = 'upload-status text-xs text-green-400';
+                } catch(e) {
+                    status.textContent = 'Fehler';
+                    status.className = 'upload-status text-xs text-red-400';
+                    alert("Upload fehlgeschlagen: " + e.message);
+                }
             };
         }
     }
 
+    // 10. Drag & Drop (SortableJS)
     function initSortable() {
-        // Alte Instanzen aufräumen
+        // Aufräumen alter Instanzen
         sortableInstances.forEach(s => s.destroy());
         sortableInstances = [];
 
         const rootContainer = document.getElementById('manage-items-list');
         
-        // Konfiguration für ALLE Listen (Root und Nested)
-        const sortableConfig = {
+        const config = {
             group: {
-                name: 'nested', // Gleicher Name erlaubt Austausch
+                name: 'nested',
                 pull: true,
                 put: (to, from, dragEl) => {
-                    // Verhindere, dass eine Gruppe (Grid/Slider) IN eine andere Gruppe gezogen wird.
-                    // Gruppen dürfen nur im Root sein.
+                    // Gruppen dürfen nicht in andere Gruppen gezogen werden
                     const type = dragEl.dataset.type;
                     const isGroup = ['slider_group', 'grid'].includes(type);
                     const isRootList = to.el.id === 'manage-items-list';
-                    
-                    if (isGroup && !isRootList) return false; // Gruppe darf nicht in Child-List
+                    if (isGroup && !isRootList) return false;
                     return true;
                 }
             },
-            animation: 150,
             handle: '.drag-handle',
+            animation: 150,
             ghostClass: 'sortable-ghost',
             onEnd: async (evt) => {
-                // 1. Item wurde verschoben
                 const itemEl = evt.item;
                 const itemId = itemEl.dataset.id;
-                
-                // 2. Wo ist es gelandet?
                 const newContainer = itemEl.closest('.child-container');
                 let newParentId = null;
-                
+
                 if (newContainer) {
-                    // Es ist jetzt ein Kind
                     newParentId = newContainer.dataset.parentId;
-                    // Placeholder ausblenden
                     const ph = newContainer.querySelector('.empty-placeholder');
                     if(ph) ph.style.display = 'none';
                 }
-                
-                // 3. Backend Update nur wenn Parent sich geändert hat oder Reihenfolge
-                // Wir machen es einfach: Immer Parent updaten, wenn gedroppt.
+
+                // Parent Update sofort senden
                 await API.updateItem(itemId, { parent_id: newParentId ? parseInt(newParentId) : null });
                 
-                // 4. UI aktualisieren (Neu laden, um sauberen State zu haben)
-                // Oder Button anzeigen zum Speichern der Reihenfolge
-                document.getElementById('save-order-button').style.display = 'block';
+                // Button zum Speichern der Reihenfolge anzeigen
+                saveOrderButton.style.display = 'block';
             }
         };
 
-        // 1. Root Liste initialisieren
-        sortableInstances.push(new Sortable(rootContainer, sortableConfig));
+        // Root Liste aktivieren
+        sortableInstances.push(new Sortable(rootContainer, config));
         
-        // 2. Alle Child-Container initialisieren
+        // Alle Gruppen-Container aktivieren
         document.querySelectorAll('.child-container').forEach(el => {
-            sortableInstances.push(new Sortable(el, sortableConfig));
+            sortableInstances.push(new Sortable(el, config));
         });
     }
 
-    document.getElementById('save-order-button').onclick = async () => {
-        // Wir speichern nur die Root-Reihenfolge explizit, 
-        // die Parent-Zuordnung ist durch onEnd schon passiert.
-        // Ideal wäre rekursives Speichern, aber für MVP reicht Root.
-        const ids = Array.from(document.getElementById('manage-items-list').children)
-            .filter(el => el.dataset.id) // Filtert Kinder-Container raus, falls Struktur komisch
+    // 11. Reihenfolge speichern Button
+    saveOrderButton.onclick = async () => {
+        // Wir speichern die Reihenfolge der Root-Elemente.
+        // Die Parent-Zuordnung ist durch onEnd bereits passiert.
+        // Für perfekte Konsistenz könnte man hier rekursiv alle Listen senden,
+        // aber für den MVP reicht Root, da SortableJS das DOM manipuliert hat.
+        const ids = Array.from(listContainer.children)
+            .filter(el => el.dataset.id)
             .map(el => el.dataset.id);
         
-        await API.reorderItems(ids);
-        
-        // Wir laden alles neu, um sicherzugehen, dass die DB konsistent ist
-        loadItems();
-        document.getElementById('save-order-button').style.display = 'none';
-        UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 2000);
+        try {
+            await API.reorderItems(ids);
+            saveOrderButton.style.display = 'none';
+            UI.setFormStatus(formStatus, 'Reihenfolge gespeichert!', 'text-green-400', 2000);
+            loadItems(); // Reload für sauberen State
+        } catch(e) {
+            UI.setFormStatus(formStatus, e.message, 'text-red-400');
+        }
     };
 
-    // --- Profile & Settings ---
+    // 12. Profil-Einstellungen
+    // Referenzen
+    const profileForm = document.getElementById('profile-form');
+    const pTitle = document.getElementById('profile-title');
+    const pBio = document.getElementById('profile-bio');
+    const pImg = document.getElementById('profile-image-url');
+    const pBg = document.getElementById('profile-bg-url'); 
+    const pTheme = document.getElementById('profile-theme');
+    const pStyle = document.getElementById('profile-button-style');
+    const cBg = document.getElementById('custom-bg-color');
+    const cText = document.getElementById('custom-text-color');
+    const cBtn = document.getElementById('custom-button-color');
+    const cBtnTxt = document.getElementById('custom-button-text-color');
+    const cHead = document.getElementById('custom-html-head');
+    const cBody = document.getElementById('custom-html-body');
+
+    async function loadProfileSettings() {
+        try {
+            const s = await API.fetchSettings();
+            
+            pTitle.value = s.title || '';
+            pBio.value = s.bio || '';
+            pImg.value = s.image_url || '';
+            if(pBg) pBg.value = s.bg_image_url || ''; 
+            pTheme.value = s.theme || 'theme-dark';
+            pStyle.value = s.button_style || 'style-rounded';
+            
+            if(cHead) cHead.value = s.custom_html_head || '';
+            if(cBody) cBody.value = s.custom_html_body || '';
+            
+            socialFields.forEach(f => {
+                const i = document.getElementById(`social-${f.id}`);
+                if(i) i.value = s[`social_${f.id}`] || '';
+            });
+            
+            cBg.value = s.custom_bg_color || '#111827';
+            cText.value = s.custom_text_color || '#F9FAFB';
+            cBtn.value = s.custom_button_color || '#1F2937';
+            cBtnTxt.value = s.custom_button_text_color || '#FFFFFF';
+            
+            toggleCustomThemeSettings(s.theme);
+        } catch(e) { UI.setFormStatus(formStatus, 'Fehler Settings', 'text-red-400'); }
+    }
+
+    function toggleCustomThemeSettings(theme) {
+        const el = document.getElementById('custom-theme-settings');
+        if(el) el.style.display = (theme === 'theme-custom') ? 'block' : 'none';
+    }
+    pTheme.addEventListener('change', () => toggleCustomThemeSettings(pTheme.value));
+
+    // Upload Helper für Profil
+    function setupImageUpload(btnId, fileId, textId) {
+        const btn = document.getElementById(btnId);
+        const file = document.getElementById(fileId);
+        const text = document.getElementById(textId);
+        if(!btn || !file || !text) return;
+        
+        btn.onclick = () => file.click();
+        file.onchange = async () => {
+            if(!file.files[0]) return;
+            const fd = new FormData(); fd.append('file', file.files[0]);
+            btn.textContent = '...';
+            try {
+                const res = await API.uploadImage(fd);
+                text.value = res.url;
+                btn.textContent = 'OK';
+            } catch(e) { btn.textContent = 'Err'; alert(e.message); }
+        };
+    }
+    setupImageUpload('upload-profile-btn', 'upload-profile-file', 'profile-image-url');
+    setupImageUpload('upload-bg-btn', 'upload-bg-file', 'profile-bg-url');
+
+    profileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        UI.setFormStatus(formStatus, 'Speichere...', 'text-blue-400');
+        
+        const socialData = {};
+        socialFields.forEach(f => { 
+            socialData[`social_${f.id}`] = document.getElementById(`social-${f.id}`).value; 
+        });
+
+        const payload = {
+            title: pTitle.value,
+            bio: pBio.value,
+            image_url: pImg.value,
+            bg_image_url: pBg ? pBg.value : '', 
+            theme: pTheme.value,
+            button_style: pStyle.value,
+            ...socialData,
+            custom_bg_color: cBg.value,
+            custom_text_color: cText.value,
+            custom_button_color: cBtn.value,
+            custom_button_text_color: cBtnTxt.value,
+            custom_html_head: cHead ? cHead.value : '',
+            custom_html_body: cBody ? cBody.value : '',
+        };
+
+        try {
+            await API.updateSettings(payload);
+            UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 2000);
+        } catch(e) { UI.setFormStatus(formStatus, e.message, 'text-red-400', 5000); }
+    });
+
+    // 13. Preview Modal
+    const previewModal = document.getElementById('preview-modal');
+    const previewBtn = document.getElementById('preview-button');
+    const refreshBtn = document.getElementById('preview-refresh-button');
+    const closeBtn = document.getElementById('preview-close-button');
+    const iframe = document.getElementById('preview-iframe');
+
+    function showPreview() {
+        iframe.src = `/?t=${Date.now()}`;
+        previewModal.classList.add('active');
+    }
+    if(previewBtn) previewBtn.onclick = showPreview;
+    if(closeBtn) closeBtn.onclick = () => { previewModal.classList.remove('active'); iframe.src = 'about:blank'; };
+    if(refreshBtn) refreshBtn.onclick = () => { iframe.src = `/?t=${Date.now()}`; };
+    if(previewModal) previewModal.onclick = (e) => { if(e.target === previewModal) closeBtn.click(); };
+
+    // INITIAL START
     loadItems();
     loadProfileSettings();
 }

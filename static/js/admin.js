@@ -5,607 +5,259 @@ import * as API from './admin_api.js';
 import * as UI from './admin_ui.js';
 import { requireAuth, logout } from './utils.js';
 
-// Helper zum Nachladen von Skripten (Fallback)
+// Helper für Fallback
 function loadScript(src) {
     return new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = src;
-        s.onload = resolve;
-        s.onerror = reject;
-        document.head.appendChild(s);
+        const s = document.createElement('script'); s.src = src;
+        s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
     });
 }
 
-if (requireAuth()) {
-    document.addEventListener('DOMContentLoaded', initializeAdminPanel);
-}
+if (requireAuth()) { document.addEventListener('DOMContentLoaded', initAdmin); }
 
-async function initializeAdminPanel() {
-    
-    // --- ROBUSTER LUCIDE CHECK & FALLBACK ---
+async function initAdmin() {
+    // Robust Check
     if (typeof lucide === 'undefined') {
-        console.warn("Lucide nicht gefunden (lokale Datei evtl. defekt). Versuche CDN-Notfall-Ladung...");
-        const listLoadingSpinner = document.getElementById('manage-list-loading');
-        
-        try {
-            // Wir versuchen, die UMD-Version direkt vom CDN zu laden
-            await loadScript('https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js');
-            console.log("Lucide erfolgreich via CDN nachgeladen!");
-        } catch (e) {
-            console.error("SCHWERWIEGENDER FEHLER: Lucide konnte auch per CDN nicht geladen werden.");
-            if (listLoadingSpinner) {
-                listLoadingSpinner.innerHTML = '<p class="text-red-400 text-center">Kritischer Fehler: Icons konnten nicht geladen werden.<br>Bitte lösche die Datei static/vendor/lucide.js manuell.</p>';
-            }
-            return; // Abbruch
-        }
+        console.warn("Lucide lokal fehlt. Lade CDN...");
+        try { await loadScript('https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js'); } 
+        catch(e) { console.error("Lucide Fail"); return; }
     }
-    // ----------------------------------------
-    
+
     const formStatus = document.getElementById('form-status');
     const listContainer = document.getElementById('manage-items-list');
-    const listLoadingSpinner = document.getElementById('manage-list-loading');
     const saveOrderButton = document.getElementById('save-order-button');
+    let sortableInstances = []; // Array statt Single
 
-    let sortableInstance = null;
-    let sliderGroups = [];
+    document.getElementById('logout-button')?.addEventListener('click', logout);
 
-    const logoutButton = document.getElementById('logout-button');
-    if (logoutButton) {
-        logoutButton.addEventListener('click', logout);
-    }
+    // Tabs
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
 
-    const qrButton = document.getElementById('qrcode-button');
-    const qrModal = document.getElementById('qrcode-modal');
-    const qrImage = document.getElementById('qrcode-image');
-    const qrDownload = document.getElementById('qrcode-download');
-
-    if (qrButton) {
-        qrButton.addEventListener('click', () => {
-            const qrUrl = `/api/qrcode?t=${new Date().getTime()}`;
-            qrImage.src = qrUrl;
-            qrDownload.href = qrUrl;
-            qrModal.style.display = 'flex';
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-button').forEach(b => {
+             b.classList.toggle('border-blue-400', b.dataset.tab === tab);
+             b.classList.toggle('text-blue-400', b.dataset.tab === tab);
+             b.classList.toggle('border-transparent', b.dataset.tab !== tab);
         });
-    }
-    if (qrModal) {
-        qrModal.addEventListener('click', (e) => {
-            if (e.target === qrModal) qrModal.style.display = 'none';
-        });
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.toggle('active', el.id === `tab-content-${tab}`));
+        
+        if (tab === 'media') initializeMediaManager();
+        if (tab === 'community') { initializeSubscribers(); initializeInbox(); }
     }
 
-    const socialInputsContainer = document.getElementById('social-inputs-container');
-    const socialFields = [
-        { id: 'youtube', label: 'YouTube', icon: 'youtube', placeholder: 'https://youtube.com/...' },
-        { id: 'instagram', label: 'Instagram', icon: 'instagram', placeholder: 'https://instagram.com/...' },
-        { id: 'tiktok', label: 'TikTok', icon: 'music-4', placeholder: 'https://tiktok.com/@...' },
-        { id: 'twitch', label: 'Twitch', icon: 'twitch', placeholder: 'https://twitch.tv/...' },
-        { id: 'x', label: 'X (Twitter)', icon: 'twitter', placeholder: 'https://x.com/...' },
-        { id: 'discord', label: 'Discord', icon: 'discord', placeholder: 'https://discord.gg/...' },
-        { id: 'email', label: 'E-Mail', icon: 'mail', placeholder: 'mailto:deine@email.com' }
+    // Forms
+    const socialContainer = document.getElementById('social-inputs-container');
+    const socialFields = [ { id: 'youtube', label: 'YouTube', icon: 'youtube', placeholder: '...' }, { id: 'instagram', label: 'Instagram', icon: 'instagram', placeholder: '...' }, { id: 'tiktok', label: 'TikTok', icon: 'music-4', placeholder: '...' }, { id: 'twitch', label: 'Twitch', icon: 'twitch', placeholder: '...' }, { id: 'x', label: 'X', icon: 'twitter', placeholder: '...' }, { id: 'discord', label: 'Discord', icon: 'discord', placeholder: '...' }, { id: 'email', label: 'E-Mail', icon: 'mail', placeholder: '...' } ];
+    UI.renderSocialFields(socialContainer, socialFields);
+
+    const forms = [
+        {id: 'add-link-form', api: '/api/links', data: (e) => ({url: e.target.querySelector('input').value})},
+        {id: 'add-video-form', api: '/api/videos', data: (e) => ({url: e.target.querySelector('input').value})},
+        {id: 'add-header-form', api: '/api/headers', data: (e) => ({title: e.target.querySelector('input').value})},
+        {id: 'add-slider-group-form', api: '/api/slider_groups', data: (e) => ({title: e.target.querySelector('input').value})},
+        {id: 'add-grid-form', api: '/api/grids', data: (e) => ({title: e.target.querySelector('input').value})},
+        {id: 'add-faq-form', api: '/api/faqs', data: (e) => ({title: e.target.querySelector('input').value})},
+        {id: 'add-divider-form', api: '/api/dividers', data: (e) => ({title: e.target.querySelector('input').value})},
+        {id: 'add-contact-form', api: '/api/contact_form', data: (e) => ({title: e.target.querySelector('input').value})},
+        {id: 'add-email-form', api: '/api/email_form', data: (e) => ({title: e.target.querySelector('input').value})},
+        {id: 'add-testimonial-form', api: '/api/testimonials', data: (e) => ({name: e.target.querySelector('#testimonial-name').value, text: prompt("Text:")})},
+        {id: 'add-product-form', api: '/api/products', data: (e) => ({title: e.target.querySelector('#product-title').value, price: e.target.querySelector('#product-price').value, url: e.target.querySelector('#product-url').value})},
+        {id: 'add-countdown-form', api: '/api/countdowns', data: (e) => ({title: e.target.querySelector('#countdown-title').value, target_datetime: new Date(e.target.querySelector('#countdown-datetime').value).toISOString()})}
     ];
 
-    UI.renderSocialFields(socialInputsContainer, socialFields);
-    
-    const forms = ['add-link-form', 'add-header-form', 'add-slider-group-form', 'add-video-form', 'add-email-form', 'add-countdown-form', 'add-grid-form', 'add-faq-form', 'add-divider-form', 'add-testimonial-form', 'add-contact-form', 'add-product-form'];
-    forms.forEach(id => {
-        const form = document.getElementById(id);
+    forms.forEach(f => {
+        const form = document.getElementById(f.id);
         if (form) {
-            form.querySelectorAll(`input`).forEach(el => el.className = UI.STYLES.input);
-            form.querySelectorAll(`button`).forEach(el => el.className = UI.STYLES.btnPrimary);
-        }
-    });
-    document.querySelectorAll('#profile-form input[type="text"], #profile-form textarea, #profile-form select').forEach(el => el.className = UI.STYLES.input);
-    const profileSubmitBtn = document.querySelector('#profile-form button[type="submit"]');
-    if(profileSubmitBtn) profileSubmitBtn.className = UI.STYLES.btnPrimary;
-    
-    const backupBtn = document.getElementById('backup-button');
-    if(backupBtn) backupBtn.className = UI.STYLES.btnSecondary;
-    
-    if(saveOrderButton) saveOrderButton.className = `${UI.STYLES.btnPrimary} w-auto`;
-
-
-    const tabButtons = document.querySelectorAll('.tab-button');
-    const tabContents = document.querySelectorAll('.tab-content');
-    
-    function switchTab(tabName) {
-        tabButtons.forEach(button => {
-            const isTarget = button.dataset.tab === tabName;
-            button.classList.toggle('active', isTarget);
-            button.classList.toggle('border-blue-400', isTarget);
-            button.classList.toggle('text-blue-400', isTarget);
-            button.classList.toggle('border-transparent', !isTarget);
-            button.classList.toggle('text-gray-400', !isTarget);
-            button.classList.toggle('hover:text-gray-200', !isTarget);
-            button.classList.toggle('hover:border-gray-500', !isTarget);
-        });
-        tabContents.forEach(content => {
-            content.classList.toggle('active', content.id === `tab-content-${tabName}`);
-        });
-
-        if (tabName === 'media') {
-            initializeMediaManager();
-        }
-        if (tabName === 'community') {
-            initializeSubscribers();
-            initializeInbox();
-        }
-    }
-    tabButtons.forEach(button => {
-        if(button.dataset.tab) {
-            button.addEventListener('click', () => switchTab(button.dataset.tab));
-        }
-    });
-    
-    const previewModal = document.getElementById('preview-modal');
-    const previewButton = document.getElementById('preview-button');
-    const previewCloseButton = document.getElementById('preview-close-button');
-    const previewRefreshButton = document.getElementById('preview-refresh-button');
-    const previewIframe = document.getElementById('preview-iframe');
-
-    function showPreview() {
-        previewIframe.src = `/?cache_bust=${new Date().getTime()}`;
-        previewModal.classList.add('active');
-    }
-    function closePreview() {
-        previewModal.classList.remove('active');
-        previewIframe.src = 'about:blank';
-    }
-    function refreshPreview() {
-        previewIframe.src = `/?cache_bust=${new Date().getTime()}`;
-    }
-
-    if(previewButton) previewButton.addEventListener('click', showPreview);
-    if(previewCloseButton) previewCloseButton.addEventListener('click', closePreview);
-    if(previewRefreshButton) previewRefreshButton.addEventListener('click', refreshPreview);
-    if(previewModal) previewModal.addEventListener('click', (e) => {
-        if (e.target === previewModal) {
-            closePreview();
-        }
-    });
-
-    const profileForm = document.getElementById('profile-form');
-    const profileTitle = document.getElementById('profile-title');
-    const profileBio = document.getElementById('profile-bio');
-    const profileImageUrl = document.getElementById('profile-image-url');
-    const profileBgUrl = document.getElementById('profile-bg-url');
-    const profileTheme = document.getElementById('profile-theme');
-    const profileButtonStyle = document.getElementById('profile-button-style');
-    
-    const customThemeSettings = document.getElementById('custom-theme-settings');
-    const customBgColor = document.getElementById('custom-bg-color');
-    const customTextColor = document.getElementById('custom-text-color');
-    const customButtonColor = document.getElementById('custom-button-color');
-    const customButtonTextColor = document.getElementById('custom-button-text-color');
-    
-    const customHeadInput = document.getElementById('custom-html-head');
-    const customBodyInput = document.getElementById('custom-html-body');
-
-    async function loadProfileSettings() {
-        try {
-            const settings = await API.fetchSettings();
+            form.querySelectorAll('input').forEach(i => i.className = UI.STYLES.input);
+            form.querySelectorAll('button').forEach(b => b.className = UI.STYLES.btnPrimary);
             
-            profileTitle.value = settings.title || '';
-            profileBio.value = settings.bio || '';
-            profileImageUrl.value = settings.image_url || '';
-            if(profileBgUrl) profileBgUrl.value = settings.bg_image_url || '';
-            profileTheme.value = settings.theme || 'theme-dark';
-            profileButtonStyle.value = settings.button_style || 'style-rounded';
-            
-            if(customHeadInput) customHeadInput.value = settings.custom_html_head || '';
-            if(customBodyInput) customBodyInput.value = settings.custom_html_body || '';
-            
-            socialFields.forEach(field => {
-                const input = document.getElementById(`social-${field.id}`);
-                if(input) input.value = settings[`social_${field.id}`] || '';
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    const payload = f.data(e);
+                    if(!payload) return; 
+                    await API.createItem(f.api, payload);
+                    UI.setFormStatus(formStatus, 'Hinzugefügt!', 'text-green-400', 2000);
+                    loadItems();
+                    e.target.reset();
+                } catch(err) { UI.setFormStatus(formStatus, err.message, 'text-red-400'); }
             });
-            
-            customBgColor.value = settings.custom_bg_color || '#111827';
-            customTextColor.value = settings.custom_text_color || '#F9FAFB';
-            customButtonColor.value = settings.custom_button_color || '#1F2937';
-            customButtonTextColor.value = settings.custom_button_text_color || '#FFFFFF';
-            
-            toggleCustomThemeSettings(settings.theme);
-
-        } catch (error) {
-            UI.setFormStatus(formStatus, `Fehler beim Laden: ${error.message}`, 'text-red-400');
-        }
-    }
-    
-    function toggleCustomThemeSettings(selectedTheme) {
-        if (selectedTheme === 'theme-custom') {
-            customThemeSettings.style.display = 'block';
-        } else {
-            customThemeSettings.style.display = 'none';
-        }
-    }
-    profileTheme.addEventListener('change', () => toggleCustomThemeSettings(profileTheme.value));
-    
-    function setupImageUpload(btnId, fileInputId, textInputId) {
-        const btn = document.getElementById(btnId);
-        const fileInput = document.getElementById(fileInputId);
-        const textInput = document.getElementById(textInputId);
-        
-        if(!btn || !fileInput || !textInput) return;
-        
-        btn.addEventListener('click', () => fileInput.click());
-        
-        fileInput.addEventListener('change', async () => {
-            if (!fileInput.files[0]) return;
-            
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            btn.textContent = '...';
-            btn.disabled = true;
-            
-            try {
-                const result = await API.uploadImage(formData);
-                textInput.value = result.url;
-                btn.textContent = 'OK';
-            } catch (error) {
-                btn.textContent = 'Fehler';
-                alert("Upload fehlgeschlagen: " + error.message);
-            } finally {
-                btn.disabled = false;
-                fileInput.value = ''; 
-                setTimeout(() => btn.textContent = 'Upload', 2000);
-            }
-        });
-    }
-    
-    setupImageUpload('upload-profile-btn', 'upload-profile-file', 'profile-image-url');
-    setupImageUpload('upload-bg-btn', 'upload-bg-file', 'profile-bg-url');
-
-    profileForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        UI.setFormStatus(formStatus, 'Speichere Profil...', 'text-blue-400');
-        
-        const socialData = {};
-        socialFields.forEach(field => {
-            socialData[`social_${field.id}`] = document.getElementById(`social-${field.id}`).value;
-        });
-        
-        const payload = {
-            title: profileTitle.value,
-            bio: profileBio.value,
-            image_url: profileImageUrl.value,
-            bg_image_url: profileBgUrl ? profileBgUrl.value : '',
-            theme: profileTheme.value,
-            button_style: profileButtonStyle.value,
-            ...socialData,
-            custom_bg_color: customBgColor.value,
-            custom_text_color: customTextColor.value,
-            custom_button_color: customButtonColor.value,
-            custom_button_text_color: customButtonTextColor.value,
-            custom_html_head: customHeadInput ? customHeadInput.value : '',
-            custom_html_body: customBodyInput ? customBodyInput.value : '',
-        };
-
-        try {
-            await API.updateSettings(payload);
-            UI.setFormStatus(formStatus, 'Profil gespeichert!', 'text-green-400', 3000);
-        } catch (error) {
-            UI.setFormStatus(formStatus, `Fehler: ${error.message}`, 'text-red-400', 5000);
-        }
-    });
-    
-    const backupButton = document.getElementById('backup-button');
-    const backupStatus = document.getElementById('backup-status');
-    if (backupButton) {
-        backupButton.addEventListener('click', async () => {
-            backupStatus.textContent = 'Backup wird erstellt...';
-            backupStatus.className = 'text-sm text-blue-400';
-            try {
-                const response = await API.downloadBackup();
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                
-                const contentDisposition = response.headers.get('content-disposition');
-                let filename = `linktree_backup_${new Date().toISOString()}.zip`;
-                if (contentDisposition) {
-                    const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-                    if (filenameMatch && filenameMatch[1]) {
-                        filename = filenameMatch[1];
-                    }
-                }
-                
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-                
-                backupStatus.textContent = 'Backup heruntergeladen!';
-                backupStatus.className = 'text-sm text-green-400';
-            } catch (error) {
-                backupStatus.textContent = `Fehler: ${error.message}`;
-                backupStatus.className = 'text-sm text-red-400';
-            }
-        });
-    }
-
-    async function handleFormSubmit(endpoint, payloadFactory, successMessage) {
-        try {
-            const payload = payloadFactory();
-            if (payload === null) return;
-            await API.createItem(endpoint, payload);
-            UI.setFormStatus(formStatus, successMessage, 'text-green-400', 3000);
-            fetchAndRenderAdminList();
-        } catch (error) {
-            UI.setFormStatus(formStatus, `Fehler: ${error.message}`, 'text-red-400', 5000);
-        }
-    }
-
-    document.getElementById('add-link-form').addEventListener('submit', (e) => { e.preventDefault(); const el = document.getElementById('link-url'); handleFormSubmit('/api/links', () => ({ url: el.value }), 'Link hinzugefügt!').then(() => el.value = ''); });
-    document.getElementById('add-header-form').addEventListener('submit', (e) => { e.preventDefault(); const el = document.getElementById('header-title'); handleFormSubmit('/api/headers', () => ({ title: el.value }), 'Überschrift hinzugefügt!').then(() => el.value = ''); });
-    document.getElementById('add-slider-group-form').addEventListener('submit', (e) => { e.preventDefault(); const el = document.getElementById('slider-group-title'); handleFormSubmit('/api/slider_groups', () => ({ title: el.value }), 'Slider hinzugefügt!').then(() => el.value = ''); });
-    document.getElementById('add-video-form').addEventListener('submit', (e) => { e.preventDefault(); const el = document.getElementById('video-url'); handleFormSubmit('/api/videos', () => ({ url: el.value }), 'Video hinzugefügt!').then(() => el.value = ''); });
-    document.getElementById('add-email-form').addEventListener('submit', (e) => { e.preventDefault(); const el = document.getElementById('email-form-title'); handleFormSubmit('/api/email_form', () => ({ title: el.value }), 'Formular hinzugefügt!').then(() => el.value = ''); });
-    
-    document.getElementById('add-countdown-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const t = document.getElementById('countdown-title');
-        const d = document.getElementById('countdown-datetime');
-        handleFormSubmit('/api/countdowns', () => ({ title: t.value, target_datetime: new Date(d.value).toISOString() }), 'Countdown hinzugefügt!').then(() => { t.value = ''; d.value = ''; });
-    });
-
-    document.getElementById('add-grid-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const el = document.getElementById('grid-title');
-        handleFormSubmit('/api/grids', () => ({ title: el.value }), 'Grid hinzugefügt!').then(() => el.value = '');
-    });
-
-    document.getElementById('add-faq-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const el = document.getElementById('faq-title');
-        handleFormSubmit('/api/faqs', () => ({ title: el.value }), 'Frage hinzugefügt!').then(() => el.value = '');
-    });
-
-    document.getElementById('add-divider-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const el = document.getElementById('divider-title');
-        handleFormSubmit('/api/dividers', () => ({ title: el.value || '---' }), 'Trennlinie hinzugefügt!').then(() => el.value = '');
-    });
-    
-    document.getElementById('add-testimonial-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const name = document.getElementById('testimonial-name');
-        const reviewText = prompt("Bitte gib den Text der Rezension ein:");
-        if (reviewText) {
-            handleFormSubmit('/api/testimonials', () => ({ name: name.value, text: reviewText }), 'Rezension hinzugefügt!').then(() => name.value = '');
         }
     });
 
-    document.getElementById('add-contact-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const el = document.getElementById('contact-title');
-        handleFormSubmit('/api/contact_form', () => ({ title: el.value }), 'Kontaktformular hinzugefügt!').then(() => el.value = '');
-    });
-    
-    document.getElementById('add-product-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const title = document.getElementById('product-title');
-        const price = document.getElementById('product-price');
-        const url = document.getElementById('product-url');
+    // List Items
+    async function loadItems() {
+        const container = document.getElementById('manage-items-list');
+        const spinner = document.getElementById('manage-list-loading');
+        spinner.style.display = 'flex'; container.innerHTML = '';
         
-        handleFormSubmit('/api/products', () => ({ 
-            title: title.value, 
-            price: price.value,
-            url: url.value 
-        }), 'Produkt hinzugefügt!').then(() => { 
-            title.value = ''; 
-            price.value = ''; 
-            url.value = ''; 
-        });
-    });
-
-    async function fetchAndRenderAdminList() {
-        listLoadingSpinner.style.display = 'flex';
-        listContainer.innerHTML = '';
         try {
             const items = await API.fetchItems();
+            spinner.style.display = 'none';
             
-            listLoadingSpinner.style.display = 'none';
-            if (items.length === 0) {
-                listContainer.innerHTML = '<p class="text-gray-400 text-center">Noch keine Items erstellt.</p>';
-                return;
-            }
+            const groups = items.filter(i => ['slider_group', 'grid'].includes(i.item_type));
             
-            sliderGroups = items.filter(i => i.item_type === 'slider_group' || i.item_type === 'grid');
-            
-            const itemGroups = { root: [], children: {} };
-            items.forEach(item => {
-                if (item.parent_id) {
-                    if (!itemGroups.children[item.parent_id]) {
-                        itemGroups.children[item.parent_id] = [];
-                    }
-                    itemGroups.children[item.parent_id].push(item);
-                    itemGroups.children[item.parent_id].sort((a, b) => a.display_order - b.display_order);
-                } else {
-                    itemGroups.root.push(item);
-                }
+            // Root und Child Trennung
+            const roots = []; const children = {};
+            items.forEach(i => {
+                if(i.parent_id) { 
+                    if(!children[i.parent_id]) children[i.parent_id] = [];
+                    children[i.parent_id].push(i);
+                } else { roots.push(i); }
             });
-            
-            itemGroups.root.forEach(item => {
-                const rendered = UI.renderAdminItem(item, sliderGroups); 
-                const itemEl = rendered.itemEl;
-                listContainer.appendChild(itemEl);
-                
+
+            roots.forEach(item => {
+                const rendered = UI.renderAdminItem(item, groups);
+                container.appendChild(rendered.itemEl);
                 setupItemEvents(item, rendered);
 
-                if ((item.item_type === 'slider_group' || item.item_type === 'grid') && itemGroups.children[item.id]) {
-                    const childrenContainer = document.createElement('div');
-                    childrenContainer.className = 'ml-6 border-l-2 border-gray-600 pl-4 space-y-2';
-                    childrenContainer.dataset.parentId = item.id;
-                    itemGroups.children[item.id].forEach(childItem => {
-                        const childRendered = UI.renderAdminItem(childItem, sliderGroups);
-                        childrenContainer.appendChild(childRendered.itemEl);
-                        setupItemEvents(childItem, childRendered);
-                    });
-                    itemEl.appendChild(childrenContainer);
+                // Container für Kinder befüllen (falls Gruppe)
+                if (['slider_group', 'grid'].includes(item.item_type)) {
+                    const childContainer = rendered.itemEl.querySelector('.child-container');
+                    
+                    // Falls Kinder existieren, anzeigen
+                    if (children[item.id]) {
+                        children[item.id].sort((a,b) => a.display_order - b.display_order);
+                        // Placeholder ausblenden, wenn Inhalt da ist
+                        const placeholder = childContainer.querySelector('.empty-placeholder');
+                        if(placeholder) placeholder.style.display = 'none';
+
+                        children[item.id].forEach(c => {
+                            const r = UI.renderAdminItem(c, groups);
+                            childContainer.appendChild(r.itemEl);
+                            setupItemEvents(c, r);
+                        });
+                    }
                 }
             });
             
             initSortable();
             lucide.createIcons();
-            
-        } catch (error) {
-            listLoadingSpinner.style.display = 'none';
-            listContainer.innerHTML = `<p class="text-red-400 text-center">Fehler: ${error.message}</p>`;
-        }
+        } catch(e) { console.error(e); spinner.innerHTML = 'Fehler beim Laden.'; }
     }
-    
-    function setupItemEvents(item, { viewContainer, editContainer }) {
-        const editButton = viewContainer.querySelector('.btn-edit');
-        const cancelButton = editContainer.querySelector('.btn-cancel-edit');
-        const saveButton = editContainer.querySelector('.btn-save-edit');
-        const deleteButton = viewContainer.querySelector('.btn-delete');
-        const toggleButton = viewContainer.querySelector('.btn-toggle');
-        
-        editButton.addEventListener('click', () => {
-            viewContainer.style.display = 'none';
-            editContainer.style.display = 'block';
-            lucide.createIcons();
-        });
-        
-        cancelButton.addEventListener('click', () => {
-            editContainer.style.display = 'none';
-            viewContainer.style.display = 'flex';
-        });
-        
-        saveButton.addEventListener('click', async () => {
-            const payload = {};
-            const titleInput = editContainer.querySelector('.edit-title'); if(titleInput) payload.title = titleInput.value;
-            const urlInput = editContainer.querySelector('.edit-url'); if(urlInput) payload.url = urlInput.value;
-            const imgInput = editContainer.querySelector('.edit-image-url'); if(imgInput) payload.image_url = imgInput.value;
-            const pInput = editContainer.querySelector('.edit-parent-id'); if(pInput) payload.parent_id = parseInt(pInput.value, 10) || null;
-            const fInput = editContainer.querySelector('.edit-is_featured'); if(fInput) payload.is_featured = fInput.checked;
-            const aInput = editContainer.querySelector('.edit-is_affiliate'); if(aInput) payload.is_affiliate = aInput.checked;
-            const pubInput = editContainer.querySelector('.edit-publish-on'); if(pubInput) payload.publish_on = pubInput.value ? new Date(pubInput.value).toISOString() : '';
-            const expInput = editContainer.querySelector('.edit-expires-on'); if(expInput) payload.expires_on = expInput.value ? new Date(expInput.value).toISOString() : '';
-            const priceInput = editContainer.querySelector('.edit-price'); if(priceInput) payload.price = priceInput.value;
 
-            try {
-                await API.updateItem(item.id, payload);
-                fetchAndRenderAdminList();
-                UI.setFormStatus(formStatus, 'Item gespeichert!', 'text-green-400', 3000);
-            } catch (error) {
-                UI.setFormStatus(formStatus, `Fehler: ${error.message}`, 'text-red-400', 5000);
-            }
-        });
+    function setupItemEvents(item, { viewContainer, editContainer }) {
+        const btns = viewContainer.querySelectorAll('button');
+        const [toggleBtn, editBtn, delBtn] = btns;
         
-        deleteButton.addEventListener('click', async () => {
-            if (!confirm(`Soll "${item.title}" wirklich gelöscht werden?`)) return;
-            try {
-                await API.deleteItem(item.id);
-                fetchAndRenderAdminList();
-                UI.setFormStatus(formStatus, 'Item gelöscht!', 'text-green-400', 3000);
-            } catch (error) {
-                UI.setFormStatus(formStatus, `Fehler: ${error.message}`, 'text-red-400', 5000);
-            }
-        });
+        editBtn.onclick = () => { viewContainer.style.display='none'; editContainer.style.display='block'; lucide.createIcons(); };
+        delBtn.onclick = async () => { if(confirm('Löschen?')) { await API.deleteItem(item.id); loadItems(); } };
+        toggleBtn.onclick = async () => { await API.toggleItemVisibility(item.id); loadItems(); };
         
-        toggleButton.addEventListener('click', async () => {
-            try {
-                await API.toggleItemVisibility(item.id);
-                fetchAndRenderAdminList();
-                UI.setFormStatus(formStatus, 'Sichtbarkeit umgeschaltet!', 'text-green-400', 2000);
-            } catch (error) {
-                UI.setFormStatus(formStatus, `Fehler: ${error.message}`, 'text-red-400', 5000);
-            }
-        });
+        const saveBtn = editContainer.querySelector('.btn-save-edit');
+        const cancelBtn = editContainer.querySelector('.btn-cancel-edit');
+        const uploadBtn = editContainer.querySelector('.btn-upload-image');
+
+        cancelBtn.onclick = () => { editContainer.style.display='none'; viewContainer.style.display='flex'; };
         
-        const uploadButton = editContainer.querySelector('.btn-upload-image');
-        if (uploadButton) {
-            uploadButton.addEventListener('click', async () => {
-                const fileInput = editContainer.querySelector('.upload-image-file');
-                const uploadStatus = editContainer.querySelector('.upload-status');
-                if (!fileInput.files[0]) return;
-                
-                const formData = new FormData();
-                formData.append('file', fileInput.files[0]);
-                uploadStatus.textContent = 'Lade hoch...';
-                
-                try {
-                    const result = await API.uploadImage(formData);
-                    const imgInput = editContainer.querySelector('.edit-image-url');
-                    if (imgInput) imgInput.value = result.url;
-                    uploadStatus.textContent = 'OK!';
-                    fileInput.value = '';
-                } catch (error) {
-                    uploadStatus.textContent = 'Fehler!';
-                }
-            });
+        saveBtn.onclick = async () => {
+            const title = editContainer.querySelector('.edit-title')?.value;
+            const url = editContainer.querySelector('.edit-url')?.value;
+            const img = editContainer.querySelector('.edit-image-url')?.value;
+            const price = editContainer.querySelector('.edit-price')?.value;
+            const parent = editContainer.querySelector('.edit-parent-id')?.value;
+            const feat = editContainer.querySelector('.edit-is_featured')?.checked;
+            const aff = editContainer.querySelector('.edit-is_affiliate')?.checked;
+            
+            const payload = { title, url, image_url: img, price, is_featured: feat, is_affiliate: aff };
+            if(parent !== undefined) payload.parent_id = parseInt(parent) || null;
+            
+            await API.updateItem(item.id, payload);
+            loadItems();
+        };
+        
+        if(uploadBtn) {
+            uploadBtn.onclick = async () => {
+                const file = editContainer.querySelector('.upload-image-file').files[0];
+                if(!file) return;
+                const formData = new FormData(); formData.append('file', file);
+                const res = await API.uploadImage(formData);
+                editContainer.querySelector('.edit-image-url').value = res.url;
+            };
         }
     }
-    
+
     function initSortable() {
-        if (sortableInstance) sortableInstance.destroy();
+        // Alte Instanzen aufräumen
+        sortableInstances.forEach(s => s.destroy());
+        sortableInstances = [];
+
+        const rootContainer = document.getElementById('manage-items-list');
         
-        sortableInstance = new Sortable(listContainer, {
-            group: 'root-items',
+        // Konfiguration für ALLE Listen (Root und Nested)
+        const sortableConfig = {
+            group: {
+                name: 'nested', // Gleicher Name erlaubt Austausch
+                pull: true,
+                put: (to, from, dragEl) => {
+                    // Verhindere, dass eine Gruppe (Grid/Slider) IN eine andere Gruppe gezogen wird.
+                    // Gruppen dürfen nur im Root sein.
+                    const type = dragEl.dataset.type;
+                    const isGroup = ['slider_group', 'grid'].includes(type);
+                    const isRootList = to.el.id === 'manage-items-list';
+                    
+                    if (isGroup && !isRootList) return false; // Gruppe darf nicht in Child-List
+                    return true;
+                }
+            },
             animation: 150,
             handle: '.drag-handle',
             ghostClass: 'sortable-ghost',
-            onStart: () => saveOrderButton.style.display = 'block',
-            onEnd: (evt) => {
-                 saveOrderButton.style.display = 'block';
-                 if (evt.from !== evt.to && evt.to === listContainer) {
-                     const itemId = evt.item.dataset.id;
-                     updateItemParent(itemId, null);
-                 }
-            }
-        });
-        
-        document.querySelectorAll('[data-parent-id]').forEach(container => {
-            new Sortable(container, {
-                group: {
-                    name: 'child-items',
-                    put: ['child-items', 'root-items']
-                },
-                animation: 150,
-                handle: '.drag-handle',
-                ghostClass: 'sortable-ghost',
-                onStart: () => saveOrderButton.style.display = 'block',
-                onEnd: (evt) => {
-                    saveOrderButton.style.display = 'block';
-                    
-                    const newParentEl = evt.to.closest('[data-parent-id]');
-                    const newParentId = newParentEl ? newParentEl.dataset.parentId : null;
-                    const itemId = evt.item.dataset.id;
-
-                    updateItemParent(itemId, newParentId);
+            onEnd: async (evt) => {
+                // 1. Item wurde verschoben
+                const itemEl = evt.item;
+                const itemId = itemEl.dataset.id;
+                
+                // 2. Wo ist es gelandet?
+                const newContainer = itemEl.closest('.child-container');
+                let newParentId = null;
+                
+                if (newContainer) {
+                    // Es ist jetzt ein Kind
+                    newParentId = newContainer.dataset.parentId;
+                    // Placeholder ausblenden
+                    const ph = newContainer.querySelector('.empty-placeholder');
+                    if(ph) ph.style.display = 'none';
                 }
-            });
+                
+                // 3. Backend Update nur wenn Parent sich geändert hat oder Reihenfolge
+                // Wir machen es einfach: Immer Parent updaten, wenn gedroppt.
+                await API.updateItem(itemId, { parent_id: newParentId ? parseInt(newParentId) : null });
+                
+                // 4. UI aktualisieren (Neu laden, um sauberen State zu haben)
+                // Oder Button anzeigen zum Speichern der Reihenfolge
+                document.getElementById('save-order-button').style.display = 'block';
+            }
+        };
+
+        // 1. Root Liste initialisieren
+        sortableInstances.push(new Sortable(rootContainer, sortableConfig));
+        
+        // 2. Alle Child-Container initialisieren
+        document.querySelectorAll('.child-container').forEach(el => {
+            sortableInstances.push(new Sortable(el, sortableConfig));
         });
     }
-    
-    saveOrderButton.addEventListener('click', async () => {
-        const ids = Array.from(listContainer.children).map(el => el.dataset.id).filter(id => id); 
-        try {
-            await API.reorderItems(ids);
-            saveOrderButton.style.display = 'none';
-            UI.setFormStatus(formStatus, 'Reihenfolge gespeichert!', 'text-green-400', 2000);
-            fetchAndRenderAdminList();
-        } catch (error) {
-            UI.setFormStatus(formStatus, `Fehler: ${error.message}`, 'text-red-400', 5000);
-        }
-    });
-    
-    async function updateItemParent(itemId, parentId) {
-        try {
-            await API.updateItem(itemId, { parent_id: parentId ? parseInt(parentId, 10) : null });
-            UI.setFormStatus(formStatus, 'Gruppe aktualisiert!', 'text-green-400', 1000);
-            fetchAndRenderAdminList(); 
-        } catch (error) {
-            UI.setFormStatus(formStatus, `Fehler: ${error.message}`, 'text-red-400', 5000);
-            fetchAndRenderAdminList();
-        }
-    }
 
-    fetchAndRenderAdminList();
+    document.getElementById('save-order-button').onclick = async () => {
+        // Wir speichern nur die Root-Reihenfolge explizit, 
+        // die Parent-Zuordnung ist durch onEnd schon passiert.
+        // Ideal wäre rekursives Speichern, aber für MVP reicht Root.
+        const ids = Array.from(document.getElementById('manage-items-list').children)
+            .filter(el => el.dataset.id) // Filtert Kinder-Container raus, falls Struktur komisch
+            .map(el => el.dataset.id);
+        
+        await API.reorderItems(ids);
+        
+        // Wir laden alles neu, um sicherzugehen, dass die DB konsistent ist
+        loadItems();
+        document.getElementById('save-order-button').style.display = 'none';
+        UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 2000);
+    };
+
+    // --- Profile & Settings ---
+    loadItems();
     loadProfileSettings();
-    lucide.createIcons();
 }

@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Abhängigkeiten installieren
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install fastapi uvicorn[standard] jinja2 requests beautifulsoup4 python-dotenv httpx qrcode[pil] python-multipart curl_cffi ddgs
 
 # Den Rest des Codes kopieren
 COPY . .

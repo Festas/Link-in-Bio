@@ -232,9 +232,27 @@ async function initAdmin() {
     }
 
     // 9. Events für einzelne Items (Edit, Delete, Save, Upload)
-    function setupItemEvents(item, { viewContainer, editContainer }) {
+    function setupItemEvents(item, { viewContainer, editContainer, itemEl }) {
+        // NEU: Toggle-Logik für Gruppen (Akkordeon)
+        const groupToggle = viewContainer.querySelector('.group-toggle');
+        if (groupToggle) {
+            groupToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const childContainer = itemEl.querySelector('.child-container');
+                const icon = groupToggle.querySelector('svg');
+                
+                if (childContainer.style.display === 'none') {
+                    childContainer.style.display = 'block';
+                    icon.style.transform = 'rotate(0deg)';
+                } else {
+                    childContainer.style.display = 'none';
+                    icon.style.transform = 'rotate(-90deg)';
+                }
+            });
+        }
+        
         const btns = viewContainer.querySelectorAll('button');
-        // Reihenfolge im HTML: Toggle, Edit, Delete (siehe admin_ui.js)
+        // WICHTIG: Wir suchen die Buttons nach Klasse, nicht nach Index, da 'group-toggle' dazukommen kann
         const toggleBtn = viewContainer.querySelector('.btn-toggle');
         const editBtn = viewContainer.querySelector('.btn-edit');
         const delBtn = viewContainer.querySelector('.btn-delete');
@@ -279,8 +297,6 @@ async function initAdmin() {
             const affIn = editContainer.querySelector('.edit-is_affiliate'); if(affIn) payload.is_affiliate = affIn.checked;
             const dateIn = editContainer.querySelector('.edit-publish-on'); if(dateIn) payload.publish_on = dateIn.value ? new Date(dateIn.value).toISOString() : '';
             const expIn = editContainer.querySelector('.edit-expires-on'); if(expIn) payload.expires_on = expIn.value ? new Date(expIn.value).toISOString() : '';
-            
-            // NEU: Spaltenanzahl für Grids
             const gridIn = editContainer.querySelector('.edit-grid-columns'); if(gridIn) payload.grid_columns = parseInt(gridIn.value) || 2;
             
             try {
@@ -318,7 +334,7 @@ async function initAdmin() {
         }
     }
 
-    // 10. Drag & Drop (SortableJS)
+    // 10. Drag & Drop (SortableJS) - NEU: Mit Deep Scan Support
     function initSortable() {
         // Aufräumen alter Instanzen
         sortableInstances.forEach(s => s.destroy());
@@ -350,8 +366,16 @@ async function initAdmin() {
 
                 if (newContainer) {
                     newParentId = newContainer.dataset.parentId;
+                    // Placeholder ausblenden
                     const ph = newContainer.querySelector('.empty-placeholder');
                     if(ph) ph.style.display = 'none';
+                    
+                    // AUTO-OPEN: Gruppe aufklappen, damit man sieht wo es ist
+                    newContainer.style.display = 'block';
+                    // Wir müssen auch den Pfeil (Chevron) drehen
+                    const groupItem = newContainer.closest('.admin-item-card');
+                    const toggleIcon = groupItem.querySelector('.group-toggle svg');
+                    if (toggleIcon) toggleIcon.style.transform = 'rotate(0deg)';
                 }
 
                 // Parent Update sofort senden
@@ -371,19 +395,18 @@ async function initAdmin() {
         });
     }
 
-    // 11. Reihenfolge speichern Button
+    // 11. Reihenfolge speichern Button - NEU: Deep Scan
     saveOrderButton.onclick = async () => {
-        // Wir speichern nur die Root-Reihenfolge explizit, 
-        // die Parent-Zuordnung ist durch onEnd schon passiert.
-        const ids = Array.from(listContainer.children)
-            .filter(el => el.dataset.id)
-            .map(el => el.dataset.id);
+        // Wir scannen das gesamte DOM nach Karten und sammeln ihre IDs in der neuen Reihenfolge
+        // Dadurch werden auch verschobene Items in Gruppen korrekt erfasst.
+        const allCards = Array.from(document.querySelectorAll('.admin-item-card'));
+        const ids = allCards.map(el => el.dataset.id);
         
         try {
             await API.reorderItems(ids);
             saveOrderButton.style.display = 'none';
             UI.setFormStatus(formStatus, 'Reihenfolge gespeichert!', 'text-green-400', 2000);
-            loadItems(); // Reload für sauberen State
+            // Wir laden NICHT neu, damit der State (offene Gruppen) erhalten bleibt
         } catch(e) {
             UI.setFormStatus(formStatus, e.message, 'text-red-400');
         }

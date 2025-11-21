@@ -161,6 +161,15 @@ body {
     transition: background-color 0.2s ease-out;
 }
 
+/* Make slider images smaller (half the visual height) but keep them square.
+   Images are centered inside each slide and use aspect-ratio to remain 1:1.
+   This reduces the perceived height while preserving layout and overlays. */
+.swiper .swiper-slide > a { display: flex; align-items: center; justify-content: center; }
+.swiper .swiper-slide img { width: 50%; aspect-ratio: 1 / 1; height: auto; object-fit: cover; border-radius: 0.5rem; }
+
+/* Reduce gradient overlay height inside slider slides so it matches the smaller image */
+.swiper .swiper-slide .bg-gradient-to-t { height: 50% !important; }
+
 /* Countdown Grid */
 .countdown-grid {
     display: grid;

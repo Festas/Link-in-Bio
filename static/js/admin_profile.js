@@ -5,7 +5,7 @@ export function initProfile() {
     const form = document.getElementById('profile-form');
     const socialContainer = document.getElementById('social-inputs-container');
 
-    // 1. Social Media Felder definieren und rendern (mit korrekten Placeholdern)
+    // 1. Social Media Felder hier definieren & rendern
     const socialFields = [
         { id: 'youtube', label: 'YouTube', icon: 'youtube', placeholder: 'Benutzername oder Link' },
         { id: 'instagram', label: 'Instagram', icon: 'instagram', placeholder: 'Benutzername' },
@@ -15,6 +15,8 @@ export function initProfile() {
         { id: 'discord', label: 'Discord', icon: 'discord', placeholder: 'Invite-Code' },
         { id: 'email', label: 'E-Mail', icon: 'mail', placeholder: 'deine@email.com' }
     ];
+    
+    // Rendert die Felder in den Container
     UI.renderSocialFields(socialContainer, socialFields);
 
     // 2. Daten laden
@@ -85,8 +87,6 @@ async function loadProfileSettings() {
         }
 
         toggleCustomThemeSettings(s.theme);
-        
-        // FIX: Styling anwenden, NACHDEM alles befüllt ist
         applyStyles();
 
     } catch(e) { console.error("Settings Load Error", e); }
@@ -96,20 +96,15 @@ function applyStyles() {
     const form = document.getElementById('profile-form');
     if (!form) return;
 
-    // Alle Inputs (auch Socials!) dunkel färben
     form.querySelectorAll('input, textarea, select').forEach(el => {
-        // UI.STYLES.input enthält die Tailwind-Klassen für den dunklen Look
-        // Wir überschreiben vorhandene Klassen, um sicherzugehen
         if (!el.classList.contains('bg-gray-700')) {
              el.className = UI.STYLES.input;
         }
-        // Color Picker Sonderbehandlung
         if (el.type === 'color') {
             el.className = "h-10 w-full bg-transparent border border-gray-600 rounded cursor-pointer";
         }
     });
 
-    // Button
     const btn = form.querySelector('button[type="submit"]');
     if(btn) btn.className = UI.STYLES.btnPrimary + " mt-6 w-full";
 }

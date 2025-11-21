@@ -58,6 +58,22 @@
             </nav>
         </div>
 
+        <!-- Fallback for JS errors: Show a warning and allow manual tab switching -->
+        <noscript>
+            <div class="bg-red-900 text-red-200 p-4 rounded mb-4 text-center">
+                JavaScript ist deaktiviert oder konnte nicht geladen werden. Bitte aktivieren Sie JavaScript für die volle Funktionalität.
+            </div>
+        </noscript>
+        <div id="js-fallback-message" style="display:none" class="bg-yellow-900 text-yellow-200 p-4 rounded mb-4 text-center">
+            Es gab ein Problem beim Laden der Admin-Oberfläche. Sie können die Tabs unten manuell einblenden.
+        </div>
+        <div id="js-fallback-tabs" style="display:none" class="flex flex-wrap gap-2 mb-4">
+            <button onclick="document.querySelectorAll('.tab-content').forEach(e=>e.style.display='none');document.getElementById('tab-content-items').style.display='block';">Items</button>
+            <button onclick="document.querySelectorAll('.tab-content').forEach(e=>e.style.display='none');document.getElementById('tab-content-profile').style.display='block';">Profil & Design</button>
+            <button onclick="document.querySelectorAll('.tab-content').forEach(e=>e.style.display='none');document.getElementById('tab-content-media').style.display='block';">Medien</button>
+            <button onclick="document.querySelectorAll('.tab-content').forEach(e=>e.style.display='none');document.getElementById('tab-content-community').style.display='block';">Community</button>
+        </div>
+
         <!-- TAB: ITEMS -->
         <div id="tab-content-items" class="tab-content active">
             <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
@@ -186,6 +202,24 @@
     </script>
 
     <script src="/static/js/admin.js?v={{ version }}" type="module"></script>
+
+        <!-- Fallback: If JS fails, show manual tab controls -->
+        <script>
+        window.addEventListener('DOMContentLoaded', function() {
+            // If the main tab logic fails to activate a tab, show fallback
+            setTimeout(function() {
+                var anyActive = Array.from(document.querySelectorAll('.tab-content')).some(e => e.classList.contains('active'));
+                if (!anyActive) {
+                    document.getElementById('js-fallback-message').style.display = 'block';
+                    document.getElementById('js-fallback-tabs').style.display = 'flex';
+                    // Show first tab by default
+                    document.querySelectorAll('.tab-content').forEach(e=>e.style.display='none');
+                    var first = document.getElementById('tab-content-items');
+                    if(first) first.style.display = 'block';
+                }
+            }, 1000);
+        });
+        </script>
     
     <script type="module">
         import { initPWA } from '/static/js/consent.js?v={{ version }}';

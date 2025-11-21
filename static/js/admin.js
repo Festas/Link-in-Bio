@@ -3,101 +3,157 @@ import { initializeSubscribers } from './subscribers.js';
 import { initializeInbox } from './inbox.js';
 import * as API from './admin_api.js';
 import * as UI from './admin_ui.js';
-// NEU: Importiere Gruppen-Logik
 import { organizeItems, getSortableConfig, isGroup } from './groups.js';
 import { requireAuth, logout } from './utils.js';
 
+// Helper für Fallback-Script-Loading (z.B. Lucide)
 function loadScript(src) {
     return new Promise((resolve, reject) => {
-        const s = document.createElement('script'); s.src = src;
-        s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
     });
 }
 
-if (requireAuth()) { document.addEventListener('DOMContentLoaded', initAdmin); }
+// Authentifizierungs-Check beim Laden
+if (requireAuth()) {
+    document.addEventListener('DOMContentLoaded', initAdmin);
+}
 
 async function initAdmin() {
-    // Lucide Check
+    // 1. Lucide Check & Fallback
     if (typeof lucide === 'undefined') {
-        try { await loadScript('https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js'); } 
-        catch(e) { console.error("Lucide Fail"); return; }
+        console.warn("Lucide lokal fehlt. Versuche CDN...");
+        try {
+            await loadScript('https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js');
+        } catch(e) {
+            console.error("Kritischer Fehler: Lucide konnte nicht geladen werden.");
+            return;
+        }
     }
 
+    // 2. Globale DOM Elemente
     const formStatus = document.getElementById('form-status');
     const listContainer = document.getElementById('manage-items-list');
     const listLoadingSpinner = document.getElementById('manage-list-loading');
     const saveOrderButton = document.getElementById('save-order-button');
-    let sortableInstances = []; 
+    let sortableInstances = []; // Speichert alle aktiven Sortable-Instanzen
 
+    // 3. Event Listener: Logout
     document.getElementById('logout-button')?.addEventListener('click', logout);
 
-    // --- Tabs ---
-    document.querySelectorAll('.tab-button').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+    // 4. Tab-Navigation
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
     function switchTab(tabName) {
+        // Buttons stylen
         document.querySelectorAll('.tab-button').forEach(b => {
-             b.classList.toggle('border-blue-400', b.dataset.tab === tabName);
-             b.classList.toggle('text-blue-400', b.dataset.tab === tabName);
-             b.classList.toggle('border-transparent', b.dataset.tab !== tabName);
+            const isActive = b.dataset.tab === tabName;
+            b.classList.toggle('border-blue-400', isActive);
+            b.classList.toggle('text-blue-400', isActive);
+            b.classList.toggle('border-transparent', !isActive);
+            b.classList.toggle('text-gray-400', !isActive);
         });
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.toggle('active', el.id === `tab-content-${tabName}`));
+        
+        // Content umschalten
+        document.querySelectorAll('.tab-content').forEach(el => {
+            el.classList.toggle('active', el.id === `tab-content-${tabName}`);
+        });
+
+        // Module initialisieren (Lazy Load)
         if (tabName === 'media') initializeMediaManager();
-        if (tabName === 'community') { initializeSubscribers(); initializeInbox(); }
+        if (tabName === 'community') {
+            initializeSubscribers();
+            initializeInbox();
+        }
     }
 
-    // --- Forms ---
-    const socialContainer = document.getElementById('social-inputs-container');
-    const socialFields = [ { id: 'youtube', label: 'YouTube', icon: 'youtube', placeholder: '...' }, { id: 'instagram', label: 'Instagram', icon: 'instagram', placeholder: '...' }, { id: 'tiktok', label: 'TikTok', icon: 'music-4', placeholder: '...' }, { id: 'twitch', label: 'Twitch', icon: 'twitch', placeholder: '...' }, { id: 'x', label: 'X', icon: 'twitter', placeholder: '...' }, { id: 'discord', label: 'Discord', icon: 'discord', placeholder: '...' }, { id: 'email', label: 'E-Mail', icon: 'mail', placeholder: '...' } ];
-    UI.renderSocialFields(socialContainer, socialFields);
+    // 5. QR-Code Modal
+    const qrButton = document.getElementById('qrcode-button');
+    const qrModal = document.getElementById('qrcode-modal');
+    const qrImage = document.getElementById('qrcode-image');
+    const qrDownload = document.getElementById('qrcode-download');
 
-    const forms = ['add-link-form', 'add-header-form', 'add-slider-group-form', 'add-video-form', 'add-email-form', 'add-countdown-form', 'add-grid-form', 'add-faq-form', 'add-divider-form', 'add-testimonial-form', 'add-contact-form', 'add-product-form'];
-    forms.forEach(id => {
-        const f = document.getElementById(id);
-        if (f) {
-            f.querySelectorAll('input').forEach(i => i.className = UI.STYLES.input);
-            f.querySelectorAll('button').forEach(b => b.className = UI.STYLES.btnPrimary);
-            f.addEventListener('submit', async (e) => {
+    if (qrButton) {
+        qrButton.addEventListener('click', () => {
+            const qrUrl = `/api/qrcode?t=${new Date().getTime()}`;
+            qrImage.src = qrUrl;
+            qrDownload.href = qrUrl;
+            qrModal.style.display = 'flex';
+        });
+    }
+    if (qrModal) {
+        qrModal.addEventListener('click', (e) => {
+            if (e.target === qrModal) qrModal.style.display = 'none';
+        });
+    }
+
+    // 6. Social Media Felder rendern
+    const socialInputsContainer = document.getElementById('social-inputs-container');
+    const socialFields = [
+        { id: 'youtube', label: 'YouTube', icon: 'youtube', placeholder: 'https://youtube.com/...' },
+        { id: 'instagram', label: 'Instagram', icon: 'instagram', placeholder: 'https://instagram.com/...' },
+        { id: 'tiktok', label: 'TikTok', icon: 'music-4', placeholder: 'https://tiktok.com/@...' },
+        { id: 'twitch', label: 'Twitch', icon: 'twitch', placeholder: 'https://twitch.tv/...' },
+        { id: 'x', label: 'X (Twitter)', icon: 'twitter', placeholder: 'https://x.com/...' },
+        { id: 'discord', label: 'Discord', icon: 'discord', placeholder: 'https://discord.gg/...' },
+        { id: 'email', label: 'E-Mail', icon: 'mail', placeholder: 'mailto:deine@email.com' }
+    ];
+    UI.renderSocialFields(socialInputsContainer, socialFields);
+
+    // 7. Generische Formular-Handler (Items erstellen)
+    const forms = [
+        {id: 'add-link-form', api: '/api/links', data: (e) => ({url: e.target.querySelector('input').value})},
+        {id: 'add-video-form', api: '/api/videos', data: (e) => ({url: e.target.querySelector('input').value})},
+        {id: 'add-header-form', api: '/api/headers', data: (e) => ({title: e.target.querySelector('input').value})},
+        {id: 'add-slider-group-form', api: '/api/slider_groups', data: (e) => ({title: e.target.querySelector('input').value})},
+        {id: 'add-grid-form', api: '/api/grids', data: (e) => ({title: e.target.querySelector('input').value})},
+        {id: 'add-faq-form', api: '/api/faqs', data: (e) => ({title: e.target.querySelector('input').value})},
+        {id: 'add-divider-form', api: '/api/dividers', data: (e) => ({title: e.target.querySelector('input').value})},
+        {id: 'add-contact-form', api: '/api/contact_form', data: (e) => ({title: e.target.querySelector('input').value})},
+        {id: 'add-email-form', api: '/api/email_form', data: (e) => ({title: e.target.querySelector('input').value})},
+        {id: 'add-testimonial-form', api: '/api/testimonials', data: (e) => ({name: e.target.querySelector('#testimonial-name').value, text: prompt("Bitte gib den Text der Rezension ein:")})},
+        {id: 'add-product-form', api: '/api/products', data: (e) => ({
+            title: e.target.querySelector('#product-title').value, 
+            price: e.target.querySelector('#product-price').value, 
+            url: e.target.querySelector('#product-url').value
+        })},
+        {id: 'add-countdown-form', api: '/api/countdowns', data: (e) => ({
+            title: e.target.querySelector('#countdown-title').value, 
+            target_datetime: new Date(e.target.querySelector('#countdown-datetime').value).toISOString()
+        })}
+    ];
+
+    forms.forEach(f => {
+        const form = document.getElementById(f.id);
+        if (form) {
+            // Styling anwenden
+            form.querySelectorAll('input').forEach(i => i.className = UI.STYLES.input);
+            form.querySelectorAll('button').forEach(b => b.className = UI.STYLES.btnPrimary);
+            
+            form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 try {
-                    let payload = null;
-                    // Simple Payload Extraction
-                    if (id === 'add-product-form') {
-                        payload = { title: f.querySelector('#product-title').value, price: f.querySelector('#product-price').value, url: f.querySelector('#product-url').value };
-                    } else if (id === 'add-testimonial-form') {
-                        const text = prompt("Text:");
-                        if(text) payload = { name: f.querySelector('#testimonial-name').value, text };
-                    } else if (id === 'add-contact-form') {
-                        payload = { title: f.querySelector('#contact-title').value };
-                    } else if (id === 'add-countdown-form') {
-                         payload = {
-                            title: f.querySelector('#countdown-title').value,
-                            target_datetime: new Date(f.querySelector('#countdown-datetime').value).toISOString()
-                         };
-                    } else {
-                        const t = f.querySelector('input[id$="-title"]');
-                        const u = f.querySelector('input[id$="-url"]');
-                        if (t) payload = { title: t.value };
-                        else if (u) payload = { url: u.value };
-                    }
+                    const payload = f.data(e);
+                    // Abbrechen, wenn Prompt (z.B. bei Testimonial) abgebrochen wurde
+                    if(!payload || (payload.text === null)) return; 
 
-                    if(!payload) return; 
-                    
-                    const apiMap = {
-                        'add-link-form': '/api/links', 'add-video-form': '/api/videos', 'add-header-form': '/api/headers',
-                        'add-slider-group-form': '/api/slider_groups', 'add-grid-form': '/api/grids', 'add-faq-form': '/api/faqs',
-                        'add-divider-form': '/api/dividers', 'add-contact-form': '/api/contact_form', 'add-email-form': '/api/email_form',
-                        'add-testimonial-form': '/api/testimonials', 'add-product-form': '/api/products', 'add-countdown-form': '/api/countdowns'
-                    };
-
-                    await API.createItem(apiMap[id], payload);
+                    await API.createItem(f.api, payload);
                     UI.setFormStatus(formStatus, 'Hinzugefügt!', 'text-green-400', 2000);
                     loadItems();
                     e.target.reset();
-                } catch(err) { UI.setFormStatus(formStatus, err.message, 'text-red-400'); }
+                } catch(err) {
+                    UI.setFormStatus(formStatus, err.message, 'text-red-400', 5000);
+                }
             });
         }
     });
 
-    // --- LOAD ITEMS (Modular) ---
+    // 8. Items laden und rendern (Verwendet groups.js Logic)
     async function loadItems() {
         listLoadingSpinner.style.display = 'flex';
         listContainer.innerHTML = '';
@@ -107,34 +163,37 @@ async function initAdmin() {
             listLoadingSpinner.style.display = 'none';
             
             if (items.length === 0) {
-                listContainer.innerHTML = '<p class="text-gray-400 text-center py-4">Noch keine Items.</p>';
+                listContainer.innerHTML = '<p class="text-gray-400 text-center py-4">Noch keine Items erstellt.</p>';
                 return;
             }
             
-            // MODULAR: Daten organisieren
-            const { roots, childrenMap } = organizeItems(items);
-            
-            // Liste der Gruppen für Dropdowns
+            // Gruppen für Dropdowns filtern
             const groupItems = items.filter(i => isGroup(i));
+            
+            // Datenstruktur sicher organisieren (Waisen retten!)
+            const { roots, childrenMap } = organizeItems(items);
 
             // Rendern
-            roots.forEach(item => {
-                const rendered = UI.renderAdminItem(item, groupItems);
+            roots.forEach(rootItem => {
+                const rendered = UI.renderAdminItem(rootItem, groupItems);
                 listContainer.appendChild(rendered.itemEl);
-                setupItemEvents(item, rendered);
+                setupItemEvents(rootItem, rendered);
 
-                // Kinder einfügen
-                if (isGroup(item)) {
+                // Wenn es eine Gruppe ist, Kinder einfügen
+                if (isGroup(rootItem)) {
                     const childContainer = rendered.childrenContainer;
-                    
-                    if (childrenMap[item.id] && childrenMap[item.id].length > 0) {
+                    const childList = childrenMap[String(rootItem.id)]; // Sicherer String-Key
+
+                    if (childList && childList.length > 0) {
+                        // Placeholder ausblenden
                         const ph = childContainer.querySelector('.empty-placeholder');
                         if(ph) ph.style.display = 'none';
 
-                        childrenMap[item.id].forEach(child => {
-                            const childRendered = UI.renderAdminItem(child, groupItems);
+                        // Kinder rendern
+                        childList.forEach(childItem => {
+                            const childRendered = UI.renderAdminItem(childItem, groupItems);
                             childContainer.appendChild(childRendered.itemEl);
-                            setupItemEvents(child, childRendered);
+                            setupItemEvents(childItem, childRendered);
                         });
                     }
                 }
@@ -142,15 +201,16 @@ async function initAdmin() {
             
             initSortable();
             lucide.createIcons();
+            
         } catch(e) {
             console.error(e);
             listLoadingSpinner.style.display = 'none';
-            listContainer.innerHTML = `<p class="text-red-400 text-center">Fehler: ${e.message}</p>`;
+            listContainer.innerHTML = `<p class="text-red-400 text-center">Fehler beim Laden: ${e.message}</p>`;
         }
     }
     
     function setupItemEvents(item, { viewContainer, editContainer, childrenContainer }) {
-        // Toggle Logic
+        // Toggle für Gruppen (Akkordeon)
         const groupToggle = viewContainer.querySelector('.group-toggle');
         if (groupToggle && childrenContainer) {
             groupToggle.onclick = (e) => {
@@ -158,15 +218,14 @@ async function initAdmin() {
                 const icon = groupToggle.querySelector('svg');
                 if (childrenContainer.style.display === 'none') {
                     childrenContainer.style.display = 'block';
-                    if(icon) icon.style.transform = 'rotate(0deg)';
+                    if(icon) icon.style.transform = 'rotate(0deg)'; // Pfeil unten
                 } else {
                     childrenContainer.style.display = 'none';
-                    if(icon) icon.style.transform = 'rotate(-90deg)';
+                    if(icon) icon.style.transform = 'rotate(-90deg)'; // Pfeil rechts
                 }
             };
         }
 
-        // Actions
         const editBtn = viewContainer.querySelector('.btn-edit');
         const delBtn = viewContainer.querySelector('.btn-delete');
         const toggleVisBtn = viewContainer.querySelector('.btn-toggle');
@@ -175,7 +234,7 @@ async function initAdmin() {
             viewContainer.style.display='none'; editContainer.style.display='block'; lucide.createIcons(); 
         };
         if(delBtn) delBtn.onclick = async () => { 
-            if(confirm(`Löschen?`)) { await API.deleteItem(item.id); loadItems(); } 
+            if(confirm('Löschen?')) { await API.deleteItem(item.id); loadItems(); } 
         };
         if(toggleVisBtn) toggleVisBtn.onclick = async () => { 
             await API.toggleItemVisibility(item.id); loadItems(); 
@@ -190,136 +249,161 @@ async function initAdmin() {
         };
         
         if(saveBtn) saveBtn.onclick = async () => {
-            const val = (sel) => editContainer.querySelector(sel)?.value;
-            const chk = (sel) => editContainer.querySelector(sel)?.checked;
+            const getVal = (sel) => editContainer.querySelector(sel)?.value;
+            const getChk = (sel) => editContainer.querySelector(sel)?.checked;
+
+            const payload = { 
+                title: getVal('.edit-title'),
+                url: getVal('.edit-url'),
+                image_url: getVal('.edit-image-url'),
+                price: getVal('.edit-price'),
+                is_featured: getChk('.edit-is_featured'),
+                is_affiliate: getChk('.edit-is_affiliate'),
+            };
             
-            const payload = { title: val('.edit-title') };
-            payload.url = val('.edit-url');
-            payload.image_url = val('.edit-image-url');
-            payload.price = val('.edit-price');
-            payload.parent_id = parseInt(val('.edit-parent-id')) || null;
-            payload.is_featured = chk('.edit-is_featured');
-            payload.is_affiliate = chk('.edit-is_affiliate');
-            const dateIn = editContainer.querySelector('.edit-publish-on'); if(dateIn) payload.publish_on = dateIn.value ? new Date(dateIn.value).toISOString() : '';
-            const expIn = editContainer.querySelector('.edit-expires-on'); if(expIn) payload.expires_on = expIn.value ? new Date(expIn.value).toISOString() : '';
-            const gridIn = editContainer.querySelector('.edit-grid-columns'); if(gridIn) payload.grid_columns = parseInt(gridIn.value) || 2;
+            const pId = parseInt(getVal('.edit-parent-id'));
+            if (!isNaN(pId)) payload.parent_id = pId === 0 ? null : pId;
             
+            const cols = parseInt(getVal('.edit-grid-columns'));
+            if (!isNaN(cols)) payload.grid_columns = cols;
+            
+            // Datum sicher formatieren
+            const dateIn = editContainer.querySelector('.edit-publish-on');
+            if(dateIn) payload.publish_on = dateIn.value ? new Date(dateIn.value).toISOString() : '';
+            
+            const expIn = editContainer.querySelector('.edit-expires-on');
+            if(expIn) payload.expires_on = expIn.value ? new Date(expIn.value).toISOString() : '';
+
             try {
                 await API.updateItem(item.id, payload);
-                UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 2000);
+                UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 1000);
                 loadItems();
-            } catch(e) { UI.setFormStatus(formStatus, e.message, 'text-red-400', 3000); }
+            } catch(e) { UI.setFormStatus(formStatus, e.message, 'text-red-400'); }
         };
         
         if(uploadBtn) {
             uploadBtn.onclick = async () => {
-                const file = editContainer.querySelector('.upload-image-file').files[0];
+                const fileInput = editContainer.querySelector('.upload-image-file');
+                const status = editContainer.querySelector('.upload-status');
+                const file = fileInput.files[0];
                 if(!file) return;
+                status.textContent = '...';
                 const formData = new FormData(); formData.append('file', file);
                 try {
                     const res = await API.uploadImage(formData);
                     editContainer.querySelector('.edit-image-url').value = res.url;
-                } catch(e) { alert("Upload Error: " + e.message); }
+                    status.textContent = 'OK';
+                    status.className = 'upload-status text-xs text-green-400';
+                } catch(e) { 
+                    status.textContent = 'Fehler'; 
+                    status.className = 'upload-status text-xs text-red-400';
+                    alert("Upload Fehler: " + e.message); 
+                }
             };
         }
     }
 
-    // --- MODULAR SORTABLE ---
+    // --- DRAG & DROP (Mit Config aus groups.js) ---
     function initSortable() {
         sortableInstances.forEach(s => s.destroy());
         sortableInstances = [];
 
         const rootContainer = document.getElementById('manage-items-list');
         
-        // Konfiguration aus groups.js holen
+        // Hole Konfiguration aus groups.js
+        // onMove Callback: Aktualisiert die Parent ID sofort in der Datenbank
+        // onReorder Callback: Zeigt den "Reihenfolge Speichern" Button
         const config = UI.getSortableConfig(
-            // onMove: Parent ID Update
             async (itemId, newParentId) => {
                 await API.updateItem(itemId, { parent_id: newParentId ? parseInt(newParentId) : null });
             },
-            // onReorder: UI Update
             () => {
                 document.getElementById('save-order-button').style.display = 'block';
-            }
+            },
+            'manage-items-list' // ID des Root-Containers für Checks
         );
 
         if(rootContainer) sortableInstances.push(new Sortable(rootContainer, config));
+        
         document.querySelectorAll('.child-container').forEach(el => {
             sortableInstances.push(new Sortable(el, config));
         });
     }
 
-    // Save Order
+    // Reihenfolge speichern
     document.getElementById('save-order-button').onclick = async () => {
-        const allCards = Array.from(document.querySelectorAll('.admin-item-card'));
-        const ids = allCards.map(el => el.dataset.id);
+        // Deep Scan: Alle IDs in visueller Reihenfolge sammeln
+        const allIds = Array.from(document.querySelectorAll('.admin-item-card'))
+                           .map(el => el.dataset.id);
+        
         try {
-            await API.reorderItems(ids);
+            await API.reorderItems(allIds);
             saveOrderButton.style.display = 'none';
             UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 2000);
         } catch(e) { UI.setFormStatus(formStatus, e.message, 'text-red-400'); }
     };
 
-    // Profile (Rest bleibt gleich)
+    // --- Profil-Einstellungen ---
     const profileForm = document.getElementById('profile-form');
-    if(profileForm) {
-        const pTitle = document.getElementById('profile-title');
-        const pBio = document.getElementById('profile-bio');
-        const pImg = document.getElementById('profile-image-url');
-        const pBg = document.getElementById('profile-bg-url'); 
-        const pTheme = document.getElementById('profile-theme');
-        const pStyle = document.getElementById('profile-button-style');
-        const cBg = document.getElementById('custom-bg-color');
-        const cText = document.getElementById('custom-text-color');
-        const cBtn = document.getElementById('custom-button-color');
-        const cBtnTxt = document.getElementById('custom-button-text-color');
-        const cHead = document.getElementById('custom-html-head');
-        const cBody = document.getElementById('custom-html-body');
-        
-        // Helper
-        const setupImageUpload = (btnId, fileId, textId) => {
-            const btn = document.getElementById(btnId), file = document.getElementById(fileId), text = document.getElementById(textId);
-            if(!btn || !file || !text) return;
-            btn.onclick = () => file.click();
-            file.onchange = async () => {
-                if(!file.files[0]) return;
-                const fd = new FormData(); fd.append('file', file.files[0]); btn.textContent = '...';
-                try { const res = await API.uploadImage(fd); text.value = res.url; btn.textContent = 'OK'; } catch(e) { btn.textContent = 'Err'; alert(e.message); }
-            }
-        };
-        setupImageUpload('upload-profile-btn', 'upload-profile-file', 'profile-image-url');
-        setupImageUpload('upload-bg-btn', 'upload-bg-file', 'profile-bg-url');
-        
-        // Load
-        (async () => {
-            try {
-                const s = await API.fetchSettings();
-                pTitle.value = s.title || ''; pBio.value = s.bio || ''; pImg.value = s.image_url || '';
-                if(pBg) pBg.value = s.bg_image_url || ''; pTheme.value = s.theme || 'theme-dark'; pStyle.value = s.button_style || 'style-rounded';
-                if(cHead) cHead.value = s.custom_html_head || ''; if(cBody) cBody.value = s.custom_html_body || '';
-                socialFields.forEach(f => { const i = document.getElementById(`social-${f.id}`); if(i) i.value = s[`social_${f.id}`] || ''; });
-                cBg.value = s.custom_bg_color || '#111827'; cText.value = s.custom_text_color || '#F9FAFB'; cBtn.value = s.custom_button_color || '#1F2937'; cBtnTxt.value = s.custom_button_text_color || '#FFFFFF';
-                
-                const toggleCustom = () => { const el = document.getElementById('custom-theme-settings'); if(el) el.style.display = (pTheme.value === 'theme-custom') ? 'block' : 'none'; };
-                pTheme.addEventListener('change', toggleCustom);
-                toggleCustom();
-            } catch(e) {}
-        })();
-        
-        // Save
-        profileForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            UI.setFormStatus(formStatus, 'Speichere...', 'text-blue-400');
-            const socialData = {}; socialFields.forEach(f => { socialData[`social_${f.id}`] = document.getElementById(`social-${f.id}`).value; });
-            const payload = {
-                title: pTitle.value, bio: pBio.value, image_url: pImg.value, bg_image_url: pBg ? pBg.value : '', 
-                theme: pTheme.value, button_style: pStyle.value, ...socialData,
-                custom_bg_color: cBg.value, custom_text_color: cText.value, custom_button_color: cBtn.value, custom_button_text_color: cBtnTxt.value,
-                custom_html_head: cHead ? cHead.value : '', custom_html_body: cBody ? cBody.value : '',
-            };
-            try { await API.updateSettings(payload); UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 2000); } catch(e) { UI.setFormStatus(formStatus, e.message, 'text-red-400', 5000); }
-        });
+    const pTitle = document.getElementById('profile-title');
+    const pBio = document.getElementById('profile-bio');
+    const pImg = document.getElementById('profile-image-url');
+    const pBg = document.getElementById('profile-bg-url'); 
+    const pTheme = document.getElementById('profile-theme');
+    const pStyle = document.getElementById('profile-button-style');
+    const cBg = document.getElementById('custom-bg-color');
+    const cText = document.getElementById('custom-text-color');
+    const cBtn = document.getElementById('custom-button-color');
+    const cBtnTxt = document.getElementById('custom-button-text-color');
+    const cHead = document.getElementById('custom-html-head');
+    const cBody = document.getElementById('custom-html-body');
+
+    async function loadProfileSettings() {
+        try {
+            const s = await API.fetchSettings();
+            pTitle.value = s.title || ''; pBio.value = s.bio || ''; pImg.value = s.image_url || '';
+            if(pBg) pBg.value = s.bg_image_url || ''; 
+            pTheme.value = s.theme || 'theme-dark'; pStyle.value = s.button_style || 'style-rounded';
+            if(cHead) cHead.value = s.custom_html_head || ''; if(cBody) cBody.value = s.custom_html_body || '';
+            socialFields.forEach(f => { const i = document.getElementById(`social-${f.id}`); if(i) i.value = s[`social_${f.id}`] || ''; });
+            cBg.value = s.custom_bg_color || '#111827'; cText.value = s.custom_text_color || '#F9FAFB'; cBtn.value = s.custom_button_color || '#1F2937'; cBtnTxt.value = s.custom_button_text_color || '#FFFFFF';
+            toggleCustomThemeSettings(s.theme);
+        } catch(e) { UI.setFormStatus(formStatus, 'Fehler Settings', 'text-red-400'); }
     }
 
+    function toggleCustomThemeSettings(theme) {
+        const el = document.getElementById('custom-theme-settings');
+        if(el) el.style.display = (theme === 'theme-custom') ? 'block' : 'none';
+    }
+    pTheme.addEventListener('change', () => toggleCustomThemeSettings(pTheme.value));
+
+    function setupImageUpload(btnId, fileId, textId) {
+        const btn = document.getElementById(btnId); const file = document.getElementById(fileId); const text = document.getElementById(textId);
+        if(!btn || !file || !text) return;
+        btn.onclick = () => file.click();
+        file.onchange = async () => {
+            if(!file.files[0]) return;
+            const fd = new FormData(); fd.append('file', file.files[0]); btn.textContent = '...';
+            try { const res = await API.uploadImage(fd); text.value = res.url; btn.textContent = 'OK'; } catch(e) { btn.textContent = 'Err'; alert(e.message); }
+        };
+    }
+    setupImageUpload('upload-profile-btn', 'upload-profile-file', 'profile-image-url');
+    setupImageUpload('upload-bg-btn', 'upload-bg-file', 'profile-bg-url');
+
+    profileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        UI.setFormStatus(formStatus, 'Speichere...', 'text-blue-400');
+        const socialData = {}; socialFields.forEach(f => { socialData[`social_${f.id}`] = document.getElementById(`social-${f.id}`).value; });
+        const payload = {
+            title: pTitle.value, bio: pBio.value, image_url: pImg.value, bg_image_url: pBg ? pBg.value : '', 
+            theme: pTheme.value, button_style: pStyle.value, ...socialData,
+            custom_bg_color: cBg.value, custom_text_color: cText.value, custom_button_color: cBtn.value, custom_button_text_color: cBtnTxt.value,
+            custom_html_head: cHead ? cHead.value : '', custom_html_body: cBody ? cBody.value : '',
+        };
+        try { await API.updateSettings(payload); UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 2000); } catch(e) { UI.setFormStatus(formStatus, e.message, 'text-red-400', 5000); }
+    });
+
+    // INITIAL START
     loadItems();
+    loadProfileSettings();
 }

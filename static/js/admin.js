@@ -1,36 +1,29 @@
 import { initializeMediaManager } from './media.js';
 import { initializeSubscribers } from './subscribers.js';
 import { initializeInbox } from './inbox.js';
-import { initProfile } from './admin_profile.js'; // <-- DIESER IMPORT FEHLTE
+import { initProfile } from './admin_profile.js';
 import * as API from './admin_api.js';
 import * as UI from './admin_ui.js';
 import { organizeItems, getSortableConfig, isGroup } from './groups.js';
 import { requireAuth, logout } from './utils.js';
 
+// Helper für Fallback-Script-Loading
 function loadScript(src) {
     return new Promise((resolve, reject) => {
-        const s = document.createElement('script'); s.src = src;
-        s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
     });
 }
 
-if (requireAuth()) { document.addEventListener('DOMContentLoaded', initAdmin); }
+if (requireAuth()) {
+    document.addEventListener('DOMContentLoaded', initAdmin);
+}
 
 async function initAdmin() {
-    if (typeof lucide === 'undefined') {
-        try { await loadScript('https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js'); } 
-        catch(e) { console.error("Lucide Fail"); return; }
-    }
-
-    const formStatus = document.getElementById('form-status');
-    const listContainer = document.getElementById('manage-items-list');
-    const listLoadingSpinner = document.getElementById('manage-list-loading');
-    const saveOrderButton = document.getElementById('save-order-button');
-    let sortableInstances = []; 
-
-    document.getElementById('logout-button')?.addEventListener('click', logout);
-
-    // --- Tabs ---
+    // 1. TABS SOFORT INITIALISIEREN (Damit sie klickbar sind)
     document.querySelectorAll('.tab-button').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
@@ -48,10 +41,30 @@ async function initAdmin() {
         });
 
         if (tabName === 'media') initializeMediaManager();
-        if (tabName === 'community') { initializeSubscribers(); initializeInbox(); }
+        if (tabName === 'community') {
+            initializeSubscribers();
+            initializeInbox();
+        }
+        // Profil wird global initialisiert, muss hier nicht neu geladen werden
     }
 
-    // --- QR Code ---
+    // 2. Globale DOM Elemente
+    const formStatus = document.getElementById('form-status');
+    const listContainer = document.getElementById('manage-items-list');
+    const listLoadingSpinner = document.getElementById('manage-list-loading');
+    const saveOrderButton = document.getElementById('save-order-button');
+    let sortableInstances = []; 
+
+    // 3. Logout Handler
+    document.getElementById('logout-button')?.addEventListener('click', logout);
+
+    // 4. Lucide Check (kann dauern, daher nach Tabs)
+    if (typeof lucide === 'undefined') {
+        try { await loadScript('https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js'); } 
+        catch(e) { console.error("Lucide Fail"); return; }
+    }
+
+    // 5. QR-Code Modal
     const qrButton = document.getElementById('qrcode-button');
     const qrModal = document.getElementById('qrcode-modal');
     const qrImage = document.getElementById('qrcode-image');
@@ -64,11 +77,7 @@ async function initAdmin() {
     }
     if (qrModal) qrModal.onclick = (e) => { if (e.target === qrModal) qrModal.style.display = 'none'; };
 
-    // --- Social Media (Werden jetzt in admin_profile.js gerendert!) ---
-    // ACHTUNG: Wir rendern sie NICHT mehr hier, um Duplikate zu vermeiden.
-    // initProfile() übernimmt das.
-
-    // --- Forms (Items erstellen) ---
+    // 6. Forms (Items erstellen)
     const forms = ['add-link-form', 'add-header-form', 'add-slider-group-form', 'add-video-form', 'add-email-form', 'add-countdown-form', 'add-grid-form', 'add-faq-form', 'add-divider-form', 'add-testimonial-form', 'add-contact-form', 'add-product-form'];
     forms.forEach(id => {
         const f = document.getElementById(id);
@@ -79,6 +88,7 @@ async function initAdmin() {
                 e.preventDefault();
                 try {
                     let payload = null;
+                    // Payload bauen
                     if (id === 'add-product-form') {
                          payload = { 
                              title: f.querySelector('#product-title').value, 
@@ -118,7 +128,7 @@ async function initAdmin() {
         }
     });
 
-    // --- Load Items ---
+    // 7. Items Laden & Rendern
     async function loadItems() {
         listLoadingSpinner.style.display = 'flex';
         listContainer.innerHTML = '';
@@ -138,6 +148,7 @@ async function initAdmin() {
                 if (isGroup(rootItem)) {
                     const childContainer = rendered.childrenContainer;
                     const childList = childrenMap[String(rootItem.id)];
+                    
                     if (childList && childList.length > 0) {
                         childContainer.querySelector('.empty-placeholder').style.display = 'none';
                         childList.forEach(c => {
@@ -153,6 +164,7 @@ async function initAdmin() {
     }
     
     function setupItemEvents(item, { viewContainer, editContainer, childrenContainer }) {
+        // Toggle
         const groupToggle = viewContainer.querySelector('.group-toggle');
         if (groupToggle && childrenContainer) {
             groupToggle.onclick = (e) => {
@@ -168,11 +180,35 @@ async function initAdmin() {
             };
         }
 
+        // Buttons
         viewContainer.querySelector('.btn-edit').onclick = () => { viewContainer.style.display='none'; editContainer.style.display='block'; lucide.createIcons(); };
         viewContainer.querySelector('.btn-delete').onclick = async () => { if(confirm('Löschen?')) { await API.deleteItem(item.id); loadItems(); } };
         viewContainer.querySelector('.btn-toggle').onclick = async () => { await API.toggleItemVisibility(item.id); loadItems(); };
+        
         editContainer.querySelector('.btn-cancel-edit').onclick = () => { editContainer.style.display='none'; viewContainer.style.display='flex'; };
         
+        // Save Item
+        editContainer.querySelector('.btn-save-edit').onclick = async () => {
+            const val = (s) => editContainer.querySelector(s)?.value;
+            const chk = (s) => editContainer.querySelector(s)?.checked;
+            
+            const payload = { 
+                title: val('.edit-title'), url: val('.edit-url'), 
+                image_url: val('.edit-image-url'), price: val('.edit-price'), 
+                is_featured: chk('.edit-is_featured'), is_affiliate: chk('.edit-is_affiliate') 
+            };
+            const pId = parseInt(val('.edit-parent-id')); if (!isNaN(pId)) payload.parent_id = pId === 0 ? null : pId;
+            const cols = parseInt(val('.edit-grid-columns')); if (!isNaN(cols)) payload.grid_columns = cols;
+            
+            const dateIn = editContainer.querySelector('.edit-publish-on');
+            if(dateIn) payload.publish_on = dateIn.value ? new Date(dateIn.value).toISOString() : '';
+            const expIn = editContainer.querySelector('.edit-expires-on');
+            if(expIn) payload.expires_on = expIn.value ? new Date(expIn.value).toISOString() : '';
+
+            try { await API.updateItem(item.id, payload); UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 1000); loadItems(); } catch(e) { UI.setFormStatus(formStatus, e.message, 'text-red-400'); }
+        };
+        
+        // Upload Item Image
         const uploadBtn = editContainer.querySelector('.btn-upload-image');
         if(uploadBtn) {
              uploadBtn.onclick = () => {
@@ -188,23 +224,9 @@ async function initAdmin() {
                 };
              };
         }
-
-        editContainer.querySelector('.btn-save-edit').onclick = async () => {
-            const val = (s) => editContainer.querySelector(s)?.value;
-            const chk = (s) => editContainer.querySelector(s)?.checked;
-            
-            const payload = { 
-                title: val('.edit-title'), url: val('.edit-url'), 
-                image_url: val('.edit-image-url'), price: val('.edit-price'), 
-                is_featured: chk('.edit-is_featured'), is_affiliate: chk('.edit-is_affiliate') 
-            };
-            const pId = parseInt(val('.edit-parent-id')); if (!isNaN(pId)) payload.parent_id = pId === 0 ? null : pId;
-            const cols = parseInt(val('.edit-grid-columns')); if (!isNaN(cols)) payload.grid_columns = cols;
-            
-            try { await API.updateItem(item.id, payload); UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 1000); loadItems(); } catch(e) { UI.setFormStatus(formStatus, e.message, 'text-red-400'); }
-        };
     }
 
+    // 8. Drag & Drop
     function initSortable() {
         sortableInstances.forEach(s => s.destroy()); sortableInstances = [];
         const root = document.getElementById('manage-items-list');
@@ -224,5 +246,8 @@ async function initAdmin() {
 
     // INITIAL START
     loadItems();
-    initProfile(); // Startet das Profil-Modul
+    
+    // WICHTIG: Profil-Modul initialisieren (dieser Aufruf fehlte!)
+    // Das lädt die Settings, Social Inputs und Stylings
+    initProfile();
 }

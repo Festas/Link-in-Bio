@@ -1,4 +1,5 @@
 import { escapeHTML, pSBC } from './utils.js';
+import { socialIconSVG } from './icons.js';
 import { trackClick, subscribeEmail } from './api.js';
 
 const state = { countdownIntervals: [], delegationInitialized: false, swipers: [] };
@@ -143,7 +144,7 @@ export function renderProfileHeader(settings) {
     const socialMap = [
         { key: 'social_youtube', icon: 'youtube', prefix: 'https://youtube.com/' },
         { key: 'social_instagram', icon: 'instagram', prefix: 'https://instagram.com/' },
-        { key: 'social_tiktok', icon: 'music', prefix: 'https://tiktok.com/@' },
+        { key: 'social_tiktok', icon: 'tiktok', prefix: 'https://tiktok.com/@' },
         { key: 'social_twitch', icon: 'twitch', prefix: 'https://twitch.tv/' },
         { key: 'social_x', icon: 'twitter', prefix: 'https://x.com/' },
         { key: 'social_discord', icon: 'discord', prefix: 'https://discord.gg/' },
@@ -155,10 +156,10 @@ export function renderProfileHeader(settings) {
         if (val && val.trim() !== "") {
             val = val.trim();
             let url = val;
-            
+
             // Prüfen ob es schon ein voller Link ist (oder mailto)
             const isFull = val.startsWith('http') || val.startsWith('mailto:');
-            
+
             if (!isFull && social.prefix) {
                 // Bei Social Media (außer Email) das @ entfernen, um Dopplung zu vermeiden
                 if (social.key !== 'social_email' && val.startsWith('@')) {
@@ -166,8 +167,12 @@ export function renderProfileHeader(settings) {
                 }
                 url = social.prefix + val;
             }
-            
-            socialLinksHTML += `<a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" class="social-icon hover:opacity-75 transition-opacity p-2 glass-card rounded-full bg-opacity-50 hover:bg-opacity-80" title="${social.icon}"><i data-lucide="${social.icon}" class="w-5 h-5" style="color: var(--color-text);"></i></a>`;
+
+            // Use inline SVG for known logos, fallback to lucide icons
+            const svg = socialIconSVG(social.icon, 'w-5 h-5');
+            const iconHTML = svg ? svg : `<i data-lucide="${social.icon}" class="w-5 h-5" style="color: var(--color-text);"></i>`;
+
+            socialLinksHTML += `<a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" class="social-icon hover:opacity-75 transition-opacity p-2 glass-card rounded-full bg-opacity-50 hover:bg-opacity-80" title="${social.icon}">${iconHTML}</a>`;
         }
     });
 

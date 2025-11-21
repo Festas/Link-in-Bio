@@ -46,7 +46,7 @@ export async function initCore() {
     const socialFields = [
         { id: 'youtube', label: 'YouTube', icon: 'youtube', placeholder: 'https://youtube.com/...' },
         { id: 'instagram', label: 'Instagram', icon: 'instagram', placeholder: 'https://instagram.com/...' },
-        { id: 'tiktok', label: 'TikTok', icon: 'music-4', placeholder: 'https://tiktok.com/@...' },
+        { id: 'tiktok', label: 'TikTok', icon: 'tiktok', placeholder: 'https://tiktok.com/@...' },
         { id: 'twitch', label: 'Twitch', icon: 'twitch', placeholder: 'https://twitch.tv/...' },
         { id: 'x', label: 'X (Twitter)', icon: 'twitter', placeholder: 'https://x.com/...' },
         { id: 'discord', label: 'Discord', icon: 'discord', placeholder: 'https://discord.gg/...' },

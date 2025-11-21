@@ -1,4 +1,5 @@
 import { escapeHTML } from './utils.js';
+import { socialIconSVG } from './icons.js';
 import { isGroup, getSortableConfig } from './groups.js';
 
 // Re-Export für admin.js
@@ -269,9 +270,12 @@ export function renderSocialFields(container, fields) {
     
     fields.forEach(f => {
         const div = document.createElement('div');
+        // Use SVG for known social icons (TikTok, Discord). Fallback to lucide for others.
+        const svg = socialIconSVG(f.icon, 'w-4 h-4');
+        const iconHTML = svg ? svg : `<i data-lucide="${f.icon}" class="w-4 h-4"></i>`;
         div.innerHTML = `
             <label for="social-${f.id}" class="block text-sm font-medium text-gray-300 flex items-center space-x-2">
-                <i data-lucide="${f.icon}" class="w-4 h-4"></i>
+                ${iconHTML}
                 <span>${f.label}</span>
             </label>
             <input type="text" id="social-${f.id}" name="social_${f.id}" class="${STYLES.input}" placeholder="${f.placeholder}">

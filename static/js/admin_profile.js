@@ -9,7 +9,7 @@ export function initProfile() {
     const socialFields = [
         { id: 'youtube', label: 'YouTube', icon: 'youtube', placeholder: 'Benutzername oder Link' },
         { id: 'instagram', label: 'Instagram', icon: 'instagram', placeholder: 'Benutzername' },
-        { id: 'tiktok', label: 'TikTok', icon: 'music', placeholder: 'Benutzername' },
+        { id: 'tiktok', label: 'TikTok', icon: 'tiktok', placeholder: 'Benutzername' },
         { id: 'twitch', label: 'Twitch', icon: 'twitch', placeholder: 'Kanalname' },
         { id: 'x', label: 'X (Twitter)', icon: 'twitter', placeholder: 'Nutzername' },
         { id: 'discord', label: 'Discord', icon: 'discord', placeholder: 'Invite-Code' },

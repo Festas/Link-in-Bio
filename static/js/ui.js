@@ -63,7 +63,8 @@ const ItemRenderers = {
         let headerHTML = item.title ? `<div class="group-header flex justify-between items-center p-4 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors"><h3 class="text-lg font-bold text-white">${escapeHTML(item.title)}</h3><i data-lucide="chevron-down" class="chevron-icon w-5 h-5 text-white transition-transform"></i></div>` : '';
         let slidesHTML = '';
         if (item.children) { item.children.forEach(child => { slidesHTML += `<div class="swiper-slide style-rounded overflow-hidden relative aspect-square group rounded-xl"><a href="${escapeHTML(child.url)}" target="_blank" class="block w-full h-full track-click" data-item-id="${child.id}">${child.image_url ? `<img src="${escapeHTML(child.image_url)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">` : '<div class="absolute inset-0 bg-gray-700 flex items-center justify-center"><i data-lucide="image" class="w-8 h-8 text-gray-500"></i></div>'}<div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none"></div><div class="absolute bottom-0 left-0 right-0 p-3 text-center pointer-events-none"><p class="text-white text-sm font-bold truncate drop-shadow-md leading-tight">${escapeHTML(child.title)}</p></div></a></div>`; }); }
-        wrapper.innerHTML = `${headerHTML}<div class="group-content p-4"><div class="swiper" id="swiper-${item.id}"><div class="swiper-wrapper">${slidesHTML}</div><div class="swiper-pagination mt-4" style="position: relative;"></div></div></div>`; return wrapper;
+        // Removed pagination element to avoid extra vertical spacing under sliders
+        wrapper.innerHTML = `${headerHTML}<div class="group-content p-4"><div class="swiper" id="swiper-${item.id}"><div class="swiper-wrapper">${slidesHTML}</div></div></div>`; return wrapper;
     },
     email_form: (item) => {
         const div = document.createElement('div'); div.className = 'item-email-form glass-card p-5 text-center';
@@ -228,14 +229,13 @@ export function initSwipers() {
         }
 
         document.querySelectorAll('.swiper').forEach(swiperEl => {
-            // Find pagination inside this swiper
-            const pagination = swiperEl.querySelector('.swiper-pagination');
+            // Pagination removed to save vertical space. If you need it later,
+            // re-enable by adding a pagination element and config.
             const config = {
                 loop: true,
                 centeredSlides: true,
                 slidesPerView: 1,
                 spaceBetween: 12,
-                pagination: pagination ? { el: pagination, clickable: true } : undefined,
                 breakpoints: {
                     640: { slidesPerView: 1.5 },
                     768: { slidesPerView: 2 },

@@ -1,6 +1,5 @@
 import * as API from './admin_api.js';
 import * as UI from './admin_ui.js';
-import { setAvatarEffect } from './picasso.js';
 import { initAvatarCropper, getAvatarOffsets, setAvatarImageSrc } from './avatar_cropper.js';
 
 export function initProfile() {
@@ -118,8 +117,7 @@ async function loadProfileSettings() {
 
         toggleCustomThemeSettings(s.theme);
         applyStyles();
-        // Preview the avatar effect immediately in admin
-        try { setAvatarEffect(!!s.picasso_avatar_effect); } catch(e) {}
+        // Picasso avatar effect removed per user request
 
     } catch(e) { console.error("Settings Load Error", e); }
 }

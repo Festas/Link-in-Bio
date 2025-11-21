@@ -88,7 +88,7 @@ const ItemRenderers = {
             <div class="group-content p-4">
                 <div class="swiper" id="${swiperId}" aria-label="${escapeHTML(item.title || 'Slider')}">
                     <div class="swiper-wrapper">${slidesHTML}</div>
-                    <div class="swiper-nav absolute top-1/2 transform -translate-y-1/2 left-3 right-3 pointer-events-auto flex justify-between items-center">
+                    <div class="swiper-nav absolute top-1/2 left-3 right-3 flex justify-between items-center" style="transform: translateY(-50%);">
                         <button class="slider-nav-prev glass-card p-2 rounded-full swiper-nav-button" aria-label="Vorheriger Slide" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
                         <button class="slider-nav-next glass-card p-2 rounded-full swiper-nav-button" aria-label="Nächster Slide" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
                     </div>

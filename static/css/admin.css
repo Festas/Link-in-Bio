@@ -210,7 +210,8 @@ body.style-pill .item-product {
 .swiper .swiper-slide .bg-gradient-to-t { height: 40% !important; }
 
 /* Admin preview: same nav and stacking polish as site styles */
-.swiper-nav { pointer-events: none; }
+.swiper { position: relative; }
+.swiper-nav { pointer-events: none; z-index: 10; }
 .swiper-nav .swiper-nav-button { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.45); color: var(--color-text); border: 1px solid var(--color-border); }
 .swiper-nav .swiper-nav-button:hover { background: rgba(0,0,0,0.6); }
 .swiper-nav .swiper-nav-button:focus { outline: 3px solid rgba(0,0,0,0.12); box-shadow: 0 6px 18px rgba(0,0,0,0.12); }

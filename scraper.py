@@ -30,10 +30,20 @@ except Exception as e:
 class SmartScraper:
     def __init__(self):
         self.impersonate = "chrome120"
+        # Expanded UA pool for better rotation
         self.user_agents = [
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Linux; Android 13; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Mobile Safari/537.36"
         ]
+        # Configurable values via env
+        self.max_retries = int(os.getenv('SCRAPER_MAX_RETRIES', '5'))
+        self.backoff_base = float(os.getenv('SCRAPER_BACKOFF_BASE', '0.5'))
+        self.backoff_cap = float(os.getenv('SCRAPER_BACKOFF_CAP', '10'))
+        # whether to verify TLS certs (default True) - some containers disable verify
+        self.verify_tls = os.getenv('SCRAPER_VERIFY_TLS', 'true').lower() not in ('0', 'false', 'no')
 
     def get_headers(self):
         return {
@@ -42,7 +52,9 @@ class SmartScraper:
             "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
             "Accept-Encoding": "gzip, deflate, br",
             "Connection": "keep-alive",
-            "Upgrade-Insecure-Requests": "1"
+            "Upgrade-Insecure-Requests": "1",
+            # Some sites look for a plausible viewport origin
+            "Sec-CH-UA-Mobile": "?0"
         }
 
     def clean_url(self, url: str) -> str:
@@ -136,45 +148,79 @@ class SmartScraper:
         proxies_env = os.getenv('SCRAPER_PROXIES', '')
         proxy_list = [p.strip() for p in proxies_env.split(',') if p.strip()] if proxies_env else []
 
-        for attempt in range(1, max_retries + 1):
+        # Use configured max_retries unless overridden
+        max_tries = max_retries or self.max_retries
+
+        # Keep a local copy so we can rotate/remove failing proxies during a single fetch
+        available_proxies = list(proxy_list)
+
+        for attempt in range(1, max_tries + 1):
             headers = self.get_headers()
             parsed = urlparse(url)
             headers['Referer'] = f"{parsed.scheme}://{parsed.netloc}/"
-            # small extra headers to look more like a real browser
             headers.setdefault('DNT', '1')
             headers.setdefault('Sec-Fetch-Mode', 'navigate')
 
-            proxy = random.choice(proxy_list) if proxy_list else None
+            proxy = None
+            if available_proxies:
+                proxy = random.choice(available_proxies)
 
             try:
                 timeout = 15 + (attempt - 1) * 5
-                async with httpx.AsyncClient(headers=headers, trust_env=True, timeout=timeout, follow_redirects=True, verify=False) as client:
+                async with httpx.AsyncClient(headers=headers, trust_env=True, timeout=timeout, follow_redirects=True, verify=self.verify_tls) as client:
                     if proxy:
-                        # httpx accepts a single proxy string for the get call
-                        r = await client.get(url, proxies=proxy)
+                        # httpx accepts mapping for proxies; support both http:// and https:// proxies
+                        proxy_map = {"http://": proxy, "https://": proxy}
+                        r = await client.get(url, proxies=proxy_map)
                     else:
                         r = await client.get(url)
 
                 status = getattr(r, 'status_code', None) or getattr(r, 'status', None)
                 text = (r.text or '')
 
-                # detect common anti-bot or challenge pages
+                # detect common anti-bot or challenge pages using content and headers
                 lowered = text.lower()
-                bot_hits = any(x in lowered for x in ['cloudflare', 'attention required', 'captcha', 'are you human', 'robot check'])
+                server_hdr = (r.headers.get('server') or '').lower()
+                cf_ray = r.headers.get('cf-ray') or r.headers.get('x-cf-ray')
+                bot_hits = any(x in lowered for x in ['cloudflare', 'attention required', 'captcha', 'are you human', 'robot check', 'please enable javascript'])
+                header_bot = any(x in server_hdr for x in ['cloudflare', 'cloudflare-nginx']) or bool(cf_ray)
 
-                if status in (403, 429, 503) or bot_hits:
-                    logger.warning(f"Fetch versuch {attempt} für {url} ergab Status {status} oder Bot-Check; retrying...")
-                    await asyncio.sleep(min(8, 0.5 * (2 ** attempt)) + random.random())
+                if status in (403, 429, 503) or bot_hits or header_bot:
+                    logger.warning(f"[scraper] attempt {attempt}/{max_tries} for {url} returned status {status} or bot-challenge (bot_hits={bot_hits}, header_bot={header_bot}).")
+                    # If proxy was used and likely flagged, drop it for this run
+                    if proxy and available_proxies:
+                        try:
+                            available_proxies.remove(proxy)
+                            logger.info(f"[scraper] removed failing proxy {proxy} from rotation (temporary)")
+                        except ValueError:
+                            pass
+
+                    # Backoff with jitter
+                    delay = min(self.backoff_cap, self.backoff_base * (2 ** (attempt - 1)))
+                    delay = delay * (0.5 + random.random() * 0.5)
+                    await asyncio.sleep(delay)
                     continue
 
                 # successful-looking response
+                logger.info(f"[scraper] success for {url} (status={status}) on attempt {attempt}")
                 return r
 
             except Exception as e:
-                logger.warning(f"Fetch versuch {attempt} für {url} fehlgeschlagen: {e}")
-                await asyncio.sleep(min(8, 0.5 * (2 ** attempt)) + random.random())
+                logger.warning(f"[scraper] attempt {attempt}/{max_tries} for {url} failed: {e}")
+                # If proxy was used, assume it might be bad and remove from available for next try
+                if proxy and available_proxies:
+                    try:
+                        available_proxies.remove(proxy)
+                        logger.info(f"[scraper] removed proxy {proxy} after exception")
+                    except ValueError:
+                        pass
+
+                delay = min(self.backoff_cap, self.backoff_base * (2 ** (attempt - 1)))
+                delay = delay * (0.5 + random.random() * 0.5)
+                await asyncio.sleep(delay)
                 continue
 
+        logger.error(f"[scraper] all {max_tries} attempts failed for {url}")
         return None
 
     async def _process_response(self, r, data, domain):

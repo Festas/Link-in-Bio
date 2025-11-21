@@ -16,8 +16,7 @@ export const STYLES = {
 export function renderAdminItem(item, sliderGroups, indentLevel = 0) {
     const itemEl = document.createElement('div');
     // WICHTIG: 'admin-item-card' Klasse für den Selektor
-    let indentClass = indentLevel > 0 ? `ml-${Math.min(indentLevel * 4, 12)}` : '';
-    itemEl.className = `admin-item-card p-3 bg-gray-700 rounded-md flex flex-col mb-2 border border-gray-600 select-none transition-all duration-200 ${indentClass}`;
+    itemEl.className = `admin-item-card p-3 bg-gray-700 rounded-md flex flex-col mb-2 border border-gray-600 select-none transition-all duration-200`;
     itemEl.dataset.id = item.id;
     itemEl.dataset.type = item.item_type;
     
@@ -93,8 +92,17 @@ export function renderAdminItem(item, sliderGroups, indentLevel = 0) {
     itemEl.appendChild(editContainer);
 
     // Container für Kinder (bei Gruppen)
-    // No childrenContainer: all items are rendered flat in the main list
-    return { itemEl, viewContainer, editContainer };
+    let childrenContainer = null;
+    if (itemIsGroup) {
+        childrenContainer = document.createElement('div');
+        // Always visible, not collapsible
+        childrenContainer.className = 'child-container ml-8 mt-2 p-2 min-h-[60px] rounded border-2 border-dashed border-gray-600 bg-gray-800/50 transition-all duration-300';
+        childrenContainer.style.display = 'block';
+        childrenContainer.dataset.parentId = item.id;
+        childrenContainer.innerHTML = '<div class="empty-placeholder text-xs text-gray-500 text-center py-2 pointer-events-none">Hier Elemente ablegen</div>';
+        itemEl.appendChild(childrenContainer);
+    }
+    return { itemEl, viewContainer, editContainer, childrenContainer };
 }
 
 export function createEditForm(item, groups) {

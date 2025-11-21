@@ -146,19 +146,24 @@ async function initAdmin() {
             const groupItems = items.filter(i => isGroup(i));
             const { roots, childrenMap } = organizeItems(items);
 
-            function renderFlat(item, indentLevel = 0) {
-                const rendered = UI.renderAdminItem(item, groupItems, indentLevel);
+            roots.forEach(rootItem => {
+                const rendered = UI.renderAdminItem(rootItem, groupItems);
                 listContainer.appendChild(rendered.itemEl);
-                setupItemEvents(item, rendered);
-                // If group, render children flat below, indented
-                if (isGroup(item)) {
-                    const childList = childrenMap[String(item.id)];
+                setupItemEvents(rootItem, rendered);
+
+                if (isGroup(rootItem)) {
+                    const childContainer = rendered.childrenContainer;
+                    const childList = childrenMap[String(rootItem.id)];
                     if (childList && childList.length > 0) {
-                        childList.forEach(child => renderFlat(child, indentLevel + 1));
+                        childContainer.querySelector('.empty-placeholder').style.display = 'none';
+                        childList.forEach(c => {
+                            const cr = UI.renderAdminItem(c, groupItems);
+                            childContainer.appendChild(cr.itemEl);
+                            setupItemEvents(c, cr);
+                        });
                     }
                 }
-            }
-            roots.forEach(rootItem => renderFlat(rootItem, 0));
+            });
             initSortable(); lucide.createIcons();
         } catch(e) { listLoadingSpinner.innerHTML = 'Fehler'; }
     }
@@ -236,6 +241,7 @@ async function initAdmin() {
             'manage-items-list'
         );
         if(root) sortableInstances.push(new Sortable(root, config));
+        // Enable drag-and-drop for all group children containers
         document.querySelectorAll('.child-container').forEach(el => sortableInstances.push(new Sortable(el, config)));
     }
 

@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 
 load_dotenv()
-DATABASE_FILE = "linktree.db"
+DATABASE_FILE = os.getenv("DATABASE_FILE", "linktree.db")
 
 @contextmanager
 def get_db_connection():

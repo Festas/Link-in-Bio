@@ -7,7 +7,7 @@ from pathlib import Path
 # KORREKTUR: datetime Klasse direkt importieren
 from datetime import datetime
 from urllib.parse import urlparse
-from fastapi import APIRouter, HTTPException, Request, Depends, Response, File, UploadFile
+from fastapi import APIRouter, HTTPException, Request, Depends, Response, File, UploadFile, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from typing import List
 import qrcode
@@ -32,10 +32,27 @@ from services import (
 )
 from rate_limit import limiter_strict, limiter_standard
 from cache import cache
+from config import BASE_DIR, UPLOAD_DIR
 
 router = APIRouter()
-BASE_DIR = Path(__file__).resolve().parent
-UPLOAD_DIR = BASE_DIR / "static" / "uploads"
+
+# --- Background Task for Scraping ---
+
+async def background_scrape_and_update(item_id: int, url: str):
+    """Background task to scrape link details and update the database entry."""
+    try:
+        details = await scrape_link_details(url)
+        update_data = {
+            "title": details.get("title", "?"),
+            "image_url": details.get("image_url")
+        }
+        # Only update if we got meaningful data
+        if update_data["title"] != "?":
+            update_item_in_db(item_id, update_data)
+            cache.invalidate("items")
+    except Exception as e:
+        # Log error but don't crash - the item already exists with placeholder data
+        print(f"Background scraping failed for item {item_id}: {e}")
 
 # --- Auth Check ---
 
@@ -53,12 +70,15 @@ def build_item_data(item_type, title, url=None, image_url=None, price=None, grid
 # --- Item Creation Endpoints ---
 
 @router.post("/links", response_model=Item)
-async def create_link(req: ItemCreate, user=Depends(require_auth)):
+async def create_link(req: ItemCreate, background_tasks: BackgroundTasks, user=Depends(require_auth)):
     if not req.url: raise HTTPException(400, "URL fehlt")
-    details = await scrape_link_details(req.url)
-    data = build_item_data("link", details.get("title", "?"), details.get("url", req.url), details.get("image_url"))
+    # Create item immediately with placeholder
+    data = build_item_data("link", req.url, req.url, None)
+    item_dict = create_item_in_db(data)
+    # Schedule background scraping
+    background_tasks.add_task(background_scrape_and_update, item_dict["id"], req.url)
     cache.invalidate("items")
-    return Item(**create_item_in_db(data))
+    return Item(**item_dict)
 
 @router.post("/videos", response_model=Item)
 async def create_video(req: ItemCreate, user=Depends(require_auth)):
@@ -100,13 +120,17 @@ async def create_testimonial(req: ItemCreate, user=Depends(require_auth)):
     return Item(**create_item_in_db(build_item_data("testimonial", req.name, req.text))) 
 
 @router.post("/products", response_model=Item)
-async def create_product(req: ItemCreate, user=Depends(require_auth)):
+async def create_product(req: ItemCreate, background_tasks: BackgroundTasks, user=Depends(require_auth)):
     if not req.url: raise HTTPException(400, "URL fehlt")
-    details = await scrape_link_details(req.url)
-    title = req.title if req.title else details.get("title", "Produkt")
-    data = build_item_data("product", title, req.url, details.get("image_url"), req.price)
+    # Create item immediately with placeholder
+    title = req.title if req.title else req.url
+    data = build_item_data("product", title, req.url, None, req.price)
+    item_dict = create_item_in_db(data)
+    # Schedule background scraping if no custom title was provided
+    if not req.title:
+        background_tasks.add_task(background_scrape_and_update, item_dict["id"], req.url)
     cache.invalidate("items")
-    return Item(**create_item_in_db(data))
+    return Item(**item_dict)
 
 @router.post("/contact_form", response_model=Item)
 async def create_contact_form(req: ItemCreate, user=Depends(require_auth)):

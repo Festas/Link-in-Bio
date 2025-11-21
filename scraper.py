@@ -67,7 +67,7 @@ class SmartScraper:
     def _validate_url_not_ssrf(self, url: str) -> None:
         """Validate URL does not point to private/loopback addresses to prevent SSRF attacks.
         
-        Raises HTTPException if URL resolves to a private or loopback IP address.
+        Raises ValueError if URL resolves to a private or loopback IP address.
         """
         parsed = urlparse(url)
         hostname = parsed.hostname
@@ -92,6 +92,8 @@ class SmartScraper:
                 ip = ipaddress.ip_address(ip_str)
                 
                 # Check if IP is private, loopback, link-local, or reserved
+                # Blocking reserved addresses prevents access to cloud metadata services
+                # and other special-use addresses that could be security risks
                 if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
                     raise ValueError(
                         f"Access to private/internal IP addresses is not allowed: {hostname} resolves to {ip_str}"

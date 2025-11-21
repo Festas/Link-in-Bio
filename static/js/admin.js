@@ -135,6 +135,32 @@ async function initAdmin() {
     });
 
     // 7. Items Laden & Rendern
+    // Recursively render all children for a group
+    function renderChildrenRecursive(parentItem, groupItems, childrenMap, setupItemEventsFn) {
+        const childList = childrenMap[String(parentItem.id)];
+        const renderedChildren = [];
+        if (childList && childList.length > 0) {
+            childList.forEach(child => {
+                const cr = UI.renderAdminItem(child, groupItems);
+                if (cr.itemEl) renderedChildren.push(cr.itemEl);
+                if (setupItemEventsFn) setupItemEventsFn(child, cr);
+                // If this child is a group, recurse
+                if (isGroup(child) && cr.childrenContainer) {
+                    cr.childrenContainer.innerHTML = '<div class="empty-placeholder text-xs text-gray-500 text-center py-2 pointer-events-none">Hier Elemente ablegen</div>';
+                    // Recursively render children
+                    const subChildren = renderChildrenRecursive(child, groupItems, childrenMap, setupItemEventsFn);
+                    if (subChildren.length > 0) {
+                        cr.childrenContainer.querySelector('.empty-placeholder').style.display = 'none';
+                        subChildren.forEach(el => cr.childrenContainer.appendChild(el));
+                    } else {
+                        cr.childrenContainer.querySelector('.empty-placeholder').style.display = 'block';
+                    }
+                }
+            });
+        }
+        return renderedChildren;
+    }
+
     async function loadItems() {
         listLoadingSpinner.style.display = 'flex';
         listContainer.innerHTML = '';
@@ -142,7 +168,7 @@ async function initAdmin() {
             const items = await API.fetchItems();
             listLoadingSpinner.style.display = 'none';
             if (items.length === 0) { listContainer.innerHTML = '<p class="text-gray-400 text-center py-4">Leer.</p>'; return; }
-            
+
             const groupItems = items.filter(i => isGroup(i));
             const { roots, childrenMap } = organizeItems(items);
 
@@ -151,27 +177,19 @@ async function initAdmin() {
                 listContainer.appendChild(rendered.itemEl);
                 setupItemEvents(rootItem, rendered);
 
-                if (isGroup(rootItem)) {
-                    const childContainer = rendered.childrenContainer;
-                    // Always clear childrenContainer before rendering
-                    if (childContainer) {
-                        childContainer.innerHTML = '<div class="empty-placeholder text-xs text-gray-500 text-center py-2 pointer-events-none">Hier Elemente ablegen</div>';
-                        const childList = childrenMap[String(rootItem.id)];
-                        if (childList && childList.length > 0) {
-                            childContainer.querySelector('.empty-placeholder').style.display = 'none';
-                            childList.forEach(c => {
-                                const cr = UI.renderAdminItem(c, groupItems);
-                                childContainer.appendChild(cr.itemEl);
-                                setupItemEvents(c, cr);
-                            });
-                        } else {
-                            // Show placeholder if no children
-                            childContainer.querySelector('.empty-placeholder').style.display = 'block';
-                        }
+                if (isGroup(rootItem) && rendered.childrenContainer) {
+                    rendered.childrenContainer.innerHTML = '<div class="empty-placeholder text-xs text-gray-500 text-center py-2 pointer-events-none">Hier Elemente ablegen</div>';
+                    const childrenEls = renderChildrenRecursive(rootItem, groupItems, childrenMap, setupItemEvents);
+                    if (childrenEls.length > 0) {
+                        rendered.childrenContainer.querySelector('.empty-placeholder').style.display = 'none';
+                        childrenEls.forEach(el => rendered.childrenContainer.appendChild(el));
+                    } else {
+                        rendered.childrenContainer.querySelector('.empty-placeholder').style.display = 'block';
                     }
                 }
             });
-            initSortable(); lucide.createIcons();
+            initSortable();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         } catch(e) { listLoadingSpinner.innerHTML = 'Fehler'; }
     }
     

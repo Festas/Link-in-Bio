@@ -1,7 +1,7 @@
 import { escapeHTML } from './utils.js';
-import { isGroup, getSortableConfig } from './groups.js'; // Importiert die Gruppen-Logik
+import { isGroup, getSortableConfig } from './groups.js';
 
-// Re-Export für admin.js (optional, aber nützlich wenn man alles über UI importiert)
+// Re-Export für admin.js
 export { getSortableConfig };
 
 export const STYLES = {
@@ -15,6 +15,7 @@ export const STYLES = {
 
 export function renderAdminItem(item, sliderGroups) {
     const itemEl = document.createElement('div');
+    // WICHTIG: 'admin-item-card' Klasse für den Selektor
     itemEl.className = `admin-item-card p-3 bg-gray-700 rounded-md flex flex-col mb-2 border border-gray-600 select-none transition-all duration-200`;
     itemEl.dataset.id = item.id;
     itemEl.dataset.type = item.item_type;
@@ -33,7 +34,7 @@ export function renderAdminItem(item, sliderGroups) {
     const scheduleIcon = (item.publish_on || item.expires_on) ? `<i data-lucide="clock" class="w-3 h-3 text-cyan-400" title="Geplant"></i>` : '';
     
     const toggleIcon = item.is_active ? 'eye' : 'eye-off';
-    const itemIsGroup = isGroup(item); // Nutzung der Helper-Funktion
+    const itemIsGroup = isGroup(item);
     
     switch(item.item_type) {
         case 'link': itemIcon = `<i data-lucide="link" class="w-5 h-5 text-blue-400"></i>`; break;
@@ -53,10 +54,10 @@ export function renderAdminItem(item, sliderGroups) {
     const viewContainer = document.createElement('div');
     viewContainer.className = 'flex items-center space-x-4 w-full';
     
-    // Chevron für Gruppen (Standard: Offen / nach unten)
+    // Chevron nur für Gruppen (Standard: Offen / nach unten)
     let chevronHTML = '';
     if (itemIsGroup) {
-        chevronHTML = `<button class="group-toggle text-gray-400 hover:text-white mr-1 focus:outline-none"><i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i></button>`;
+        chevronHTML = `<button class="group-toggle text-gray-400 hover:text-white mr-1 focus:outline-none"><i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" style="transform: rotate(0deg)"></i></button>`;
     }
 
     viewContainer.innerHTML = `
@@ -90,18 +91,19 @@ export function renderAdminItem(item, sliderGroups) {
     itemEl.appendChild(viewContainer);
     itemEl.appendChild(editContainer);
 
-    // Container für Kinder (bei Gruppen) - Standard: Sichtbar
+    // Container für Kinder (bei Gruppen)
     let childrenContainer = null;
     if (itemIsGroup) {
         childrenContainer = document.createElement('div');
+        // ml-8 für Einrückung, min-h-[60px] für Dropzone, Standard: Sichtbar
         childrenContainer.className = 'child-container ml-8 mt-2 p-2 min-h-[60px] rounded border-2 border-dashed border-gray-600 bg-gray-800/50 transition-all duration-300';
-        childrenContainer.style.display = 'block';
+        childrenContainer.style.display = 'block'; 
         childrenContainer.dataset.parentId = item.id;
         childrenContainer.innerHTML = '<div class="empty-placeholder text-xs text-gray-500 text-center py-2 pointer-events-none">Hier Elemente ablegen</div>';
         itemEl.appendChild(childrenContainer);
     }
     
-    // Wir geben childrenContainer zurück, damit admin.js ihn befüllen kann
+    // Wir geben childrenContainer explizit zurück
     return { itemEl, viewContainer, editContainer, childrenContainer };
 }
 
@@ -121,8 +123,8 @@ export function createEditForm(item, groups) {
     `;
 }
 
+// Fallback Dropdown, falls Drag & Drop klemmt
 function renderGroupOptions(item, groups) {
-    // Fallback Dropdown (falls Drag & Drop mal nicht gewünscht)
     let options = groups.filter(g => g.id !== item.id).map(g => {
         const selected = (g.id === item.parent_id) ? 'selected' : '';
         return `<option value="${g.id}" ${selected}>${escapeHTML(g.title)}</option>`;
@@ -137,68 +139,158 @@ function renderCommonFields(item) {
     if (item.item_type === 'divider') label = 'Text (Optional)';
     if (item.item_type === 'contact_form') label = 'Überschrift';
     
-    return `<div><label class="block text-xs font-medium text-gray-400">${label}</label><input type="text" class="edit-title ${STYLES.input}" value="${escapeHTML(item.title)}"></div>`;
+    return `
+        <div>
+            <label class="block text-xs font-medium text-gray-400">${label}</label>
+            <input type="text" class="edit-title ${STYLES.input}" value="${escapeHTML(item.title)}">
+        </div>
+    `;
 }
 
 function renderTypeSpecificFields(item, groups) {
     if (item.item_type === 'grid') {
         const cols = item.grid_columns || 2;
-        return `<div><label class="block text-xs font-medium text-gray-400">Spaltenanzahl</label><select class="edit-grid-columns ${STYLES.input}"><option value="1" ${cols == 1 ? 'selected' : ''}>1 Spalte (Liste)</option><option value="2" ${cols == 2 ? 'selected' : ''}>2 Spalten</option><option value="3" ${cols == 3 ? 'selected' : ''}>3 Spalten</option></select></div>`;
+        return `
+            <div>
+                <label class="block text-xs font-medium text-gray-400">Spaltenanzahl</label>
+                <select class="edit-grid-columns ${STYLES.input}">
+                    <option value="1" ${cols == 1 ? 'selected' : ''}>1 Spalte (Liste)</option>
+                    <option value="2" ${cols == 2 ? 'selected' : ''}>2 Spalten</option>
+                    <option value="3" ${cols == 3 ? 'selected' : ''}>3 Spalten</option>
+                </select>
+            </div>
+        `;
     }
 
     if (item.item_type === 'link' || item.item_type === 'product') {
-        let fields = `<div><label class="block text-xs font-medium text-gray-400">URL / Ziel</label><input type="text" class="edit-url ${STYLES.input}" value="${escapeHTML(item.url || '')}"></div>`;
+        let fields = `
+            <div>
+                <label class="block text-xs font-medium text-gray-400">URL / Ziel</label>
+                <input type="text" class="edit-url ${STYLES.input}" value="${escapeHTML(item.url || '')}">
+            </div>
+        `;
         
         if (item.item_type === 'product') {
-            fields += `<div><label class="block text-xs font-medium text-gray-400">Preis</label><input type="text" class="edit-price ${STYLES.input}" value="${escapeHTML(item.price || '')}" placeholder="z.B. 19.99 €"></div>`;
+            fields += `
+                <div>
+                    <label class="block text-xs font-medium text-gray-400">Preis</label>
+                    <input type="text" class="edit-price ${STYLES.input}" value="${escapeHTML(item.price || '')}" placeholder="z.B. 19.99 €">
+                </div>
+            `;
         }
 
         fields += `
-            <div><label class="block text-xs font-medium text-gray-400">Bild-URL</label><input type="text" class="edit-image-url ${STYLES.input}" value="${escapeHTML(item.image_url || '')}"></div>
-            <div class="pt-2 flex items-center space-x-2"><input type="file" class="upload-image-file text-xs text-gray-300"><button type="button" class="btn-upload-image text-xs bg-blue-600 px-2 py-1 rounded">Upload</button></div>
-            <div><label class="block text-xs font-medium text-gray-400">Gruppe (Manuell)</label><select class="edit-parent-id ${STYLES.input}">${renderGroupOptions(item, groups)}</select></div>
-            <div class="flex items-center space-x-4 pt-2"><label class="flex items-center space-x-2"><input type="checkbox" class="edit-is_featured" ${item.is_featured ? 'checked' : ''}><span class="text-sm text-gray-300">Spotlight?</span></label></div>
+            <div>
+                <label class="block text-xs font-medium text-gray-400">Bild-URL</label>
+                <input type="text" class="edit-image-url ${STYLES.input}" value="${escapeHTML(item.image_url || '')}">
+            </div>
+            <div class="pt-2 flex items-center space-x-2">
+                <input type="file" class="upload-image-file text-xs text-gray-300">
+                <button type="button" class="btn-upload-image text-xs bg-blue-600 px-2 py-1 rounded">Upload</button>
+            </div>
+            <!-- Fallback Dropdown -->
+            <div>
+                <label class="block text-xs font-medium text-gray-400">Gruppe (Alternative zu Drag&Drop)</label>
+                <select class="edit-parent-id ${STYLES.input}">${renderGroupOptions(item, groups)}</select>
+            </div>
+            <div class="flex items-center space-x-4 pt-2">
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" class="edit-is_featured" ${item.is_featured ? 'checked' : ''}>
+                    <span class="text-sm text-gray-300">Spotlight?</span>
+                </label>
+                ${item.item_type === 'link' ? `<label class="flex items-center space-x-2"><input type="checkbox" class="edit-is_affiliate" ${item.is_affiliate ? 'checked' : ''}><span class="text-sm text-gray-300">Affiliate?</span></label>` : ''}
+            </div>
         `;
         return fields;
     }
     
     if (item.item_type === 'video' || item.item_type === 'countdown') {
-        return `<div><label class="block text-xs font-medium text-gray-400">URL / Ziel</label><input type="text" class="edit-url ${STYLES.input}" value="${escapeHTML(item.url || '')}"></div>`;
+        return `
+            <div>
+                <label class="block text-xs font-medium text-gray-400">URL / Ziel</label>
+                <input type="text" class="edit-url ${STYLES.input}" value="${escapeHTML(item.url || '')}">
+            </div>
+        `;
     }
+
     if (item.item_type === 'faq' || item.item_type === 'testimonial') {
-        return `<div><label class="block text-xs font-medium text-gray-400">Inhalt</label><textarea class="edit-url ${STYLES.input}" rows="3">${escapeHTML(item.url || '')}</textarea></div>`;
+        return `
+            <div>
+                <label class="block text-xs font-medium text-gray-400">Inhalt</label>
+                <textarea class="edit-url ${STYLES.input}" rows="3">${escapeHTML(item.url || '')}</textarea>
+            </div>
+        `;
     }
+    
     return ''; 
 }
 
 function renderSchedulingFields(item) {
     if (['header', 'slider_group', 'grid', 'divider', 'testimonial', 'contact_form'].includes(item.item_type)) return '';
-    const formatISODate = (iso) => { if (!iso) return ''; try { const d = new Date(iso); const l = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)); return l.toISOString().slice(0, 16); } catch (e) { return ''; } };
+
+    const formatISODate = (iso) => {
+        if (!iso) return '';
+        try {
+            const d = new Date(iso);
+            // Offset hack für datetime-local input
+            const l = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
+            return l.toISOString().slice(0, 16);
+        } catch (e) { return ''; }
+    };
+    
     return `
         <div class="pt-3 border-t border-gray-600">
             <h4 class="text-sm font-medium text-gray-300 mb-2">Planung</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div><label class="block text-xs font-medium text-gray-400">Start</label><input type="datetime-local" class="edit-publish-on ${STYLES.input}" value="${formatISODate(item.publish_on)}" style="color-scheme: dark;"></div>
-                <div><label class="block text-xs font-medium text-gray-400">Ende</label><input type="datetime-local" class="edit-expires-on ${STYLES.input}" value="${formatISODate(item.expires_on)}" style="color-scheme: dark;"></div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400">Start</label>
+                    <input type="datetime-local" class="edit-publish-on ${STYLES.input}" value="${formatISODate(item.publish_on)}" style="color-scheme: dark;">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400">Ende</label>
+                    <input type="datetime-local" class="edit-expires-on ${STYLES.input}" value="${formatISODate(item.expires_on)}" style="color-scheme: dark;">
+                </div>
             </div>
         </div>
     `;
 }
 
 function renderActionButtons() {
-    return `<div class="flex justify-end space-x-3 pt-3"><button class="btn-cancel-edit ${STYLES.btnSecondary} w-auto py-1.5 px-3">Abbrechen</button><button class="btn-save-edit ${STYLES.btnPrimary} w-auto py-1.5 px-3">Speichern</button></div>`;
+    return `
+        <div class="flex justify-end space-x-3 pt-3">
+            <button class="btn-cancel-edit ${STYLES.btnSecondary} w-auto py-1.5 px-3">Abbrechen</button>
+            <button class="btn-save-edit ${STYLES.btnPrimary} w-auto py-1.5 px-3">Speichern</button>
+        </div>
+    `;
 }
 
 export function renderSocialFields(container, fields) {
     if (!container) return;
+    // FIX: Container leeren, um Duplikate zu vermeiden
+    container.innerHTML = '';
+    
     fields.forEach(f => {
         const div = document.createElement('div');
-        div.innerHTML = `<label for="social-${f.id}" class="block text-sm font-medium text-gray-300 flex items-center space-x-2"><i data-lucide="${f.icon}" class="w-4 h-4"></i><span>${f.label}</span></label><input type="text" id="social-${f.id}" name="social_${f.id}" class="${STYLES.input}" placeholder="${f.placeholder}">`;
+        div.innerHTML = `
+            <label for="social-${f.id}" class="block text-sm font-medium text-gray-300 flex items-center space-x-2">
+                <i data-lucide="${f.icon}" class="w-4 h-4"></i>
+                <span>${f.label}</span>
+            </label>
+            <input type="text" id="social-${f.id}" name="social_${f.id}" class="${STYLES.input}" placeholder="${f.placeholder}">
+        `;
         container.appendChild(div);
     });
 }
-export function setFormStatus(el, msg, cls, dur=0) {
-    if (!el) return;
-    el.textContent = msg; el.className = `mt-6 text-center ${cls}`;
-    if (dur > 0) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, dur);
+
+export function setFormStatus(element, message, className, duration = 0) {
+    if (!element) return;
+    element.textContent = message;
+    element.className = `mt-6 text-center ${className}`;
+    if (duration > 0) {
+        setTimeout(() => {
+            if (element.textContent === message) {
+                element.textContent = '';
+            }
+        }, duration);
+    }
 }

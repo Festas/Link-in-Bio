@@ -1,5 +1,6 @@
 import * as API from './admin_api.js';
 import * as UI from './admin_ui.js';
+import { setAvatarEffect } from './picasso.js';
 
 export function initProfile() {
     const form = document.getElementById('profile-form');
@@ -46,6 +47,7 @@ export function initProfile() {
                 image_url: val('profile-image-url'), bg_image_url: val('profile-bg-url'),
                 theme: val('profile-theme'), button_style: val('profile-button-style'),
                 ...socialData,
+                picasso_avatar_effect: document.getElementById('picasso-avatar-effect')?.checked ? true : false,
                 custom_bg_color: val('custom-bg-color'), custom_text_color: val('custom-text-color'),
                 custom_button_color: val('custom-button-color'), custom_button_text_color: val('custom-button-text-color'),
                 custom_html_head: val('custom-html-head'), custom_html_body: val('custom-html-body'),
@@ -78,6 +80,10 @@ async function loadProfileSettings() {
         setVal('custom-button-color', s.custom_button_color || '#1F2937');
         setVal('custom-button-text-color', s.custom_button_text_color || '#FFFFFF');
 
+        // Picasso avatar effect checkbox
+        const picEl = document.getElementById('picasso-avatar-effect');
+        if (picEl) picEl.checked = !!s.picasso_avatar_effect;
+
         // Socials
         const container = document.getElementById('social-inputs-container');
         if (container) {
@@ -88,6 +94,8 @@ async function loadProfileSettings() {
 
         toggleCustomThemeSettings(s.theme);
         applyStyles();
+        // Preview the avatar effect immediately in admin
+        try { setAvatarEffect(!!s.picasso_avatar_effect); } catch(e) {}
 
     } catch(e) { console.error("Settings Load Error", e); }
 }

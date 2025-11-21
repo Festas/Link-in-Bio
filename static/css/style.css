@@ -55,6 +55,18 @@ body.theme-picasso {
     /* no forced transform here, but allow optional CSS mask via admin setting */
 }
 
+/* Picasso avatar effect: geometric mask + subtle color filter */
+body.theme-picasso .picasso-avatar {
+    display: inline-block;
+    clip-path: polygon(10% 0%, 90% 0%, 100% 30%, 85% 100%, 15% 100%, 0% 30%);
+    transform: rotate(-2deg) scale(1.02);
+    filter: saturate(1.08) contrast(1.05) brightness(0.98) drop-shadow(0 8px 18px rgba(0,0,0,0.08));
+    transition: transform 0.35s ease, filter 0.35s ease;
+}
+body.theme-picasso .picasso-avatar:hover {
+    transform: rotate(0deg) scale(1.04);
+}
+
 /* Animation Keyframes */
 @keyframes fadeInUp {
     from {

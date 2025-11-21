@@ -135,6 +135,14 @@ export function applyTheme(settings) {
         customStyle.innerHTML = `body.theme-custom { --color-bg: ${escapeHTML(settings.custom_bg_color)}; --color-text: ${escapeHTML(settings.custom_text_color)}; --color-text-muted: ${escapeHTML(settings.custom_text_color)}CC; --color-item-bg: ${escapeHTML(settings.custom_button_color)}CC; --color-item-text: ${escapeHTML(settings.custom_button_text_color)}; --color-item-bg-hover: ${pSBC(-0.10, settings.custom_button_color)}DD; --color-item-shadow: rgba(0, 0, 0, 0.2); --color-border: ${pSBC(-0.20, settings.custom_button_color)}55; } body.theme-custom .countdown-box { background-color: rgba(0, 0, 0, 0.1); } body.theme-custom .email-input { color: #111; } body.theme-custom .email-submit-button { background-color: var(--color-item-text); color: var(--color-item-bg); }`;
     } else { document.body.classList.add(settings.theme || 'theme-dark'); }
     document.body.classList.add(settings.button_style || 'style-rounded');
+    // Picasso avatar effect: apply class to profile image when enabled
+    try {
+        const picEnabled = !!settings.picasso_avatar_effect && settings.theme === 'theme-picasso';
+        const img = document.getElementById('profile-image');
+        if (img) {
+            if (picEnabled) img.classList.add('picasso-avatar'); else img.classList.remove('picasso-avatar');
+        }
+    } catch (e) {}
 }
 
 // KORRIGIERT: Render Profile Header mit Smart Links

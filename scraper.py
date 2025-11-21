@@ -1,29 +1,54 @@
 import re
-import logging
-import random
+import httpx
 import json
-import asyncio
+import random
+import logging
+import warnings
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse, urlunparse
 from duckduckgo_search import DDGS
-from curl_cffi.requests import AsyncSession
+
+# Warnung unterdrücken
+warnings.filterwarnings("ignore", category=RuntimeWarning, module="duckduckgo_search")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# --- SAFE IMPORT für curl_cffi ---
+# Verhindert Server-Absturz, falls die Library im Container zickt
+HAS_CURL_CFFI = False
+try:
+    from curl_cffi.requests import AsyncSession
+    HAS_CURL_CFFI = True
+except ImportError:
+    logger.warning("curl_cffi konnte nicht geladen werden. Nutze Standard-HTTP.")
+except Exception as e:
+    logger.warning(f"curl_cffi Fehler: {e}. Nutze Standard-HTTP.")
+
 class SmartScraper:
     def __init__(self):
-        self.impersonate = "chrome120" 
+        self.impersonate = "chrome120"
+        self.user_agents = [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+        ]
+
+    def get_headers(self):
+        return {
+            "User-Agent": random.choice(self.user_agents),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1"
+        }
 
     def clean_url(self, url: str) -> str:
-        """
-        KORREKTUR: Wir fassen die URL nicht an!
-        Tracking-Parameter und Affiliate-Tags bleiben erhalten.
-        """
-        return url.strip()
+        try:
+            return url.strip()
+        except: return url
 
     def extract_asin(self, text: str) -> str | None:
-        """Findet ASINs in Texten."""
         match = re.search(r'/(dp|gp/product|d)/(B[A-Z0-9]{9})', text)
         if match: return match.group(2)
         match = re.search(r'/([A-Z0-9]{10})(?:[/?]|$)', text)
@@ -55,14 +80,12 @@ class SmartScraper:
 
     def search_duckduckgo_title(self, query_url: str) -> str | None:
         try:
-            logger.info(f"DDG Fallback für: {query_url}")
             with DDGS() as ddgs:
                 results = list(ddgs.text(query_url, max_results=1))
                 if results:
                     title = results[0].get('title', '')
                     return re.split(r' [:|] ', title)[0]
-        except Exception as e:
-            logger.warning(f"DDG Suche fehlgeschlagen: {e}")
+        except: pass
         return None
 
     def get_google_favicon(self, domain: str) -> str:
@@ -72,67 +95,64 @@ class SmartScraper:
         url = self.clean_url(raw_url)
         parsed = urlparse(url)
         domain = parsed.netloc.replace('www.', '').split('.')[0].capitalize()
-        clean_domain_title = domain
-        
-        # WICHTIG: Wir initialisieren 'data' mit der ORIGINAL URL.
-        # Diese wird am Ende zurückgegeben, egal wohin wir redirected werden.
-        data = { 
-            "title": clean_domain_title, 
-            "image_url": None, 
-            "url": url 
-        }
+        data = { "title": domain, "image_url": None, "url": url }
 
+        # Entscheidung: High-End oder Standard?
+        if HAS_CURL_CFFI:
+            try:
+                async with AsyncSession(impersonate=self.impersonate) as s:
+                    r = await s.get(url, allow_redirects=True, timeout=15)
+                    await self._process_response(r, data, domain)
+            except Exception as e:
+                logger.error(f"Browser-Scraping Fehler: {e}. Versuche Fallback...")
+                await self._scrape_fallback(url, data, domain)
+        else:
+            await self._scrape_fallback(url, data, domain)
+            
+        # Fallbacks
+        self._apply_fallbacks(data, domain)
+        return data
+
+    async def _scrape_fallback(self, url, data, domain):
+        """Standard httpx Scraper als Backup"""
         try:
-            async with AsyncSession(impersonate=self.impersonate) as s:
-                
-                logger.info(f"Scrape URL (Impersonated): {url}")
-                r = await s.get(url, allow_redirects=True, timeout=15)
-                
-                # Wir nutzen die finale URL (nach Redirects) NUR INTERN zum Parsen
-                final_url_internal = str(r.url)
-                html_content = r.text
-                
-                # --- Amazon Spezial: ASIN ---
-                if "amazon" in final_url_internal or "amzn" in final_url_internal:
-                    asin = self.extract_asin(final_url_internal) or self.extract_asin(html_content)
-                    if asin:
-                        logger.info(f"ASIN gefunden: {asin}")
-                        data["image_url"] = f"https://images-na.ssl-images-amazon.com/images/P/{asin}.01.MAIN._SCLZZZZZZZ_.jpg"
-                        data["title"] = "Amazon Produkt" 
-
-                # --- Normales Scraping ---
-                soup = BeautifulSoup(html_content, 'html.parser')
-                
-                # 1. JSON-LD
-                json_data = self.extract_json_ld(soup)
-                if json_data.get('title'): data['title'] = json_data['title']
-                if json_data.get('image_url'): data['image_url'] = json_data['image_url']
-
-                # 2. Meta Tags
-                # Hier nutzen wir final_url_internal um relative Bildpfade aufzulösen
-                if not data.get('image_url') or data['title'] in [domain, "Amazon Produkt"]:
-                    og_title = soup.find('meta', property='og:title')
-                    if og_title and og_title.get('content'): data['title'] = og_title['content']
-                    elif soup.title: data['title'] = soup.title.string.strip()
-
-                    og_image = soup.find('meta', property='og:image')
-                    if og_image and og_image.get('content'):
-                        data['image_url'] = urljoin(final_url_internal, og_image['content'])
-
+            async with httpx.AsyncClient(headers=self.get_headers(), trust_env=True, timeout=15, follow_redirects=True, verify=False) as client:
+                r = await client.get(url)
+                await self._process_response(r, data, domain)
         except Exception as e:
-            logger.error(f"Scraping Fehler: {e}")
+            logger.error(f"Fallback Fehler: {e}")
 
-        # Fallback: DuckDuckGo
-        bad_titles = [domain, "Amazon Produkt", "Robot Check", "Captcha", "Access Denied", "403 Forbidden", "Just a moment..."]
+    async def _process_response(self, r, data, domain):
+        data["url"] = str(r.url)
+        html = r.text
+        
+        # Amazon ASIN
+        if "amazon" in data["url"] or "amzn" in data["url"]:
+            asin = self.extract_asin(data["url"]) or self.extract_asin(html)
+            if asin:
+                data["image_url"] = f"https://images-na.ssl-images-amazon.com/images/P/{asin}.01.MAIN._SCLZZZZZZZ_.jpg"
+                data["title"] = "Amazon Produkt"
+
+        soup = BeautifulSoup(html, 'html.parser')
+        json_data = self.extract_json_ld(soup)
+        if json_data.get('title'): data['title'] = json_data['title']
+        if json_data.get('image_url'): data['image_url'] = json_data['image_url']
+
+        if not data.get('image_url') or data['title'] in [domain, "Amazon Produkt"]:
+            og_title = soup.find('meta', property='og:title')
+            if og_title: data['title'] = og_title['content']
+            elif soup.title: data['title'] = soup.title.string.strip()
+
+            og_image = soup.find('meta', property='og:image')
+            if og_image: data['image_url'] = urljoin(data["url"], og_image['content'])
+
+    def _apply_fallbacks(self, data, domain):
+        bad_titles = [domain, "Amazon Produkt", "Robot Check", "Captcha", "Access Denied"]
         if not data["title"] or any(bt.lower() in data["title"].lower() for bt in bad_titles):
-            # Wir suchen nach der ORIGINAL URL (oft besser bei Shortlinks im Index)
-            ddg_title = self.search_duckduckgo_title(data["url"])
-            if ddg_title: data["title"] = ddg_title
-
-        # Fallback: Favicon
+            ddg = self.search_duckduckgo_title(data["url"])
+            if ddg: data["title"] = ddg
+        
         if not data["image_url"]:
             data["image_url"] = self.get_google_favicon(urlparse(data["url"]).netloc)
-
-        return data
 
 scraper = SmartScraper()

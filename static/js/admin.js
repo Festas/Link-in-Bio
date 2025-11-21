@@ -5,164 +5,101 @@ import * as API from './admin_api.js';
 import * as UI from './admin_ui.js';
 import { requireAuth, logout } from './utils.js';
 
-// Helper für Fallback-Script-Loading (z.B. Lucide)
 function loadScript(src) {
     return new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = src;
-        s.onload = resolve;
-        s.onerror = reject;
-        document.head.appendChild(s);
+        const s = document.createElement('script'); s.src = src;
+        s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
     });
 }
 
-// Authentifizierungs-Check beim Laden
-if (requireAuth()) {
-    document.addEventListener('DOMContentLoaded', initAdmin);
-}
+if (requireAuth()) { document.addEventListener('DOMContentLoaded', initAdmin); }
 
 async function initAdmin() {
-    // 1. Lucide Check & Fallback
     if (typeof lucide === 'undefined') {
-        console.warn("Lucide lokal fehlt. Versuche CDN...");
-        try {
-            await loadScript('https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js');
-        } catch(e) {
-            console.error("Kritischer Fehler: Lucide konnte nicht geladen werden.");
-            return;
-        }
+        try { await loadScript('https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js'); } 
+        catch(e) { console.error("Lucide Fail"); return; }
     }
 
-    // 2. Globale DOM Elemente
     const formStatus = document.getElementById('form-status');
     const listContainer = document.getElementById('manage-items-list');
     const listLoadingSpinner = document.getElementById('manage-list-loading');
     const saveOrderButton = document.getElementById('save-order-button');
-    let sortableInstances = []; // Speichert alle aktiven Sortable-Instanzen
+    let sortableInstances = []; 
 
-    // 3. Event Listener: Logout
     document.getElementById('logout-button')?.addEventListener('click', logout);
 
-    // 4. Tab-Navigation
-    document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-    });
-
+    // --- Tabs ---
+    document.querySelectorAll('.tab-button').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
     function switchTab(tabName) {
-        // Buttons stylen
         document.querySelectorAll('.tab-button').forEach(b => {
-            const isActive = b.dataset.tab === tabName;
-            b.classList.toggle('border-blue-400', isActive);
-            b.classList.toggle('text-blue-400', isActive);
-            b.classList.toggle('border-transparent', !isActive);
-            b.classList.toggle('text-gray-400', !isActive);
+             b.classList.toggle('border-blue-400', b.dataset.tab === tabName);
+             b.classList.toggle('text-blue-400', b.dataset.tab === tabName);
+             b.classList.toggle('border-transparent', b.dataset.tab !== tabName);
         });
-        
-        // Content umschalten
-        document.querySelectorAll('.tab-content').forEach(el => {
-            el.classList.toggle('active', el.id === `tab-content-${tabName}`);
-        });
-
-        // Module initialisieren (Lazy Load)
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.toggle('active', el.id === `tab-content-${tabName}`));
         if (tabName === 'media') initializeMediaManager();
-        if (tabName === 'community') {
-            initializeSubscribers();
-            initializeInbox();
-        }
+        if (tabName === 'community') { initializeSubscribers(); initializeInbox(); }
     }
 
-    // 5. QR-Code Modal
-    const qrButton = document.getElementById('qrcode-button');
-    const qrModal = document.getElementById('qrcode-modal');
-    const qrImage = document.getElementById('qrcode-image');
-    const qrDownload = document.getElementById('qrcode-download');
+    // --- Forms ---
+    const socialContainer = document.getElementById('social-inputs-container');
+    const socialFields = [ { id: 'youtube', label: 'YouTube', icon: 'youtube', placeholder: '...' }, { id: 'instagram', label: 'Instagram', icon: 'instagram', placeholder: '...' }, { id: 'tiktok', label: 'TikTok', icon: 'music-4', placeholder: '...' }, { id: 'twitch', label: 'Twitch', icon: 'twitch', placeholder: '...' }, { id: 'x', label: 'X', icon: 'twitter', placeholder: '...' }, { id: 'discord', label: 'Discord', icon: 'discord', placeholder: '...' }, { id: 'email', label: 'E-Mail', icon: 'mail', placeholder: '...' } ];
+    UI.renderSocialFields(socialContainer, socialFields);
 
-    if (qrButton) {
-        qrButton.addEventListener('click', () => {
-            const qrUrl = `/api/qrcode?t=${new Date().getTime()}`;
-            qrImage.src = qrUrl;
-            qrDownload.href = qrUrl;
-            qrModal.style.display = 'flex';
-        });
-    }
-    if (qrModal) {
-        qrModal.addEventListener('click', (e) => {
-            if (e.target === qrModal) qrModal.style.display = 'none';
-        });
-    }
-
-    // 6. Social Media Felder rendern
-    const socialInputsContainer = document.getElementById('social-inputs-container');
-    const socialFields = [
-        { id: 'youtube', label: 'YouTube', icon: 'youtube', placeholder: 'https://youtube.com/...' },
-        { id: 'instagram', label: 'Instagram', icon: 'instagram', placeholder: 'https://instagram.com/...' },
-        { id: 'tiktok', label: 'TikTok', icon: 'music-4', placeholder: 'https://tiktok.com/@...' },
-        { id: 'twitch', label: 'Twitch', icon: 'twitch', placeholder: 'https://twitch.tv/...' },
-        { id: 'x', label: 'X (Twitter)', icon: 'twitter', placeholder: 'https://x.com/...' },
-        { id: 'discord', label: 'Discord', icon: 'discord', placeholder: 'https://discord.gg/...' },
-        { id: 'email', label: 'E-Mail', icon: 'mail', placeholder: 'mailto:deine@email.com' }
-    ];
-    UI.renderSocialFields(socialInputsContainer, socialFields);
-
-    // 7. Generische Formular-Handler (Items erstellen)
-    const forms = [
-        {id: 'add-link-form', api: '/api/links', data: (e) => ({url: e.target.querySelector('input').value})},
-        {id: 'add-video-form', api: '/api/videos', data: (e) => ({url: e.target.querySelector('input').value})},
-        {id: 'add-header-form', api: '/api/headers', data: (e) => ({title: e.target.querySelector('input').value})},
-        {id: 'add-slider-group-form', api: '/api/slider_groups', data: (e) => ({title: e.target.querySelector('input').value})},
-        {id: 'add-grid-form', api: '/api/grids', data: (e) => ({title: e.target.querySelector('input').value})},
-        {id: 'add-faq-form', api: '/api/faqs', data: (e) => ({title: e.target.querySelector('input').value})},
-        {id: 'add-divider-form', api: '/api/dividers', data: (e) => ({title: e.target.querySelector('input').value})},
-        {id: 'add-contact-form', api: '/api/contact_form', data: (e) => ({title: e.target.querySelector('input').value})},
-        {id: 'add-email-form', api: '/api/email_form', data: (e) => ({title: e.target.querySelector('input').value})},
-        {id: 'add-testimonial-form', api: '/api/testimonials', data: (e) => ({name: e.target.querySelector('#testimonial-name').value, text: prompt("Bitte gib den Text der Rezension ein:")})},
-        {id: 'add-product-form', api: '/api/products', data: (e) => ({
-            title: e.target.querySelector('#product-title').value, 
-            price: e.target.querySelector('#product-price').value, 
-            url: e.target.querySelector('#product-url').value
-        })},
-        {id: 'add-countdown-form', api: '/api/countdowns', data: (e) => ({
-            title: e.target.querySelector('#countdown-title').value, 
-            target_datetime: new Date(e.target.querySelector('#countdown-datetime').value).toISOString()
-        })}
-    ];
-
-    forms.forEach(f => {
-        const form = document.getElementById(f.id);
-        if (form) {
-            // Styling anwenden
-            form.querySelectorAll('input').forEach(i => i.className = UI.STYLES.input);
-            form.querySelectorAll('button').forEach(b => b.className = UI.STYLES.btnPrimary);
-            
-            form.addEventListener('submit', async (e) => {
+    const forms = ['add-link-form', 'add-header-form', 'add-slider-group-form', 'add-video-form', 'add-email-form', 'add-countdown-form', 'add-grid-form', 'add-faq-form', 'add-divider-form', 'add-testimonial-form', 'add-contact-form', 'add-product-form'];
+    forms.forEach(id => {
+        const f = document.getElementById(id);
+        if (f) {
+            f.querySelectorAll('input').forEach(i => i.className = UI.STYLES.input);
+            f.querySelectorAll('button').forEach(b => b.className = UI.STYLES.btnPrimary);
+            f.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 try {
-                    const payload = f.data(e);
-                    // Abbrechen, wenn Prompt (z.B. bei Testimonial) abgebrochen wurde
-                    if(!payload || (payload.text === null)) return; 
+                    // Dynamische Datenextraktion
+                    let payload = null;
+                    if (id === 'add-testimonial-form') {
+                        const name = f.querySelector('#testimonial-name').value;
+                        const text = prompt("Bitte gib den Text der Rezension ein:");
+                        if (text) payload = { name, text };
+                    } else if (id === 'add-product-form') {
+                         payload = {
+                            title: f.querySelector('#product-title').value,
+                            price: f.querySelector('#product-price').value,
+                            url: f.querySelector('#product-url').value
+                         };
+                    } else if (id === 'add-contact-form') {
+                        payload = { title: f.querySelector('#contact-title').value };
+                    } else if (id === 'add-countdown-form') {
+                         payload = {
+                            title: f.querySelector('#countdown-title').value,
+                            target_datetime: new Date(f.querySelector('#countdown-datetime').value).toISOString()
+                         };
+                    } else {
+                        const titleInput = f.querySelector('input[id$="-title"]');
+                        const urlInput = f.querySelector('input[id$="-url"]');
+                        if (titleInput) payload = { title: titleInput.value };
+                        else if (urlInput) payload = { url: urlInput.value };
+                    }
 
-                    await API.createItem(f.api, payload);
-                    UI.setFormStatus(formStatus, 'Erfolgreich hinzugefügt!', 'text-green-400', 2000);
+                    if(!payload) return; 
+                    
+                    const apiMap = {
+                        'add-link-form': '/api/links', 'add-video-form': '/api/videos', 'add-header-form': '/api/headers',
+                        'add-slider-group-form': '/api/slider_groups', 'add-grid-form': '/api/grids', 'add-faq-form': '/api/faqs',
+                        'add-divider-form': '/api/dividers', 'add-contact-form': '/api/contact_form', 'add-email-form': '/api/email_form',
+                        'add-testimonial-form': '/api/testimonials', 'add-product-form': '/api/products', 'add-countdown-form': '/api/countdowns'
+                    };
+
+                    await API.createItem(apiMap[id], payload);
+                    UI.setFormStatus(formStatus, 'Hinzugefügt!', 'text-green-400', 2000);
                     loadItems();
                     e.target.reset();
-                } catch(err) {
-                    UI.setFormStatus(formStatus, err.message, 'text-red-400', 5000);
-                }
+                } catch(err) { UI.setFormStatus(formStatus, err.message, 'text-red-400'); }
             });
         }
     });
-    
-    // Styling für das Profil-Formular
-    document.querySelectorAll('#profile-form input[type="text"], #profile-form textarea, #profile-form select').forEach(el => el.className = UI.STYLES.input);
-    const profileSubmitBtn = document.querySelector('#profile-form button[type="submit"]');
-    if(profileSubmitBtn) profileSubmitBtn.className = UI.STYLES.btnPrimary;
-    
-    const backupBtn = document.getElementById('backup-button');
-    if(backupBtn) backupBtn.className = UI.STYLES.btnSecondary;
-    
-    if(saveOrderButton) saveOrderButton.className = `${UI.STYLES.btnPrimary} w-auto`;
 
-    // 8. Items laden und rendern (Robust & Rekursiv)
+    // --- LOAD ITEMS ---
     async function loadItems() {
         listLoadingSpinner.style.display = 'flex';
         listContainer.innerHTML = '';
@@ -176,18 +113,15 @@ async function initAdmin() {
                 return;
             }
             
-            // Gruppen für Dropdowns (Parent-Auswahl) filtern
+            // Gruppen für Dropdowns
             const groupItems = items.filter(i => ['slider_group', 'grid'].includes(i.item_type));
             
-            // 1. IDs sammeln für Waisen-Check
+            // Daten aufbereiten
             const allIds = new Set(items.map(i => i.id));
-            
-            // 2. Datenstruktur aufbereiten (Root vs. Kinder)
             const roots = []; 
             const childrenMap = {};
             
             items.forEach(i => {
-                // Ein Item ist ein Kind, wenn es eine parent_id hat UND der Vater auch existiert
                 if(i.parent_id && allIds.has(i.parent_id)) { 
                     if(!childrenMap[i.parent_id]) childrenMap[i.parent_id] = [];
                     childrenMap[i.parent_id].push(i);
@@ -196,23 +130,31 @@ async function initAdmin() {
                 }
             });
 
-            // 3. Rendern
+            // Root-Ebene sortieren
+            roots.sort((a,b) => a.display_order - b.display_order);
+
+            // Rendern
             roots.forEach(item => {
                 const rendered = UI.renderAdminItem(item, groupItems);
                 listContainer.appendChild(rendered.itemEl);
                 setupItemEvents(item, rendered);
 
-                // Wenn es eine Gruppe ist, Kinder einfügen
+                // Kinder rendern (in Gruppen)
                 if (['slider_group', 'grid'].includes(item.item_type)) {
                     const childContainer = rendered.itemEl.querySelector('.child-container');
                     
                     if (childrenMap[item.id] && childrenMap[item.id].length > 0) {
+                        // Kinder sortieren
                         childrenMap[item.id].sort((a,b) => a.display_order - b.display_order);
                         
-                        // Placeholder ausblenden
+                        // Placeholder weg, da Inhalt da ist
                         const ph = childContainer.querySelector('.empty-placeholder');
                         if(ph) ph.style.display = 'none';
 
+                        // WICHTIG: Gruppe offen anzeigen, wenn Kinder drin sind? 
+                        // Optional. Standardmäßig geschlossen, außer wir wollen es anders.
+                        // Hier lassen wir es zu, aber User kann aufklappen.
+                        
                         childrenMap[item.id].forEach(child => {
                             const childRendered = UI.renderAdminItem(child, groupItems);
                             childContainer.appendChild(childRendered.itemEl);
@@ -222,29 +164,23 @@ async function initAdmin() {
                 }
             });
             
-            // Drag & Drop initialisieren
             initSortable();
-            
-            // Icons rendern
             lucide.createIcons();
-            
         } catch(e) {
             console.error(e);
             listLoadingSpinner.style.display = 'none';
-            listContainer.innerHTML = `<p class="text-red-400 text-center">Fehler beim Laden: ${e.message}</p>`;
+            listContainer.innerHTML = `<p class="text-red-400 text-center">Fehler: ${e.message}</p>`;
         }
     }
-
-    // 9. Events für einzelne Items (Edit, Delete, Save, Upload, ToggleGroup)
+    
     function setupItemEvents(item, { viewContainer, editContainer, itemEl }) {
         // Toggle für Gruppen (Akkordeon)
         const groupToggle = viewContainer.querySelector('.group-toggle');
         if (groupToggle) {
-            groupToggle.addEventListener('click', (e) => {
+            groupToggle.onclick = (e) => {
                 e.stopPropagation();
                 const childContainer = itemEl.querySelector('.child-container');
                 const icon = groupToggle.querySelector('svg');
-                
                 if (childContainer.style.display === 'none') {
                     childContainer.style.display = 'block';
                     icon.style.transform = 'rotate(0deg)';
@@ -252,12 +188,13 @@ async function initAdmin() {
                     childContainer.style.display = 'none';
                     icon.style.transform = 'rotate(-90deg)';
                 }
-            });
+            };
         }
-        
+
+        // Actions
         const editBtn = viewContainer.querySelector('.btn-edit');
         const delBtn = viewContainer.querySelector('.btn-delete');
-        const toggleVisBtn = viewContainer.querySelector('.btn-toggle');
+        const toggleBtn = viewContainer.querySelector('.btn-toggle');
         
         if(editBtn) editBtn.onclick = () => { 
             viewContainer.style.display='none'; 
@@ -266,13 +203,13 @@ async function initAdmin() {
         };
         
         if(delBtn) delBtn.onclick = async () => { 
-            if(confirm(`Item "${item.title}" wirklich löschen?`)) { 
+            if(confirm(`Löschen?`)) { 
                 await API.deleteItem(item.id); 
                 loadItems(); 
             } 
         };
         
-        if(toggleVisBtn) toggleVisBtn.onclick = async () => { 
+        if(toggleBtn) toggleBtn.onclick = async () => { 
             await API.toggleItemVisibility(item.id); 
             loadItems(); 
         };
@@ -289,7 +226,7 @@ async function initAdmin() {
         if(saveBtn) saveBtn.onclick = async () => {
             const payload = {};
             
-            // Werte auslesen (sicherstellen, dass Elemente existieren)
+            // Alle möglichen Felder auslesen
             const titleIn = editContainer.querySelector('.edit-title'); if(titleIn) payload.title = titleIn.value;
             const urlIn = editContainer.querySelector('.edit-url'); if(urlIn) payload.url = urlIn.value;
             const imgIn = editContainer.querySelector('.edit-image-url'); if(imgIn) payload.image_url = imgIn.value;
@@ -305,9 +242,7 @@ async function initAdmin() {
                 await API.updateItem(item.id, payload);
                 UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 2000);
                 loadItems();
-            } catch(e) {
-                UI.setFormStatus(formStatus, e.message, 'text-red-400', 3000);
-            }
+            } catch(e) { UI.setFormStatus(formStatus, e.message, 'text-red-400', 3000); }
         };
         
         if(uploadBtn) {
@@ -315,28 +250,19 @@ async function initAdmin() {
                 const fileInput = editContainer.querySelector('.upload-image-file');
                 const status = editContainer.querySelector('.upload-status');
                 const file = fileInput.files[0];
-                
                 if(!file) return;
-                
-                status.textContent = 'Lade hoch...';
-                const formData = new FormData(); 
-                formData.append('file', file);
-                
+                status.textContent = '...';
+                const formData = new FormData(); formData.append('file', file);
                 try {
                     const res = await API.uploadImage(formData);
                     editContainer.querySelector('.edit-image-url').value = res.url;
                     status.textContent = 'OK';
-                    status.className = 'upload-status text-xs text-green-400';
-                } catch(e) {
-                    status.textContent = 'Fehler';
-                    status.className = 'upload-status text-xs text-red-400';
-                    alert("Upload fehlgeschlagen: " + e.message);
-                }
+                } catch(e) { status.textContent = 'Err'; alert(e.message); }
             };
         }
     }
 
-    // 10. Drag & Drop (SortableJS) mit Deep Scan
+    // --- DRAG & DROP ---
     function initSortable() {
         sortableInstances.forEach(s => s.destroy());
         sortableInstances = [];
@@ -348,12 +274,11 @@ async function initAdmin() {
                 name: 'nested',
                 pull: true,
                 put: (to, from, dragEl) => {
-                    // Verhindere Gruppen in Gruppen
+                    // Gruppen dürfen nicht in andere Gruppen
                     const type = dragEl.dataset.type;
                     const isGroup = ['slider_group', 'grid'].includes(type);
                     const isRootList = to.el.id === 'manage-items-list';
-                    
-                    if (isGroup && !isRootList) return false; // Gruppen nur im Root
+                    if (isGroup && !isRootList) return false;
                     return true;
                 }
             },
@@ -363,28 +288,38 @@ async function initAdmin() {
             onEnd: async (evt) => {
                 const itemEl = evt.item;
                 const itemId = itemEl.dataset.id;
+                
+                // Wo liegt das Item jetzt?
                 const newContainer = itemEl.closest('.child-container');
                 let newParentId = null;
 
                 if (newContainer) {
+                    // Es liegt in einer Gruppe
                     newParentId = newContainer.dataset.parentId;
-                    // Placeholder ausblenden
-                    const ph = newContainer.querySelector('.empty-placeholder');
-                    if(ph) ph.style.display = 'none';
                     
-                    // AUTO-OPEN: Gruppe aufklappen
+                    // Placeholder verstecken
+                    newContainer.querySelector('.empty-placeholder').style.display = 'none';
+                    
+                    // Gruppe automatisch aufklappen
                     newContainer.style.display = 'block';
-                    // Icon drehen
-                    const groupCard = newContainer.closest('.admin-item-card');
-                    const icon = groupCard?.querySelector('.group-toggle svg');
+                    const icon = newContainer.closest('.admin-item-card').querySelector('.group-toggle svg');
                     if(icon) icon.style.transform = 'rotate(0deg)';
+                } else {
+                    // Es liegt im Root
+                    newParentId = null;
                 }
 
-                // Parent Update sofort senden
-                await API.updateItem(itemId, { parent_id: newParentId ? parseInt(newParentId) : null });
-                
-                // Button zum Speichern der Reihenfolge anzeigen
-                saveOrderButton.style.display = 'block';
+                // 1. Parent ID updaten
+                try {
+                    await API.updateItem(itemId, { parent_id: newParentId ? parseInt(newParentId) : null });
+                    
+                    // 2. Button zeigen, um Reihenfolge zu speichern
+                    saveOrderButton.style.display = 'block';
+                } catch(e) {
+                    console.error("Fehler beim Verschieben", e);
+                    // Im Fehlerfall neu laden, um Chaos zu vermeiden
+                    loadItems();
+                }
             }
         };
 
@@ -394,16 +329,10 @@ async function initAdmin() {
         });
     }
 
-    // 11. Reihenfolge speichern (Deep Scan)
-    // Wir scannen ALLE Karten im DOM, egal wie tief verschachtelt, und speichern die ID-Liste.
-    // Das ist vereinfacht. Idealerweise würde man eine Baumstruktur senden, aber da wir
-    // parent_id schon beim Droppen speichern, reicht es, die 'display_order' flach neu zu verteilen
-    // oder man müsste die Sortierung pro Gruppe speichern.
-    // HIER: Wir triggern einen Reorder nur für die Elemente in ihren jeweiligen Containern.
-    // ABER: Einfachheitshalber und da unser Backend 'display_order' nutzt, iterieren wir über alles.
-    // Das Backend sortiert global nach display_order.
+    // --- SPEICHERN (Deep Scan) ---
     saveOrderButton.onclick = async () => {
-        // Wir sammeln ALLE Items in ihrer visuellen Reihenfolge (DOM Order)
+        // Wir scannen ALLE Karten im DOM, egal wo sie sind.
+        // Da display_order global ist, reicht das, um die Sortierung zu fixieren.
         const allCards = Array.from(document.querySelectorAll('.admin-item-card'));
         const ids = allCards.map(el => el.dataset.id);
         
@@ -411,13 +340,10 @@ async function initAdmin() {
             await API.reorderItems(ids);
             saveOrderButton.style.display = 'none';
             UI.setFormStatus(formStatus, 'Reihenfolge gespeichert!', 'text-green-400', 2000);
-            // Kein Reload nötig, da DOM ja schon stimmt
-        } catch(e) {
-            UI.setFormStatus(formStatus, e.message, 'text-red-400');
-        }
+        } catch(e) { UI.setFormStatus(formStatus, e.message, 'text-red-400'); }
     };
 
-    // 12. Profil-Einstellungen (Alles in einem Block)
+    // Profile & Settings Init
     const profileForm = document.getElementById('profile-form');
     const pTitle = document.getElementById('profile-title');
     const pBio = document.getElementById('profile-bio');
@@ -425,66 +351,35 @@ async function initAdmin() {
     const pBg = document.getElementById('profile-bg-url'); 
     const pTheme = document.getElementById('profile-theme');
     const pStyle = document.getElementById('profile-button-style');
-    
     const cBg = document.getElementById('custom-bg-color');
     const cText = document.getElementById('custom-text-color');
     const cBtn = document.getElementById('custom-button-color');
     const cBtnTxt = document.getElementById('custom-button-text-color');
-    
     const cHead = document.getElementById('custom-html-head');
     const cBody = document.getElementById('custom-html-body');
 
     async function loadProfileSettings() {
         try {
             const s = await API.fetchSettings();
-            
-            pTitle.value = s.title || '';
-            pBio.value = s.bio || '';
-            pImg.value = s.image_url || '';
+            pTitle.value = s.title || ''; pBio.value = s.bio || ''; pImg.value = s.image_url || '';
             if(pBg) pBg.value = s.bg_image_url || ''; 
-            pTheme.value = s.theme || 'theme-dark';
-            pStyle.value = s.button_style || 'style-rounded';
-            
-            if(cHead) cHead.value = s.custom_html_head || '';
-            if(cBody) cBody.value = s.custom_html_body || '';
-            
-            socialFields.forEach(f => {
-                const i = document.getElementById(`social-${f.id}`);
-                if(i) i.value = s[`social_${f.id}`] || '';
-            });
-            
-            cBg.value = s.custom_bg_color || '#111827';
-            cText.value = s.custom_text_color || '#F9FAFB';
-            cBtn.value = s.custom_button_color || '#1F2937';
-            cBtnTxt.value = s.custom_button_text_color || '#FFFFFF';
-            
+            pTheme.value = s.theme || 'theme-dark'; pStyle.value = s.button_style || 'style-rounded';
+            if(cHead) cHead.value = s.custom_html_head || ''; if(cBody) cBody.value = s.custom_html_body || '';
+            socialFields.forEach(f => { const i = document.getElementById(`social-${f.id}`); if(i) i.value = s[`social_${f.id}`] || ''; });
+            cBg.value = s.custom_bg_color || '#111827'; cText.value = s.custom_text_color || '#F9FAFB'; cBtn.value = s.custom_button_color || '#1F2937'; cBtnTxt.value = s.custom_button_text_color || '#FFFFFF';
             toggleCustomThemeSettings(s.theme);
-
         } catch(e) { UI.setFormStatus(formStatus, 'Fehler Settings', 'text-red-400'); }
     }
-
-    function toggleCustomThemeSettings(theme) {
-        const el = document.getElementById('custom-theme-settings');
-        if(el) el.style.display = (theme === 'theme-custom') ? 'block' : 'none';
-    }
+    function toggleCustomThemeSettings(theme) { const el = document.getElementById('custom-theme-settings'); if(el) el.style.display = (theme === 'theme-custom') ? 'block' : 'none'; }
     pTheme.addEventListener('change', () => toggleCustomThemeSettings(pTheme.value));
-
     function setupImageUpload(btnId, fileId, textId) {
-        const btn = document.getElementById(btnId);
-        const file = document.getElementById(fileId);
-        const text = document.getElementById(textId);
+        const btn = document.getElementById(btnId); const file = document.getElementById(fileId); const text = document.getElementById(textId);
         if(!btn || !file || !text) return;
-        
         btn.onclick = () => file.click();
         file.onchange = async () => {
             if(!file.files[0]) return;
-            const fd = new FormData(); fd.append('file', file.files[0]);
-            btn.textContent = '...';
-            try {
-                const res = await API.uploadImage(fd);
-                text.value = res.url;
-                btn.textContent = 'OK';
-            } catch(e) { btn.textContent = 'Err'; alert(e.message); }
+            const fd = new FormData(); fd.append('file', file.files[0]); btn.textContent = '...';
+            try { const res = await API.uploadImage(fd); text.value = res.url; btn.textContent = 'OK'; } catch(e) { btn.textContent = 'Err'; alert(e.message); }
         };
     }
     setupImageUpload('upload-profile-btn', 'upload-profile-file', 'profile-image-url');
@@ -493,73 +388,16 @@ async function initAdmin() {
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         UI.setFormStatus(formStatus, 'Speichere...', 'text-blue-400');
-        
-        const socialData = {};
-        socialFields.forEach(f => { 
-            socialData[`social_${f.id}`] = document.getElementById(`social-${f.id}`).value; 
-        });
-
+        const socialData = {}; socialFields.forEach(f => { socialData[`social_${f.id}`] = document.getElementById(`social-${f.id}`).value; });
         const payload = {
-            title: pTitle.value,
-            bio: pBio.value,
-            image_url: pImg.value,
-            bg_image_url: pBg ? pBg.value : '', 
-            theme: pTheme.value,
-            button_style: pStyle.value,
-            ...socialData,
-            custom_bg_color: cBg.value,
-            custom_text_color: cText.value,
-            custom_button_color: cBtn.value,
-            custom_button_text_color: cBtnTxt.value,
-            custom_html_head: cHead ? cHead.value : '',
-            custom_html_body: cBody ? cBody.value : '',
+            title: pTitle.value, bio: pBio.value, image_url: pImg.value, bg_image_url: pBg ? pBg.value : '', 
+            theme: pTheme.value, button_style: pStyle.value, ...socialData,
+            custom_bg_color: cBg.value, custom_text_color: cText.value, custom_button_color: cBtn.value, custom_button_text_color: cBtnTxt.value,
+            custom_html_head: cHead ? cHead.value : '', custom_html_body: cBody ? cBody.value : '',
         };
-
-        try {
-            await API.updateSettings(payload);
-            UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 2000);
-        } catch(e) { UI.setFormStatus(formStatus, e.message, 'text-red-400', 5000); }
+        try { await API.updateSettings(payload); UI.setFormStatus(formStatus, 'Gespeichert!', 'text-green-400', 2000); } catch(e) { UI.setFormStatus(formStatus, e.message, 'text-red-400', 5000); }
     });
-    
-    const backupButton = document.getElementById('backup-button');
-    if (backupButton) {
-        backupButton.addEventListener('click', async () => {
-            const status = document.getElementById('backup-status');
-            status.textContent = 'Erstelle Backup...';
-            status.className = 'text-sm text-blue-400';
-            try {
-                const response = await API.downloadBackup();
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
-                const cd = response.headers.get('content-disposition');
-                let fn = `backup_${Date.now()}.zip`;
-                if (cd && cd.includes('filename=')) fn = cd.split('filename=')[1];
-                a.download = fn; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a);
-                status.textContent = 'Download gestartet!'; status.className = 'text-sm text-green-400';
-            } catch (error) { status.textContent = 'Fehler!'; status.className = 'text-sm text-red-400'; }
-        });
-    }
 
-    // 13. Preview Modal
-    const previewModal = document.getElementById('preview-modal');
-    const previewBtn = document.getElementById('preview-button');
-    const refreshBtn = document.getElementById('preview-refresh-button');
-    const closeBtn = document.getElementById('preview-close-button');
-    const iframe = document.getElementById('preview-iframe');
-
-    function showPreview() {
-        iframe.src = `/?t=${Date.now()}`;
-        previewModal.classList.add('active');
-    }
-    if(previewBtn) previewBtn.onclick = showPreview;
-    if(closeBtn) closeBtn.onclick = () => { previewModal.classList.remove('active'); iframe.src = 'about:blank'; };
-    if(refreshBtn) refreshBtn.onclick = () => { iframe.src = `/?t=${Date.now()}`; };
-    if(previewModal) previewModal.onclick = (e) => { if(e.target === previewModal) closeBtn.click(); };
-
-    // INITIAL START
     loadItems();
     loadProfileSettings();
 }
-
-

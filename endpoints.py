@@ -309,16 +309,21 @@ async def get_public_items(request: Request):
     
     items_dict = {}
     nested = []
+    # Always create a new Item with a fresh children list
     for r in rows:
-        item = Item(**dict(r))
+        item_data = dict(r)
+        item_data['children'] = []
+        item = Item(**item_data)
         items_dict[item.id] = item
-        if item.parent_id is None: nested.append(item)
-    
+        if item.parent_id is None:
+            nested.append(item)
+
     for item in items_dict.values():
         if item.parent_id in items_dict:
-            if item in nested: nested.remove(item)
+            if item in nested:
+                nested.remove(item)
             items_dict[item.parent_id].children.append(item)
-            
+
     cache.set(cache_key, nested, ttl=300)
     return nested
 

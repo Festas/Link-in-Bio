@@ -42,6 +42,11 @@ class Item(BaseModel):
     grid_columns: int = 2
     children: List['Item'] = []
 
+    def __init__(self, **data):
+        # Always create a new list for children to avoid shared reference bugs
+        data['children'] = list(data.get('children', []))
+        super().__init__(**data)
+
 Item.model_rebuild()
 
 class Settings(BaseModel):

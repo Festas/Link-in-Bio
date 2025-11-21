@@ -6,6 +6,8 @@ import asyncio
 import os
 import logging
 import warnings
+import socket
+import ipaddress
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse, urlunparse
 from duckduckgo_search import DDGS
@@ -62,6 +64,45 @@ class SmartScraper:
             return url.strip()
         except: return url
 
+    def is_safe_url(self, url: str) -> bool:
+        """Check if URL is safe to fetch (not targeting internal/private networks).
+        
+        Returns False if the URL resolves to:
+        - Private IP addresses (e.g., 192.168.x.x, 10.x.x.x)
+        - Loopback addresses (e.g., 127.0.0.1, localhost)
+        - Link-local addresses (e.g., 169.254.x.x)
+        - Multicast addresses
+        
+        Returns True if URL is safe to fetch.
+        """
+        try:
+            parsed = urlparse(url)
+            hostname = parsed.hostname
+            
+            if not hostname:
+                logger.warning(f"[SSRF] No hostname found in URL: {url}")
+                return False
+            
+            # Resolve hostname to IP address
+            try:
+                ip_str = socket.gethostbyname(hostname)
+                ip = ipaddress.ip_address(ip_str)
+                
+                # Check if IP is private, loopback, link-local, or multicast
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast:
+                    logger.warning(f"[SSRF] Blocked unsafe IP {ip} for hostname {hostname}")
+                    return False
+                    
+                return True
+                
+            except socket.gaierror as e:
+                logger.warning(f"[SSRF] DNS resolution failed for {hostname}: {e}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"[SSRF] Error checking URL safety: {e}")
+            return False
+
     def extract_asin(self, text: str) -> str | None:
         match = re.search(r'/(dp|gp/product|d)/(B[A-Z0-9]{9})', text)
         if match: return match.group(2)
@@ -110,6 +151,11 @@ class SmartScraper:
         parsed = urlparse(url)
         domain = parsed.netloc.replace('www.', '').split('.')[0].capitalize()
         data = { "title": domain, "image_url": None, "url": url }
+        
+        # SSRF protection: check if URL is safe before making any requests
+        if not self.is_safe_url(url):
+            logger.warning(f"[SSRF] Blocked request to unsafe URL: {url}")
+            return data
 
         # Entscheidung: High-End oder Standard?
         if HAS_CURL_CFFI:

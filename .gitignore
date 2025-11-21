@@ -8,6 +8,7 @@ __pycache__/
 
 # Database
 linktree.db
+test_linktree.db
 
 # Virtual environments
 venv/
@@ -27,3 +28,8 @@ Thumbs.db
 # Uploads (keep directory structure but not files)
 static/uploads/*
 !static/uploads/.gitkeep
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage

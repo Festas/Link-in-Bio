@@ -211,6 +211,15 @@ body.style-pill .item-product {
 .swiper .swiper-slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; }
 .swiper .swiper-slide .bg-gradient-to-t { height: 40% !important; }
 
+/* Admin preview: same nav and stacking polish as site styles */
+.swiper-nav { pointer-events: none; }
+.swiper-nav .swiper-nav-button { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.45); color: var(--color-text); border: 1px solid var(--color-border); }
+.swiper-nav .swiper-nav-button:hover { background: rgba(0,0,0,0.6); }
+.swiper-nav .swiper-nav-button:focus { outline: 3px solid rgba(0,0,0,0.12); box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
+.slide-link { position: relative; display: block; width: 100%; height: 100%; pointer-events: auto; z-index: 2; }
+.slide-image { z-index: 0; }
+.slide-title { pointer-events: none; }
+
 /* Countdown Grid */
 .countdown-grid {
     display: grid;

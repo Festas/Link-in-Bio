@@ -61,11 +61,41 @@ const ItemRenderers = {
     },
     slider_group: (item) => {
         const wrapper = document.createElement('div'); wrapper.className = 'group-container glass-card mb-4 overflow-hidden rounded-2xl';
-        let headerHTML = item.title ? `<div class="group-header flex justify-between items-center p-4 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors"><h3 class="text-lg font-bold text-white">${escapeHTML(item.title)}</h3><i data-lucide="chevron-down" class="chevron-icon w-5 h-5 text-white transition-transform"></i></div>` : '';
+        const titleHTML = item.title ? `<div class="group-header flex justify-between items-center p-4 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors"><h3 class="text-lg font-bold text-white">${escapeHTML(item.title)}</h3><i data-lucide="chevron-down" class="chevron-icon w-5 h-5 text-white transition-transform"></i></div>` : '';
+
         let slidesHTML = '';
-        if (item.children) { item.children.forEach(child => { slidesHTML += `<div class="swiper-slide style-rounded overflow-hidden relative aspect-square group rounded-xl"><a href="${escapeHTML(child.url)}" target="_blank" class="block w-full h-full track-click" data-item-id="${child.id}">${child.image_url ? `<img src="${escapeHTML(child.image_url)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">` : '<div class="absolute inset-0 bg-gray-700 flex items-center justify-center"><i data-lucide="image" class="w-8 h-8 text-gray-500"></i></div>'}<div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none"></div><div class="absolute bottom-0 left-0 right-0 p-3 text-center pointer-events-none"><p class="text-white text-sm font-bold drop-shadow-md leading-tight whitespace-normal break-words">${escapeHTML(child.title)}</p></div></a></div>`; }); }
-        // Removed pagination element to avoid extra vertical spacing under sliders
-        wrapper.innerHTML = `${headerHTML}<div class="group-content p-4"><div class="swiper" id="swiper-${item.id}"><div class="swiper-wrapper">${slidesHTML}</div></div></div>`; return wrapper;
+        if (item.children && item.children.length) {
+            item.children.forEach(child => {
+                // Each slide is a full anchor so the whole tile is clickable; include lazy hint and aria-label
+                const imgHTML = child.image_url ? `<img loading="lazy" src="${escapeHTML(child.image_url)}" alt="${escapeHTML(child.title)}" class="slide-image absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">` : `<div class="absolute inset-0 bg-gray-700 flex items-center justify-center"><i data-lucide="image" class="w-8 h-8 text-gray-500"></i></div>`;
+                slidesHTML += `
+                    <div class="swiper-slide style-rounded overflow-hidden relative group rounded-xl" role="group" aria-roledescription="slide">
+                        <a href="${escapeHTML(child.url)}" target="_blank" rel="noopener noreferrer" class="slide-link block w-full h-full track-click" data-item-id="${child.id}" aria-label="${escapeHTML(child.title)}">
+                            ${imgHTML}
+                            <div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none"></div>
+                            <div class="absolute bottom-0 left-0 right-0 p-3 text-center pointer-events-none">
+                                <p class="slide-title text-white text-sm font-bold drop-shadow-md leading-tight whitespace-normal break-words">${escapeHTML(child.title)}</p>
+                            </div>
+                        </a>
+                    </div>`;
+            });
+        }
+
+        // Navigation buttons are created per-swiper so Swiper can attach to local elements (avoids global selector conflicts)
+        const swiperId = `swiper-${item.id}`;
+        wrapper.innerHTML = `
+            ${titleHTML}
+            <div class="group-content p-4">
+                <div class="swiper" id="${swiperId}" aria-label="${escapeHTML(item.title || 'Slider')}">
+                    <div class="swiper-wrapper">${slidesHTML}</div>
+                    <div class="swiper-nav absolute top-1/2 transform -translate-y-1/2 left-3 right-3 pointer-events-auto flex justify-between items-center">
+                        <button class="slider-nav-prev glass-card p-2 rounded-full swiper-nav-button" aria-label="Vorheriger Slide" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                        <button class="slider-nav-next glass-card p-2 rounded-full swiper-nav-button" aria-label="Nächster Slide" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
+                    </div>
+                </div>
+            </div>`;
+
+        return wrapper;
     },
     email_form: (item) => {
         const div = document.createElement('div'); div.className = 'item-email-form glass-card p-5 text-center';
@@ -242,29 +272,37 @@ export function initSwipers() {
         }
 
         document.querySelectorAll('.swiper').forEach(swiperEl => {
-            // Pagination removed to save vertical space. If you need it later,
-            // re-enable by adding a pagination element and config.
+            // Build a robust config: no loop (avoids duplicated slides issues),
+            // lazy loading enabled, keyboard & a11y, navigation hooked to local buttons
             const config = {
-                loop: true,
-                // For a reliable two-up layout we don't center slides —
-                // allow Swiper to show two full slides side-by-side.
+                loop: false,
                 centeredSlides: false,
+                preloadImages: false,
+                lazy: { enabled: true, loadPrevNext: true, loadOnTransitionStart: true },
+                watchOverflow: true,
+                slideToClickedSlide: true,
+                keyboard: { enabled: true, onlyInViewport: true },
+                a11y: { enabled: true },
                 slidesPerView: 1,
                 spaceBetween: 12,
                 breakpoints: {
-                    // Force two slides per view for medium and larger screens
                     640: { slidesPerView: 2 },
-                    768: { slidesPerView: 2 },
-                    1024: { slidesPerView: 2 }
+                    1024: { slidesPerView: 3 }
                 }
             };
+
+            // If there are local nav buttons inside the swiper container, pass them as elements
+            const prevBtn = swiperEl.querySelector('.slider-nav-prev');
+            const nextBtn = swiperEl.querySelector('.slider-nav-next');
+            if (prevBtn && nextBtn) {
+                config.navigation = { prevEl: prevBtn, nextEl: nextBtn };
+            }
 
             // Create instance and store it
             try {
                 const instance = new Swiper(swiperEl, config);
                 state.swipers.push(instance);
             } catch (err) {
-                // Some Swiper builds require initializing on the wrapper element or using CSS selectors.
                 try {
                     const id = swiperEl.id ? `#${swiperEl.id}` : swiperEl;
                     const instance = new Swiper(id, config);

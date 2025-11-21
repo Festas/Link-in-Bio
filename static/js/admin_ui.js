@@ -11,6 +11,7 @@ export const STYLES = {
 
 export function renderAdminItem(item, sliderGroups) {
     const itemEl = document.createElement('div');
+    // WICHTIG: 'admin-item-card' Klasse für den Selektor
     itemEl.className = `admin-item-card p-3 bg-gray-700 rounded-md flex flex-col mb-2 border border-gray-600 select-none transition-all duration-200`;
     itemEl.dataset.id = item.id;
     itemEl.dataset.type = item.item_type;
@@ -26,6 +27,7 @@ export function renderAdminItem(item, sliderGroups) {
     
     const affiliateIcon = item.is_affiliate ? `<i data-lucide="euro" class="w-3 h-3 text-yellow-400" title="Werbung/Affiliate"></i>` : '';
     const spotlightIcon = item.is_featured ? `<i data-lucide="star" class="w-3 h-3 text-yellow-400" title="Spotlight"></i>` : '';
+    const scheduleIcon = (item.publish_on || item.expires_on) ? `<i data-lucide="clock" class="w-3 h-3 text-cyan-400" title="Geplant"></i>` : '';
     
     const toggleIcon = item.is_active ? 'eye' : 'eye-off';
     const isGroup = ['slider_group', 'grid'].includes(item.item_type);
@@ -48,9 +50,9 @@ export function renderAdminItem(item, sliderGroups) {
     const viewContainer = document.createElement('div');
     viewContainer.className = 'flex items-center space-x-4 w-full';
     
+    // Chevron: Standard ist 0deg (nach unten/offen). Klick dreht auf -90deg (nach rechts/zu).
     let chevronHTML = '';
     if (isGroup) {
-        // MODIFIZIERT: Kein rotate(-90deg) mehr -> Standard ist offen (0deg)
         chevronHTML = `<button class="group-toggle text-gray-400 hover:text-white mr-1 focus:outline-none"><i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i></button>`;
     }
 
@@ -65,6 +67,7 @@ export function renderAdminItem(item, sliderGroups) {
                 <span class="truncate font-medium">${escapeHTML(item.title)}</span>
                 ${spotlightIcon}
                 ${affiliateIcon} 
+                ${scheduleIcon}
             </p>
             <p class="text-xs text-gray-400 truncate">${escapeHTML(item.url || itemTypeInfo)}</p>
         </div>
@@ -84,23 +87,27 @@ export function renderAdminItem(item, sliderGroups) {
     itemEl.appendChild(viewContainer);
     itemEl.appendChild(editContainer);
 
+    let childrenContainer = null;
     if (isGroup) {
-        const childrenContainer = document.createElement('div');
+        childrenContainer = document.createElement('div');
+        // ml-8 für Einrückung, min-h-[60px] für Dropzone
         childrenContainer.className = 'child-container ml-8 mt-2 p-2 min-h-[60px] rounded border-2 border-dashed border-gray-600 bg-gray-800/50 transition-all duration-300';
-        // MODIFIZIERT: display: none entfernt -> Standard ist offen
+        // Standard: Sichtbar (block)
+        childrenContainer.style.display = 'block';
         childrenContainer.dataset.parentId = item.id;
         childrenContainer.innerHTML = '<div class="empty-placeholder text-xs text-gray-500 text-center py-2 pointer-events-none">Hier Elemente ablegen</div>';
         itemEl.appendChild(childrenContainer);
     }
     
-    return { itemEl, viewContainer, editContainer };
+    // Wir geben childrenContainer explizit zurück, damit admin.js nicht raten muss
+    return { itemEl, viewContainer, editContainer, childrenContainer };
 }
 
 export function createEditForm(item, groups) {
     const commonFields = renderCommonFields(item);
     const typeFields = renderTypeSpecificFields(item, groups);
-    const actions = renderActionButtons();
     const scheduling = renderSchedulingFields(item);
+    const actions = renderActionButtons();
 
     return `
         <div class="space-y-3">
@@ -112,6 +119,7 @@ export function createEditForm(item, groups) {
     `;
 }
 
+// Dropdown nur als Fallback, falls Drag & Drop klemmt
 function renderGroupOptions(item, groups) {
     let options = groups.filter(g => g.id !== item.id).map(g => {
         const selected = (g.id === item.parent_id) ? 'selected' : '';
@@ -145,7 +153,7 @@ function renderTypeSpecificFields(item, groups) {
 
         fields += `
             <div><label class="block text-xs font-medium text-gray-400">Bild-URL</label><input type="text" class="edit-image-url ${STYLES.input}" value="${escapeHTML(item.image_url || '')}"></div>
-            <div class="pt-2 flex items-center space-x-2"><input type="file" class="upload-image-file text-xs text-gray-300"><button type="button" class="btn-upload-image text-xs bg-blue-600 px-2 py-1 rounded">Upload</button><span class="upload-status text-xs"></span></div>
+            <div class="pt-2 flex items-center space-x-2"><input type="file" class="upload-image-file text-xs text-gray-300"><button type="button" class="btn-upload-image text-xs bg-blue-600 px-2 py-1 rounded">Upload</button></div>
             <div><label class="block text-xs font-medium text-gray-400">Gruppe (Manuell)</label><select class="edit-parent-id ${STYLES.input}">${renderGroupOptions(item, groups)}</select></div>
             <div class="flex items-center space-x-4 pt-2"><label class="flex items-center space-x-2"><input type="checkbox" class="edit-is_featured" ${item.is_featured ? 'checked' : ''}><span class="text-sm text-gray-300">Spotlight?</span></label></div>
         `;
@@ -187,8 +195,16 @@ export function renderSocialFields(container, fields) {
         container.appendChild(div);
     });
 }
-export function setFormStatus(el, msg, cls, dur=0) {
-    if (!el) return;
-    el.textContent = msg; el.className = `mt-6 text-center ${cls}`;
-    if (dur > 0) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, dur);
+
+export function setFormStatus(element, message, className, duration = 0) {
+    if (!element) return;
+    element.textContent = message;
+    element.className = `mt-6 text-center ${className}`;
+    if (duration > 0) {
+        setTimeout(() => {
+            if (element.textContent === message) {
+                element.textContent = '';
+            }
+        }, duration);
+    }
 }

@@ -13,10 +13,11 @@ export const STYLES = {
     btnIcon: "p-2 text-gray-400 hover:text-blue-400 transition-colors"
 };
 
-export function renderAdminItem(item, sliderGroups) {
+export function renderAdminItem(item, sliderGroups, indentLevel = 0) {
     const itemEl = document.createElement('div');
     // WICHTIG: 'admin-item-card' Klasse für den Selektor
-    itemEl.className = `admin-item-card p-3 bg-gray-700 rounded-md flex flex-col mb-2 border border-gray-600 select-none transition-all duration-200`;
+    let indentClass = indentLevel > 0 ? `ml-${Math.min(indentLevel * 4, 12)}` : '';
+    itemEl.className = `admin-item-card p-3 bg-gray-700 rounded-md flex flex-col mb-2 border border-gray-600 select-none transition-all duration-200 ${indentClass}`;
     itemEl.dataset.id = item.id;
     itemEl.dataset.type = item.item_type;
     
@@ -92,19 +93,8 @@ export function renderAdminItem(item, sliderGroups) {
     itemEl.appendChild(editContainer);
 
     // Container für Kinder (bei Gruppen)
-    let childrenContainer = null;
-    if (itemIsGroup) {
-        childrenContainer = document.createElement('div');
-        // ml-8 für Einrückung, min-h-[60px] für Dropzone, Standard: Sichtbar
-        childrenContainer.className = 'child-container ml-8 mt-2 p-2 min-h-[60px] rounded border-2 border-dashed border-gray-600 bg-gray-800/50 transition-all duration-300';
-        childrenContainer.style.display = 'block'; 
-        childrenContainer.dataset.parentId = item.id;
-        childrenContainer.innerHTML = '<div class="empty-placeholder text-xs text-gray-500 text-center py-2 pointer-events-none">Hier Elemente ablegen</div>';
-        itemEl.appendChild(childrenContainer);
-    }
-    
-    // Wir geben childrenContainer explizit zurück
-    return { itemEl, viewContainer, editContainer, childrenContainer };
+    // No childrenContainer: all items are rendered flat in the main list
+    return { itemEl, viewContainer, editContainer };
 }
 
 export function createEditForm(item, groups) {

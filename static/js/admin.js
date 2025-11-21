@@ -146,23 +146,19 @@ async function initAdmin() {
             const groupItems = items.filter(i => isGroup(i));
             const { roots, childrenMap } = organizeItems(items);
 
-            roots.forEach(rootItem => {
-                const rendered = UI.renderAdminItem(rootItem, groupItems);
+            function renderFlat(item, indentLevel = 0) {
+                const rendered = UI.renderAdminItem(item, groupItems, indentLevel);
                 listContainer.appendChild(rendered.itemEl);
-                setupItemEvents(rootItem, rendered);
-
-                // If this is a group, render its children directly below in the main list (not nested)
-                if (isGroup(rootItem)) {
-                    const childList = childrenMap[String(rootItem.id)];
+                setupItemEvents(item, rendered);
+                // If group, render children flat below, indented
+                if (isGroup(item)) {
+                    const childList = childrenMap[String(item.id)];
                     if (childList && childList.length > 0) {
-                        childList.forEach(c => {
-                            const cr = UI.renderAdminItem(c, groupItems);
-                            listContainer.appendChild(cr.itemEl);
-                            setupItemEvents(c, cr);
-                        });
+                        childList.forEach(child => renderFlat(child, indentLevel + 1));
                     }
                 }
-            });
+            }
+            roots.forEach(rootItem => renderFlat(rootItem, 0));
             initSortable(); lucide.createIcons();
         } catch(e) { listLoadingSpinner.innerHTML = 'Fehler'; }
     }

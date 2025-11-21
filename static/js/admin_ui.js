@@ -67,13 +67,13 @@ export function renderAdminItem(item, sliderGroups, indentLevel = 0) {
         ${chevronHTML}
         <div class="flex-shrink-0 w-6 text-center">${itemIcon}</div>
         <div class="flex-grow min-w-0">
-            <p class="text-white flex items-center space-x-2 truncate">
-                <span class="truncate font-medium">${escapeHTML(item.title)}</span>
+            <p class="text-white flex items-center space-x-2 flex-wrap">
+                <span class="font-medium whitespace-normal break-words">${escapeHTML(item.title)}</span>
                 ${spotlightIcon}
                 ${affiliateIcon} 
                 ${scheduleIcon}
             </p>
-            <p class="text-xs text-gray-400 truncate">${escapeHTML(item.url || itemTypeInfo)}</p>
+            <p class="text-xs text-gray-400 whitespace-normal break-words">${escapeHTML(item.url || itemTypeInfo)}</p>
         </div>
         <div class="flex-shrink-0">${clickInfo}</div>
         <div class="flex-shrink-0 flex space-x-1">

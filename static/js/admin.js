@@ -169,8 +169,22 @@ async function initAdmin() {
             listLoadingSpinner.style.display = 'none';
             if (items.length === 0) { listContainer.innerHTML = '<p class="text-gray-400 text-center py-4">Leer.</p>'; return; }
 
-            const groupItems = items.filter(i => isGroup(i));
-            const { roots, childrenMap } = organizeItems(items);
+            // If the API returns a nested tree (roots with .children arrays),
+            // flatten it so `organizeItems` receives a flat list of all items.
+            function flattenItems(list) {
+                const out = [];
+                (function walk(arr) {
+                    arr.forEach(it => {
+                        out.push(it);
+                        if (it.children && Array.isArray(it.children) && it.children.length > 0) walk(it.children);
+                    });
+                })(list || []);
+                return out;
+            }
+
+            const flatItems = flattenItems(items);
+            const groupItems = flatItems.filter(i => isGroup(i));
+            const { roots, childrenMap } = organizeItems(flatItems);
 
             roots.forEach(rootItem => {
                 const rendered = UI.renderAdminItem(rootItem, groupItems);

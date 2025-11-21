@@ -2,6 +2,8 @@ import re
 import httpx
 import json
 import random
+import asyncio
+import os
 import logging
 import warnings
 from bs4 import BeautifulSoup
@@ -115,12 +117,65 @@ class SmartScraper:
 
     async def _scrape_fallback(self, url, data, domain):
         """Standard httpx Scraper als Backup"""
-        try:
-            async with httpx.AsyncClient(headers=self.get_headers(), trust_env=True, timeout=15, follow_redirects=True, verify=False) as client:
-                r = await client.get(url)
-                await self._process_response(r, data, domain)
-        except Exception as e:
-            logger.error(f"Fallback Fehler: {e}")
+        # polite jitter before starting
+        await asyncio.sleep(random.uniform(0.1, 0.6))
+        r = await self._fetch_with_retries(url)
+        if r:
+            await self._process_response(r, data, domain)
+        else:
+            logger.error("Fallback Fehler: alle Versuche fehlgeschlagen.")
+
+    async def _fetch_with_retries(self, url: str, max_retries: int = 4):
+        """Fetch URL with retries, UA rotation, optional proxies and simple Cloudflare detection.
+
+        - Reads `SCRAPER_PROXIES` env var (comma-separated) to try proxies if set.
+        - Switches user-agent and headers each attempt.
+        - Exponential backoff with jitter on transient errors and common anti-bot responses.
+        Returns an httpx-like response object or None if all attempts fail.
+        """
+        proxies_env = os.getenv('SCRAPER_PROXIES', '')
+        proxy_list = [p.strip() for p in proxies_env.split(',') if p.strip()] if proxies_env else []
+
+        for attempt in range(1, max_retries + 1):
+            headers = self.get_headers()
+            parsed = urlparse(url)
+            headers['Referer'] = f"{parsed.scheme}://{parsed.netloc}/"
+            # small extra headers to look more like a real browser
+            headers.setdefault('DNT', '1')
+            headers.setdefault('Sec-Fetch-Mode', 'navigate')
+
+            proxy = random.choice(proxy_list) if proxy_list else None
+
+            try:
+                timeout = 15 + (attempt - 1) * 5
+                async with httpx.AsyncClient(headers=headers, trust_env=True, timeout=timeout, follow_redirects=True, verify=False) as client:
+                    if proxy:
+                        # httpx accepts a single proxy string for the get call
+                        r = await client.get(url, proxies=proxy)
+                    else:
+                        r = await client.get(url)
+
+                status = getattr(r, 'status_code', None) or getattr(r, 'status', None)
+                text = (r.text or '')
+
+                # detect common anti-bot or challenge pages
+                lowered = text.lower()
+                bot_hits = any(x in lowered for x in ['cloudflare', 'attention required', 'captcha', 'are you human', 'robot check'])
+
+                if status in (403, 429, 503) or bot_hits:
+                    logger.warning(f"Fetch versuch {attempt} für {url} ergab Status {status} oder Bot-Check; retrying...")
+                    await asyncio.sleep(min(8, 0.5 * (2 ** attempt)) + random.random())
+                    continue
+
+                # successful-looking response
+                return r
+
+            except Exception as e:
+                logger.warning(f"Fetch versuch {attempt} für {url} fehlgeschlagen: {e}")
+                await asyncio.sleep(min(8, 0.5 * (2 ** attempt)) + random.random())
+                continue
+
+        return None
 
     async def _process_response(self, r, data, domain):
         data["url"] = str(r.url)

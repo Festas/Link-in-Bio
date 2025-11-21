@@ -33,14 +33,14 @@ function setupGlobalEventListeners() {
     document.addEventListener('click', (e) => {
         const groupHeader = e.target.closest('.group-header, .faq-header');
         if (groupHeader) {
-            const container = groupHeader.closest('.group-container, .glass-card'); // Container finden
+            const container = groupHeader.closest('.group-container, .glass-card');
             const content = container.querySelector('.group-content, .faq-content');
-            const icon = groupHeader.querySelector('svg'); // Lucide Icon (Chevron)
+            const icon = groupHeader.querySelector('svg');
             
             if (content) {
                 content.classList.toggle('hidden');
                 if (content.classList.contains('hidden')) {
-                    icon.style.transform = 'rotate(-90deg)'; // Zu (bei FAQ evtl 0)
+                    icon.style.transform = 'rotate(-90deg)'; // Zu
                     if (groupHeader.classList.contains('faq-header')) icon.style.transform = 'rotate(0deg)';
                 } else {
                     icon.style.transform = 'rotate(0deg)'; // Offen
@@ -85,7 +85,7 @@ const ItemRenderers = {
         return div;
     },
     
-    // GRID MIT AKKORDEON
+    // GRID MIT AKKORDEON & BILD
     grid: (item) => {
         const cols = item.grid_columns || 2;
         const wrapper = document.createElement('div');
@@ -119,7 +119,7 @@ const ItemRenderers = {
         return wrapper;
     },
 
-    // SLIDER MIT AKKORDEON
+    // SLIDER MIT AKKORDEON & BILD
     slider_group: (item) => {
         const wrapper = document.createElement('div');
         wrapper.className = 'group-container glass-card mb-4 overflow-hidden rounded-2xl';

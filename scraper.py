@@ -154,5 +154,22 @@ class SmartScraper:
         
         if not data["image_url"]:
             data["image_url"] = self.get_google_favicon(urlparse(data["url"]).netloc)
+        
+        # Normalize title: strip Steam Workshop prefix if present
+        if data.get("title"):
+            data["title"] = self._strip_steam_prefix(data["title"]) 
+
+    def _strip_steam_prefix(self, title: str) -> str:
+        """Remove leading 'Steam Workshop::' (or variants like single/double colons) from titles.
+
+        Case-insensitive and tolerant of surrounding whitespace. Examples:
+        - 'Steam Workshop:: Cool Mod' -> 'Cool Mod'
+        - 'steam workshop: Another Mod' -> 'Another Mod'
+        """
+        if not title or not isinstance(title, str):
+            return title
+        # Remove leading 'Steam Workshop' followed by one or more colons and optional whitespace
+        new_title = re.sub(r'(?i)^\s*steam workshop:+\s*', '', title)
+        return new_title.strip()
 
 scraper = SmartScraper()

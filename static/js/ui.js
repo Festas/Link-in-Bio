@@ -274,14 +274,34 @@ export function applyTheme(settings) {
     document.body.classList.add(settings.button_style || 'style-rounded');
 }
 
+// MODIFIZIERT: Smarte Social Links (Username zu URL & TikTok Icon Fix)
 export function renderProfileHeader(settings) {
     const header = document.getElementById('profile-header');
     let socialLinksHTML = '';
-    const socialMap = [ { key: 'social_youtube', icon: 'youtube' }, { key: 'social_instagram', icon: 'instagram' }, { key: 'social_tiktok', icon: 'music-4' }, { key: 'social_twitch', icon: 'twitch' }, { key: 'social_x', icon: 'twitter' }, { key: 'social_discord', icon: 'discord' }, { key: 'social_email', icon: 'mail' } ];
+    
+    // Map mit Prefixes
+    const socialMap = [
+        { key: 'social_youtube', icon: 'youtube', prefix: 'https://youtube.com/' },
+        { key: 'social_instagram', icon: 'instagram', prefix: 'https://instagram.com/' },
+        { key: 'social_tiktok', icon: 'music', prefix: 'https://tiktok.com/@' }, // Music als Fallback für TikTok
+        { key: 'social_twitch', icon: 'twitch', prefix: 'https://twitch.tv/' },
+        { key: 'social_x', icon: 'twitter', prefix: 'https://x.com/' },
+        { key: 'social_discord', icon: 'discord', prefix: 'https://discord.gg/' }, // Annahme: Invite Code
+        { key: 'social_email', icon: 'mail', prefix: 'mailto:' }
+    ];
     
     socialMap.forEach(social => {
-        if (settings[social.key]) {
-            socialLinksHTML += `<a href="${escapeHTML(settings[social.key])}" target="_blank" rel="noopener noreferrer" class="social-icon hover:opacity-75 transition-opacity p-2 glass-card rounded-full bg-opacity-50 hover:bg-opacity-80" title="${social.icon}"><i data-lucide="${social.icon}" class="w-5 h-5" style="color: var(--color-text);"></i></a>`;
+        let value = settings[social.key];
+        if (value) {
+            // Prüfen, ob es schon eine URL ist
+            let url = value;
+            if (!value.startsWith('http') && !value.startsWith('mailto:') && social.prefix) {
+                // Wenn nicht, Prefix davor (z.B. Username)
+                // Sonderfall TikTok: Wenn User schon @ eingibt, entfernen wir es vom Prefix? Nein, TikTok URL braucht @
+                url = social.prefix + value.replace('@', '');
+            }
+            
+            socialLinksHTML += `<a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" class="social-icon hover:opacity-75 transition-opacity p-2 glass-card rounded-full bg-opacity-50 hover:bg-opacity-80" title="${social.icon}"><i data-lucide="${social.icon}" class="w-5 h-5" style="color: var(--color-text);"></i></a>`;
         }
     });
 

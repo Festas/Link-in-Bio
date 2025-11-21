@@ -147,6 +147,24 @@
                                 <label class="flex items-center space-x-2"><input type="checkbox" id="picasso-avatar-effect" name="picasso_avatar_effect"><span class="text-sm text-gray-300">Picasso Avatar Effekt aktivieren</span></label>
                                 <p class="text-xs text-gray-500 mt-1">Leichter geometrischer Masken- & Farb-Filter für das Profilbild (nur bei Theme: Picasso sichtbar).</p>
                             </div>
+                            <div class="pt-3">
+                                <label class="flex items-center space-x-2"><input type="checkbox" id="picasso-avatar-autocenter" name="picasso_avatar_autocenter"><span class="text-sm text-gray-300">Avatar automatisch zentrieren</span></label>
+                                <p class="text-xs text-yellow-300 mt-1">Hinweis: Maskierung kann Bildteile abschneiden. Nutze die Vorschau unten, um die Position anzupassen.</p>
+                            </div>
+                            <div class="pt-3">
+                                <label for="picasso-art-variant" class="block text-sm font-medium text-gray-300">Picasso Artwork Variante</label>
+                                <select id="picasso-art-variant" class="mt-1 block w-48 bg-gray-700 border border-gray-600 rounded-md text-white text-sm">
+                                    <option value="a">Variante A (warm)</option>
+                                    <option value="b">Variante B (pastell)</option>
+                                    <option value="c">Variante C (kontrast)</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">Wähle eine Hintergrund-Komposition für das Picasso-Theme.</p>
+                            </div>
+                            <div class="pt-3">
+                                <label class="block text-sm font-medium text-gray-300">Avatar Vorschau</label>
+                                <div id="profile-image-preview" class="mt-2 w-24 h-24 rounded-full overflow-hidden border border-gray-600"><img id="profile-image-preview-img" src="" alt="Vorschau" class="w-full h-full object-cover"></div>
+                                <div class="flex space-x-2 mt-2"><button type="button" id="profile-image-reset" class="px-2 py-1 text-xs bg-gray-600 rounded">Zurücksetzen</button><span class="text-xs text-gray-400 self-center">Ziehe das Bild, um Ausschnitt zu verschieben.</span></div>
+                            </div>
                         <div id="custom-theme-settings" class="space-y-4 pt-4 border-t border-gray-700" style="display: none;">
                             <h4 class="text-md font-medium text-gray-200">Benutzerdefinierte Farben</h4>
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">

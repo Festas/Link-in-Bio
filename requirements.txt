@@ -1,1 +1,11 @@
-fastapi uvicorn[standard] jinja requests beautifulsoup4 python-dotenv httpx qrcode[pil] python-multipart curl_cffi ddgs
+fastapi
+uvicorn[standard]
+jinja2
+requests
+beautifulsoup4
+python-dotenv
+httpx
+qrcode[pil]
+python-multipart
+curl_cffi
+ddgs

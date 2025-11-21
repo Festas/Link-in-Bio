@@ -1,17 +1,27 @@
+/* static/css/style.css */
+
 :root {
+    /* Standard-Fallback */
     --color-bg: #111827;
     --color-text: #F9FAFB;
     --color-text-muted: #9CA3AF;
-    --color-item-bg: rgba(31, 41, 55, 0.7);
+    --color-item-bg: rgba(31, 41, 55, 0.7); /* Mehr Transparenz für Glass */
     --color-item-bg-hover: rgba(55, 65, 81, 0.8);
     --color-item-text: #FFFFFF;
     --color-item-shadow: rgba(0, 0, 0, 0.2);
-    --color-border: rgba(255, 255, 255, 0.08);
+    --color-border: rgba(255, 255, 255, 0.08); /* Subtiler Rand */
 }
 
+/* Animation Keyframes */
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px) scale(0.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 @keyframes pulse-border {
@@ -24,47 +34,56 @@ body {
     background-color: var(--color-bg);
     background-size: cover;
     background-position: center;
-    background-attachment: fixed;
+    background-attachment: fixed; /* Parallax-Effekt */
     background-repeat: no-repeat;
     color: var(--color-text);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     min-height: 100vh;
-    overflow-x: hidden;
+    overflow-x: hidden; /* Verhindert horizontales Scrollen bei Animationen */
 }
 
+/* Hilfsklasse für Animation */
 .animate-entry {
-    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    opacity: 0;
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; /* Weicheres Easing */
+    opacity: 0; /* Startzustand unsichtbar */
 }
 
+/* Glassmorphism Basis-Klasse für alle Items */
 .glass-card {
     background-color: var(--color-item-bg);
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px); /* Stärkerer Blur */
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--color-border);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
+/* Link Items & Interaktive Elemente */
 .item-link, .item-product {
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease-out, box-shadow 0.2s;
 }
-
 .item-link:hover, .item-product:hover {
     transform: scale(1.02);
     background-color: var(--color-item-bg-hover);
     box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
-    z-index: 10;
+    z-index: 10; /* Hovert über anderen Elementen */
 }
-
 .item-link:active, .item-product:active {
     transform: scale(0.98);
 }
 
-/* Style Varianten */
-.style-rounded .item-link, .style-rounded .item-product, .style-rounded .item-slider-wrapper, .style-rounded .item-video-wrapper, .style-rounded .item-countdown-wrapper, .style-rounded .item-email-form, .style-rounded .item-contact-form, .style-rounded .glass-card, .style-rounded .swiper-slide { border-radius: 1rem; }
-.style-square .item-link, .style-square .item-product, .style-square .item-slider-wrapper, .style-square .item-video-wrapper, .style-square .item-countdown-wrapper, .style-square .item-email-form, .style-square .item-contact-form, .style-square .glass-card, .style-square .swiper-slide { border-radius: 0px; }
-.style-pill .item-link, .style-pill .item-product, .style-pill .item-slider-wrapper, .style-pill .item-video-wrapper, .style-pill .item-countdown-wrapper, .style-pill .item-email-form, .style-pill .item-contact-form, .style-pill .glass-card, .style-pill .swiper-slide { border-radius: 1.5rem; }
-.style-pill .item-link, .style-pill .item-product { border-radius: 9999px; }
+/* Style Varianten (Rundungen) */
+.style-rounded .item-link, .style-rounded .item-product, .style-rounded .item-slider-wrapper, .style-rounded .item-video-wrapper, .style-rounded .item-countdown-wrapper, .style-rounded .item-email-form, .style-rounded .item-contact-form, .style-rounded .glass-card, .style-rounded .swiper-slide {
+    border-radius: 1rem; 
+}
+.style-square .item-link, .style-square .item-product, .style-square .item-slider-wrapper, .style-square .item-video-wrapper, .style-square .item-countdown-wrapper, .style-square .item-email-form, .style-square .item-contact-form, .style-square .glass-card, .style-square .swiper-slide {
+    border-radius: 0px;
+}
+.style-pill .item-link, .style-pill .item-product, .style-pill .item-slider-wrapper, .style-pill .item-video-wrapper, .style-pill .item-countdown-wrapper, .style-pill .item-email-form, .style-pill .item-contact-form, .style-pill .glass-card, .style-pill .swiper-slide {
+    border-radius: 1.5rem;
+}
+.style-pill .item-link, .style-pill .item-product {
+    border-radius: 9999px;
+}
 
 /* Typografie */
 .item-title { color: var(--color-item-text); text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
@@ -72,14 +91,14 @@ body {
 .profile-title { font-weight: 800; letter-spacing: -0.025em; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 .item-header { font-weight: 600; }
 
-/* Spotlight */
+/* Spotlight Animation */
 .spotlight-item {
     animation: pulse-border 2s infinite;
     border-width: 1px;
     border-color: rgba(255,255,255,0.5);
 }
 
-/* Slider */
+/* Slider / Swiper */
 .swiper-pagination-bullet { background-color: var(--color-text-muted) !important; opacity: 0.5 !important; }
 .swiper-pagination-bullet-active { background-color: var(--color-text) !important; opacity: 1 !important; }
 .swiper-slide {
@@ -87,7 +106,7 @@ body {
     transition: background-color 0.2s ease-out;
 }
 
-/* Countdown */
+/* Countdown Grid */
 .countdown-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -105,7 +124,7 @@ body {
     font-weight: 700;
     line-height: 2rem;
     color: var(--color-text);
-    font-feature-settings: "tnum";
+    font-feature-settings: "tnum"; /* Tabular figures für Zahlen */
 }
 .countdown-label {
     font-size: 0.65rem;
@@ -116,7 +135,7 @@ body {
 
 /* Formulare (Newsletter & Kontakt) */
 .email-input {
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.2); /* Dunkler Hintergrund für Inputs */
     color: var(--color-text);
     border: 1px solid rgba(255, 255, 255, 0.1);
     transition: all 0.2s;
@@ -127,11 +146,13 @@ body {
     outline: none;
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
 }
-.email-input::placeholder { color: rgba(255, 255, 255, 0.4); }
+.email-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
 
 .email-submit-button {
     background-color: var(--color-text);
-    color: #111;
+    color: #111; /* Starker Kontrast */
     font-weight: bold;
     transition: opacity 0.2s, transform 0.1s;
 }
@@ -141,10 +162,24 @@ body {
 /* FAQ Akkordeon */
 .faq-header svg { transition: transform 0.3s ease; }
 
-/* Grid Layout */
+/* Grid Layout Feinheiten */
 .grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
 }
-@media (max-width: 350px) { .grid { grid-template-columns: 1fr; } }
+@media (max-width: 350px) {
+    .grid { grid-template-columns: 1fr; }
+}
+
+/* Admin Drop Zones (Für Drag & Drop in Gruppen) */
+.child-container {
+    min-height: 60px;
+    transition: background-color 0.2s;
+}
+/* Wenn leer, soll man es gut sehen */
+.child-container:empty {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 2px dashed #4B5563;
+    border-radius: 0.5rem;
+}

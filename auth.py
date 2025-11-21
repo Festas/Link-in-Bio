@@ -3,11 +3,25 @@ import secrets
 import base64
 from fastapi import Request, HTTPException, Depends
 from dotenv import load_dotenv
+import sys
 
 load_dotenv()
 
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "super-sicheres-passwort-123")
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+
+# Security: Require credentials to be set, no default passwords
+if not ADMIN_USERNAME or not ADMIN_PASSWORD:
+    print("❌ FEHLER: ADMIN_USERNAME und ADMIN_PASSWORD müssen in der .env Datei gesetzt sein!")
+    print("   Bitte erstellen Sie eine .env Datei basierend auf .env.example")
+    sys.exit(1)
+
+if ADMIN_PASSWORD == "change-this-to-a-secure-password" or len(ADMIN_PASSWORD) < 12:
+    print("⚠️  WARNUNG: Das Admin-Passwort ist unsicher!")
+    print("   Bitte verwenden Sie ein starkes Passwort mit mindestens 12 Zeichen.")
+    # In production, this should exit, but for development we'll just warn
+    if os.getenv("ENVIRONMENT") == "production":
+        sys.exit(1)
 
 async def check_auth(request: Request):
     auth_header = request.headers.get("Authorization")

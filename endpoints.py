@@ -37,6 +37,29 @@ router = APIRouter()
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "static" / "uploads"
 
+# --- Health Check ---
+
+@router.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring and container orchestration"""
+    try:
+        # Check database connectivity
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1")
+        
+        return {
+            "status": "healthy",
+            "database": "connected",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
 # --- Auth Check ---
 
 @router.get("/auth/check", dependencies=[Depends(limiter_strict)])

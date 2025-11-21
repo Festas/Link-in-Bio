@@ -2,6 +2,7 @@ import uvicorn
 import os
 import sys
 import asyncio
+import logging
 from pathlib import Path
 from fastapi import FastAPI, Request, Response, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse, RedirectResponse
@@ -11,6 +12,17 @@ from contextlib import asynccontextmanager
 from urllib.parse import urljoin
 from dotenv import load_dotenv
 from starlette.exceptions import HTTPException as StarletteHTTPException
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('app.log') if not os.getenv('DISABLE_FILE_LOGGING') else logging.NullHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # --- WINDOWS FIX FÜR CURL_CFFI ---
 # Dies verhindert den "NotImplementedError" auf Windows-Systemen
@@ -76,9 +88,20 @@ def configure_template_globals():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
-    configure_template_globals()
+    logger.info("🚀 Starting Link-in-Bio application...")
+    try:
+        init_db()
+        logger.info("✅ Database initialized")
+        configure_template_globals()
+        logger.info("✅ Templates configured")
+        logger.info("🎉 Application startup complete")
+    except Exception as e:
+        logger.error(f"❌ Startup failed: {e}")
+        raise
+    
     yield
+    
+    logger.info("👋 Shutting down application...")
 
 app = FastAPI(lifespan=lifespan)
 
@@ -96,12 +119,14 @@ app.include_router(api_router, prefix="/api")
 
 @app.exception_handler(StarletteHTTPException)
 async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    logger.warning(f"HTTP {exc.status_code} error on {request.url.path}: {exc.detail}")
     if request.url.path.startswith("/api/"):
         return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
     return templates.TemplateResponse("error.html", {"request": request, "status_code": exc.status_code, "detail": exc.detail}, status_code=exc.status_code)
 
 @app.exception_handler(500)
 async def general_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Internal server error on {request.url.path}: {exc}", exc_info=True)
     if request.url.path.startswith("/api/"):
         return JSONResponse({"detail": "Interner Serverfehler"}, status_code=500)
     return templates.TemplateResponse("error.html", {"request": request, "status_code": 500, "detail": "Interner Serverfehler"}, status_code=500)
@@ -201,5 +226,5 @@ async def get_index_html(request: Request):
     return templates.TemplateResponse("index.html", context)
 
 if __name__ == "__main__":
-    print(f"Starte Server auf http://127.0.0.1:8000")
+    logger.info(f"Starte Server auf http://127.0.0.1:8000")
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

@@ -6,6 +6,8 @@ import asyncio
 import os
 import logging
 import warnings
+import socket
+import ipaddress
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse, urlunparse
 from duckduckgo_search import DDGS
@@ -62,6 +64,45 @@ class SmartScraper:
             return url.strip()
         except: return url
 
+    def _validate_url_not_ssrf(self, url: str) -> None:
+        """Validate URL does not point to private/loopback addresses to prevent SSRF attacks.
+        
+        Raises HTTPException if URL resolves to a private or loopback IP address.
+        """
+        parsed = urlparse(url)
+        hostname = parsed.hostname
+        
+        if not hostname:
+            raise ValueError("Invalid URL: no hostname found")
+        
+        # Resolve hostname to IP addresses
+        try:
+            # Get all IP addresses for the hostname
+            addr_info = socket.getaddrinfo(hostname, None)
+        except socket.gaierror as e:
+            # DNS resolution failed - allow the request to proceed
+            # The actual HTTP request will fail with a more appropriate error
+            logger.warning(f"DNS resolution failed for {hostname}: {e}")
+            return
+        
+        # Check each resolved IP address
+        for info in addr_info:
+            ip_str = info[4][0]
+            try:
+                ip = ipaddress.ip_address(ip_str)
+                
+                # Check if IP is private, loopback, link-local, or reserved
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                    raise ValueError(
+                        f"Access to private/internal IP addresses is not allowed: {hostname} resolves to {ip_str}"
+                    )
+            except ValueError as e:
+                # Re-raise our custom error, but catch invalid IP format errors
+                if "not allowed" in str(e):
+                    raise
+                logger.warning(f"Could not parse IP address {ip_str}: {e}")
+                continue
+
     def extract_asin(self, text: str) -> str | None:
         match = re.search(r'/(dp|gp/product|d)/(B[A-Z0-9]{9})', text)
         if match: return match.group(2)
@@ -107,6 +148,14 @@ class SmartScraper:
 
     async def scrape(self, raw_url: str) -> dict:
         url = self.clean_url(raw_url)
+        
+        # Validate URL to prevent SSRF attacks
+        try:
+            self._validate_url_not_ssrf(url)
+        except ValueError as e:
+            logger.error(f"SSRF validation failed for {url}: {e}")
+            raise ValueError(f"URL validation failed: {e}")
+        
         parsed = urlparse(url)
         domain = parsed.netloc.replace('www.', '').split('.')[0].capitalize()
         data = { "title": domain, "image_url": None, "url": url }

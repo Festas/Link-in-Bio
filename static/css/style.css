@@ -184,6 +184,13 @@ body {
 /* Reduce gradient overlay height inside slider slides so it matches the smaller image */
 .swiper .swiper-slide .bg-gradient-to-t { height: 40% !important; }
 
+/* Ensure anchors inside slides are clickable and overlays sit above images.
+    Some Swiper builds/variants can add transform/backface rules that affect
+    pointer events — make stacking explicit so links remain interactive. */
+.swiper .swiper-slide > a { position: relative; pointer-events: auto; z-index: 1; }
+.swiper .swiper-slide img { z-index: 0; }
+.swiper .swiper-slide a .pointer-events-none { z-index: 2; }
+
 /* Responsive adjustments are driven by Swiper's slidesPerView breakpoints in JS */
 
 /* Countdown Grid */

@@ -246,13 +246,16 @@ export function initSwipers() {
             // re-enable by adding a pagination element and config.
             const config = {
                 loop: true,
-                centeredSlides: true,
+                // For a reliable two-up layout we don't center slides —
+                // allow Swiper to show two full slides side-by-side.
+                centeredSlides: false,
                 slidesPerView: 1,
                 spaceBetween: 12,
                 breakpoints: {
-                    640: { slidesPerView: 1.5 },
+                    // Force two slides per view for medium and larger screens
+                    640: { slidesPerView: 2 },
                     768: { slidesPerView: 2 },
-                    1024: { slidesPerView: 3 }
+                    1024: { slidesPerView: 2 }
                 }
             };
 

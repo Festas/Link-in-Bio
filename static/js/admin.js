@@ -151,15 +151,13 @@ async function initAdmin() {
                 listContainer.appendChild(rendered.itemEl);
                 setupItemEvents(rootItem, rendered);
 
+                // If this is a group, render its children directly below in the main list (not nested)
                 if (isGroup(rootItem)) {
-                    const childContainer = rendered.childrenContainer;
                     const childList = childrenMap[String(rootItem.id)];
-                    
                     if (childList && childList.length > 0) {
-                        childContainer.querySelector('.empty-placeholder').style.display = 'none';
                         childList.forEach(c => {
                             const cr = UI.renderAdminItem(c, groupItems);
-                            childContainer.appendChild(cr.itemEl);
+                            listContainer.appendChild(cr.itemEl);
                             setupItemEvents(c, cr);
                         });
                     }

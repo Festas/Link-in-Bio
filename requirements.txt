@@ -9,3 +9,4 @@ qrcode[pil]
 python-multipart
 curl_cffi
 ddgs
+pydantic[email]

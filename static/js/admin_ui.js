@@ -11,8 +11,7 @@ export const STYLES = {
 
 export function renderAdminItem(item, sliderGroups) {
     const itemEl = document.createElement('div');
-    // WICHTIG: Wir geben dem Item die Klasse 'admin-item-card' für den Selektor später
-    itemEl.className = `admin-item-card p-3 bg-gray-700 rounded-md flex flex-col mb-2 border border-gray-600 select-none`;
+    itemEl.className = `admin-item-card p-3 bg-gray-700 rounded-md flex flex-col mb-2 border border-gray-600 select-none transition-all duration-200`;
     itemEl.dataset.id = item.id;
     itemEl.dataset.type = item.item_type;
     
@@ -49,11 +48,9 @@ export function renderAdminItem(item, sliderGroups) {
     const viewContainer = document.createElement('div');
     viewContainer.className = 'flex items-center space-x-4 w-full';
     
-    // Chevron nur für Gruppen
     let chevronHTML = '';
     if (isGroup) {
-        // Icon standardmäßig rotiert (-90deg) für "geschlossen" oder 0 für "offen". Wir starten offen.
-        chevronHTML = `<button class="group-toggle text-gray-400 hover:text-white mr-1 focus:outline-none"><i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i></button>`;
+        chevronHTML = `<button class="group-toggle text-gray-400 hover:text-white mr-1 focus:outline-none"><i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" style="transform: rotate(-90deg)"></i></button>`;
     }
 
     viewContainer.innerHTML = `
@@ -86,12 +83,11 @@ export function renderAdminItem(item, sliderGroups) {
     itemEl.appendChild(viewContainer);
     itemEl.appendChild(editContainer);
 
-    // Container für Kinder
     if (isGroup) {
         const childrenContainer = document.createElement('div');
         childrenContainer.className = 'child-container ml-8 mt-2 p-2 min-h-[60px] rounded border-2 border-dashed border-gray-600 bg-gray-800/50 transition-all duration-300';
+        childrenContainer.style.display = 'none'; // Standardmäßig zu
         childrenContainer.dataset.parentId = item.id;
-        // Wir lassen ihn standardmäßig offen
         childrenContainer.innerHTML = '<div class="empty-placeholder text-xs text-gray-500 text-center py-2 pointer-events-none">Hier Elemente ablegen</div>';
         itemEl.appendChild(childrenContainer);
     }
@@ -102,21 +98,20 @@ export function renderAdminItem(item, sliderGroups) {
 export function createEditForm(item, groups) {
     const commonFields = renderCommonFields(item);
     const typeFields = renderTypeSpecificFields(item, groups);
-    const schedulingFields = renderSchedulingFields(item);
     const actions = renderActionButtons();
+    const scheduling = renderSchedulingFields(item);
 
     return `
         <div class="space-y-3">
             ${commonFields}
             ${typeFields}
-            ${schedulingFields}
+            ${scheduling}
             ${actions}
         </div>
     `;
 }
 
 function renderGroupOptions(item, groups) {
-    // Fallback Dropdown, falls D&D nicht genutzt wird
     let options = groups.filter(g => g.id !== item.id).map(g => {
         const selected = (g.id === item.parent_id) ? 'selected' : '';
         return `<option value="${g.id}" ${selected}>${escapeHTML(g.title)}</option>`;
@@ -131,64 +126,27 @@ function renderCommonFields(item) {
     if (item.item_type === 'divider') label = 'Text (Optional)';
     if (item.item_type === 'contact_form') label = 'Überschrift';
     
-    return `
-        <div>
-            <label class="block text-xs font-medium text-gray-400">${label}</label>
-            <input type="text" class="edit-title ${STYLES.input}" value="${escapeHTML(item.title)}">
-        </div>
-    `;
+    return `<div><label class="block text-xs font-medium text-gray-400">${label}</label><input type="text" class="edit-title ${STYLES.input}" value="${escapeHTML(item.title)}"></div>`;
 }
 
 function renderTypeSpecificFields(item, groups) {
     if (item.item_type === 'grid') {
         const cols = item.grid_columns || 2;
-        return `
-            <div>
-                <label class="block text-xs font-medium text-gray-400">Spaltenanzahl</label>
-                <select class="edit-grid-columns ${STYLES.input}">
-                    <option value="1" ${cols == 1 ? 'selected' : ''}>1 Spalte (Liste)</option>
-                    <option value="2" ${cols == 2 ? 'selected' : ''}>2 Spalten</option>
-                    <option value="3" ${cols == 3 ? 'selected' : ''}>3 Spalten</option>
-                </select>
-            </div>
-        `;
+        return `<div><label class="block text-xs font-medium text-gray-400">Spaltenanzahl</label><select class="edit-grid-columns ${STYLES.input}"><option value="1" ${cols == 1 ? 'selected' : ''}>1 Spalte (Liste)</option><option value="2" ${cols == 2 ? 'selected' : ''}>2 Spalten</option><option value="3" ${cols == 3 ? 'selected' : ''}>3 Spalten</option></select></div>`;
     }
 
     if (item.item_type === 'link' || item.item_type === 'product') {
-        let fields = `
-            <div>
-                <label class="block text-xs font-medium text-gray-400">URL</label>
-                <input type="text" class="edit-url ${STYLES.input}" value="${escapeHTML(item.url || '')}">
-            </div>
-        `;
+        let fields = `<div><label class="block text-xs font-medium text-gray-400">URL / Ziel</label><input type="text" class="edit-url ${STYLES.input}" value="${escapeHTML(item.url || '')}"></div>`;
         
         if (item.item_type === 'product') {
-            fields += `
-                <div>
-                    <label class="block text-xs font-medium text-gray-400">Preis</label>
-                    <input type="text" class="edit-price ${STYLES.input}" value="${escapeHTML(item.price || '')}" placeholder="z.B. 19.99 €">
-                </div>
-            `;
+            fields += `<div><label class="block text-xs font-medium text-gray-400">Preis</label><input type="text" class="edit-price ${STYLES.input}" value="${escapeHTML(item.price || '')}" placeholder="z.B. 19.99 €"></div>`;
         }
 
         fields += `
-            <div>
-                <label class="block text-xs font-medium text-gray-400">Bild-URL</label>
-                <input type="text" class="edit-image-url ${STYLES.input}" value="${escapeHTML(item.image_url || '')}">
-            </div>
-            <div class="pt-2 flex items-center space-x-2">
-                <input type="file" class="upload-image-file text-xs text-gray-300">
-                <button type="button" class="btn-upload-image text-xs bg-blue-600 px-2 py-1 rounded">Upload</button>
-            </div>
-            <!-- Fallback Dropdown -->
-            <div>
-                <label class="block text-xs font-medium text-gray-400">Gruppe (Manuell)</label>
-                <select class="edit-parent-id ${STYLES.input}">${renderGroupOptions(item, groups)}</select>
-            </div>
-            <div class="flex items-center space-x-4 pt-2">
-                <label class="flex items-center space-x-2"><input type="checkbox" class="edit-is_featured" ${item.is_featured ? 'checked' : ''}><span class="text-sm text-gray-300">Spotlight?</span></label>
-                ${item.item_type === 'link' ? `<label class="flex items-center space-x-2"><input type="checkbox" class="edit-is_affiliate" ${item.is_affiliate ? 'checked' : ''}><span class="text-sm text-gray-300">Affiliate?</span></label>` : ''}
-            </div>
+            <div><label class="block text-xs font-medium text-gray-400">Bild-URL</label><input type="text" class="edit-image-url ${STYLES.input}" value="${escapeHTML(item.image_url || '')}"></div>
+            <div class="pt-2 flex items-center space-x-2"><input type="file" class="upload-image-file text-xs text-gray-300"><button type="button" class="btn-upload-image text-xs bg-blue-600 px-2 py-1 rounded">Upload</button></div>
+            <div><label class="block text-xs font-medium text-gray-400">Gruppe (Manuell)</label><select class="edit-parent-id ${STYLES.input}">${renderGroupOptions(item, groups)}</select></div>
+            <div class="flex items-center space-x-4 pt-2"><label class="flex items-center space-x-2"><input type="checkbox" class="edit-is_featured" ${item.is_featured ? 'checked' : ''}><span class="text-sm text-gray-300">Spotlight?</span></label></div>
         `;
         return fields;
     }
@@ -233,5 +191,3 @@ export function setFormStatus(el, msg, cls, dur=0) {
     el.textContent = msg; el.className = `mt-6 text-center ${cls}`;
     if (dur > 0) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, dur);
 }
-
-

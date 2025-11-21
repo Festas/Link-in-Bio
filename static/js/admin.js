@@ -113,10 +113,9 @@ async function initAdmin() {
                 return;
             }
             
-            // Gruppen für Dropdowns
             const groupItems = items.filter(i => ['slider_group', 'grid'].includes(i.item_type));
             
-            // Daten aufbereiten
+            // IDs sammeln
             const allIds = new Set(items.map(i => i.id));
             const roots = []; 
             const childrenMap = {};
@@ -130,31 +129,22 @@ async function initAdmin() {
                 }
             });
 
-            // Root-Ebene sortieren
             roots.sort((a,b) => a.display_order - b.display_order);
 
-            // Rendern
             roots.forEach(item => {
                 const rendered = UI.renderAdminItem(item, groupItems);
                 listContainer.appendChild(rendered.itemEl);
                 setupItemEvents(item, rendered);
 
-                // Kinder rendern (in Gruppen)
                 if (['slider_group', 'grid'].includes(item.item_type)) {
                     const childContainer = rendered.itemEl.querySelector('.child-container');
                     
                     if (childrenMap[item.id] && childrenMap[item.id].length > 0) {
-                        // Kinder sortieren
                         childrenMap[item.id].sort((a,b) => a.display_order - b.display_order);
                         
-                        // Placeholder weg, da Inhalt da ist
                         const ph = childContainer.querySelector('.empty-placeholder');
                         if(ph) ph.style.display = 'none';
 
-                        // WICHTIG: Gruppe offen anzeigen, wenn Kinder drin sind? 
-                        // Optional. Standardmäßig geschlossen, außer wir wollen es anders.
-                        // Hier lassen wir es zu, aber User kann aufklappen.
-                        
                         childrenMap[item.id].forEach(child => {
                             const childRendered = UI.renderAdminItem(child, groupItems);
                             childContainer.appendChild(childRendered.itemEl);
@@ -174,27 +164,29 @@ async function initAdmin() {
     }
     
     function setupItemEvents(item, { viewContainer, editContainer, itemEl }) {
-        // Toggle für Gruppen (Akkordeon)
         const groupToggle = viewContainer.querySelector('.group-toggle');
         if (groupToggle) {
             groupToggle.onclick = (e) => {
                 e.stopPropagation();
                 const childContainer = itemEl.querySelector('.child-container');
                 const icon = groupToggle.querySelector('svg');
+                
+                // MODIFIZIERT: Standard ist offen (block/0deg).
+                // Wir prüfen, ob es aktuell 'none' ist.
                 if (childContainer.style.display === 'none') {
                     childContainer.style.display = 'block';
                     icon.style.transform = 'rotate(0deg)';
                 } else {
                     childContainer.style.display = 'none';
-                    icon.style.transform = 'rotate(-90deg)';
+                    icon.style.transform = 'rotate(-90deg)'; // Zu (nach rechts)
                 }
             };
         }
 
-        // Actions
+        const btns = viewContainer.querySelectorAll('button');
+        const toggleBtn = viewContainer.querySelector('.btn-toggle');
         const editBtn = viewContainer.querySelector('.btn-edit');
         const delBtn = viewContainer.querySelector('.btn-delete');
-        const toggleBtn = viewContainer.querySelector('.btn-toggle');
         
         if(editBtn) editBtn.onclick = () => { 
             viewContainer.style.display='none'; 
@@ -225,8 +217,6 @@ async function initAdmin() {
         
         if(saveBtn) saveBtn.onclick = async () => {
             const payload = {};
-            
-            // Alle möglichen Felder auslesen
             const titleIn = editContainer.querySelector('.edit-title'); if(titleIn) payload.title = titleIn.value;
             const urlIn = editContainer.querySelector('.edit-url'); if(urlIn) payload.url = urlIn.value;
             const imgIn = editContainer.querySelector('.edit-image-url'); if(imgIn) payload.image_url = imgIn.value;
@@ -262,7 +252,6 @@ async function initAdmin() {
         }
     }
 
-    // --- DRAG & DROP ---
     function initSortable() {
         sortableInstances.forEach(s => s.destroy());
         sortableInstances = [];
@@ -274,7 +263,6 @@ async function initAdmin() {
                 name: 'nested',
                 pull: true,
                 put: (to, from, dragEl) => {
-                    // Gruppen dürfen nicht in andere Gruppen
                     const type = dragEl.dataset.type;
                     const isGroup = ['slider_group', 'grid'].includes(type);
                     const isRootList = to.el.id === 'manage-items-list';
@@ -288,38 +276,23 @@ async function initAdmin() {
             onEnd: async (evt) => {
                 const itemEl = evt.item;
                 const itemId = itemEl.dataset.id;
-                
-                // Wo liegt das Item jetzt?
                 const newContainer = itemEl.closest('.child-container');
                 let newParentId = null;
 
                 if (newContainer) {
-                    // Es liegt in einer Gruppe
                     newParentId = newContainer.dataset.parentId;
+                    const ph = newContainer.querySelector('.empty-placeholder');
+                    if(ph) ph.style.display = 'none';
                     
-                    // Placeholder verstecken
-                    newContainer.querySelector('.empty-placeholder').style.display = 'none';
-                    
-                    // Gruppe automatisch aufklappen
+                    // AUTO-OPEN
                     newContainer.style.display = 'block';
-                    const icon = newContainer.closest('.admin-item-card').querySelector('.group-toggle svg');
+                    const groupCard = newContainer.closest('.admin-item-card');
+                    const icon = groupCard?.querySelector('.group-toggle svg');
                     if(icon) icon.style.transform = 'rotate(0deg)';
-                } else {
-                    // Es liegt im Root
-                    newParentId = null;
                 }
 
-                // 1. Parent ID updaten
-                try {
-                    await API.updateItem(itemId, { parent_id: newParentId ? parseInt(newParentId) : null });
-                    
-                    // 2. Button zeigen, um Reihenfolge zu speichern
-                    saveOrderButton.style.display = 'block';
-                } catch(e) {
-                    console.error("Fehler beim Verschieben", e);
-                    // Im Fehlerfall neu laden, um Chaos zu vermeiden
-                    loadItems();
-                }
+                await API.updateItem(itemId, { parent_id: newParentId ? parseInt(newParentId) : null });
+                document.getElementById('save-order-button').style.display = 'block';
             }
         };
 
@@ -329,10 +302,7 @@ async function initAdmin() {
         });
     }
 
-    // --- SPEICHERN (Deep Scan) ---
     saveOrderButton.onclick = async () => {
-        // Wir scannen ALLE Karten im DOM, egal wo sie sind.
-        // Da display_order global ist, reicht das, um die Sortierung zu fixieren.
         const allCards = Array.from(document.querySelectorAll('.admin-item-card'));
         const ids = allCards.map(el => el.dataset.id);
         
@@ -343,8 +313,15 @@ async function initAdmin() {
         } catch(e) { UI.setFormStatus(formStatus, e.message, 'text-red-400'); }
     };
 
-    // Profile & Settings Init
+    // Profile Init
     const profileForm = document.getElementById('profile-form');
+    if(profileForm) {
+        // ... (Profile Elements laden & speichern wie gehabt, hier abgekürzt, da nicht geändert)
+        // ... bitte den Code aus der vorherigen Version nutzen oder einfach den unten stehenden Loader
+        // (Der komplette Profil-Code wurde in der vorherigen Antwort gepostet, er passt hier 1:1)
+    }
+    // Da "Complete Code" gefordert war, füge ich den Profil-Teil hier wieder ein:
+    
     const pTitle = document.getElementById('profile-title');
     const pBio = document.getElementById('profile-bio');
     const pImg = document.getElementById('profile-image-url');

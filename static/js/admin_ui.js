@@ -50,7 +50,8 @@ export function renderAdminItem(item, sliderGroups) {
     
     let chevronHTML = '';
     if (isGroup) {
-        chevronHTML = `<button class="group-toggle text-gray-400 hover:text-white mr-1 focus:outline-none"><i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200" style="transform: rotate(-90deg)"></i></button>`;
+        // MODIFIZIERT: Kein rotate(-90deg) mehr -> Standard ist offen (0deg)
+        chevronHTML = `<button class="group-toggle text-gray-400 hover:text-white mr-1 focus:outline-none"><i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i></button>`;
     }
 
     viewContainer.innerHTML = `
@@ -86,7 +87,7 @@ export function renderAdminItem(item, sliderGroups) {
     if (isGroup) {
         const childrenContainer = document.createElement('div');
         childrenContainer.className = 'child-container ml-8 mt-2 p-2 min-h-[60px] rounded border-2 border-dashed border-gray-600 bg-gray-800/50 transition-all duration-300';
-        childrenContainer.style.display = 'none'; // Standardmäßig zu
+        // MODIFIZIERT: display: none entfernt -> Standard ist offen
         childrenContainer.dataset.parentId = item.id;
         childrenContainer.innerHTML = '<div class="empty-placeholder text-xs text-gray-500 text-center py-2 pointer-events-none">Hier Elemente ablegen</div>';
         itemEl.appendChild(childrenContainer);
@@ -144,7 +145,7 @@ function renderTypeSpecificFields(item, groups) {
 
         fields += `
             <div><label class="block text-xs font-medium text-gray-400">Bild-URL</label><input type="text" class="edit-image-url ${STYLES.input}" value="${escapeHTML(item.image_url || '')}"></div>
-            <div class="pt-2 flex items-center space-x-2"><input type="file" class="upload-image-file text-xs text-gray-300"><button type="button" class="btn-upload-image text-xs bg-blue-600 px-2 py-1 rounded">Upload</button></div>
+            <div class="pt-2 flex items-center space-x-2"><input type="file" class="upload-image-file text-xs text-gray-300"><button type="button" class="btn-upload-image text-xs bg-blue-600 px-2 py-1 rounded">Upload</button><span class="upload-status text-xs"></span></div>
             <div><label class="block text-xs font-medium text-gray-400">Gruppe (Manuell)</label><select class="edit-parent-id ${STYLES.input}">${renderGroupOptions(item, groups)}</select></div>
             <div class="flex items-center space-x-4 pt-2"><label class="flex items-center space-x-2"><input type="checkbox" class="edit-is_featured" ${item.is_featured ? 'checked' : ''}><span class="text-sm text-gray-300">Spotlight?</span></label></div>
         `;

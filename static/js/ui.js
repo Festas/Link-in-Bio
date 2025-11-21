@@ -1,7 +1,7 @@
 import { escapeHTML, pSBC } from './utils.js';
 import { trackClick, subscribeEmail } from './api.js';
 
-const state = { countdownIntervals: [], delegationInitialized: false };
+const state = { countdownIntervals: [], delegationInitialized: false, swipers: [] };
 const CountdownManager = {
     clearAll() { state.countdownIntervals.forEach(entry => clearInterval(entry.interval)); state.countdownIntervals = []; },
     register(id, interval) { state.countdownIntervals.push({ id, interval }); },
@@ -211,4 +211,54 @@ export function renderItems(items) {
     document.getElementById('loading-spinner').style.display = 'none';
     initSwipers(); 
     if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// Initialize Swiper sliders present in the page. Destroys previous instances first.
+export function initSwipers() {
+    try {
+        // If Swiper not available, skip silently
+        if (typeof Swiper === 'undefined') return;
+
+        // Destroy existing instances
+        if (state.swipers && state.swipers.length > 0) {
+            state.swipers.forEach(s => {
+                try { s.destroy(true, true); } catch (_) {}
+            });
+            state.swipers = [];
+        }
+
+        document.querySelectorAll('.swiper').forEach(swiperEl => {
+            // Find pagination inside this swiper
+            const pagination = swiperEl.querySelector('.swiper-pagination');
+            const config = {
+                loop: true,
+                centeredSlides: true,
+                slidesPerView: 1,
+                spaceBetween: 12,
+                pagination: pagination ? { el: pagination, clickable: true } : undefined,
+                breakpoints: {
+                    640: { slidesPerView: 1.5 },
+                    768: { slidesPerView: 2 },
+                    1024: { slidesPerView: 3 }
+                }
+            };
+
+            // Create instance and store it
+            try {
+                const instance = new Swiper(swiperEl, config);
+                state.swipers.push(instance);
+            } catch (err) {
+                // Some Swiper builds require initializing on the wrapper element or using CSS selectors.
+                try {
+                    const id = swiperEl.id ? `#${swiperEl.id}` : swiperEl;
+                    const instance = new Swiper(id, config);
+                    state.swipers.push(instance);
+                } catch (e) {
+                    console.warn('Swiper init failed for', swiperEl, e);
+                }
+            }
+        });
+    } catch (e) {
+        console.error('initSwipers error', e);
+    }
 }

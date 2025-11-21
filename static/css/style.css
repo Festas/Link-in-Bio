@@ -12,6 +12,49 @@
     --color-border: rgba(255, 255, 255, 0.08); /* Subtiler Rand */
 }
 
+/* --- PICASSO THEME --- */
+body.theme-picasso {
+    --color-bg: linear-gradient(135deg, #F6E8D9 0%, #E4D6F8 50%, #FDEBD0 100%);
+    --color-bg-solid: #F6F0E8;
+    --color-text: #2B2B2B;
+    --color-text-muted: #6B6B6B;
+    --color-item-bg: rgba(255,255,255,0.75);
+    --color-item-bg-hover: rgba(255,255,255,0.9);
+    --color-item-text: #111827;
+    --color-item-shadow: rgba(0,0,0,0.06);
+    --color-border: rgba(43,43,43,0.06);
+}
+
+/* Decorative profile header for Picasso theme */
+#profile-header {
+    position: relative;
+    overflow: visible;
+}
+#profile-header::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -20px;
+    transform: translateX(-50%);
+    width: 120%;
+    height: 220px;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 220'><defs><linearGradient id='g1' x1='0' x2='1'><stop offset='0' stop-color='%23f8e3c6'/><stop offset='0.5' stop-color='%23e6d4f7'/><stop offset='1' stop-color='%23fde9cc'/></linearGradient></defs><g fill='none' fill-rule='evenodd'><path d='M0 120 C150 20 300 220 450 120 C600 20 750 220 800 120 L800 220 L0 220 Z' fill='url(%23g1)' opacity='0.95'/><g transform='translate(40,10)' fill='%232B2B2B' opacity='0.06'><rect x='0' y='0' width='80' height='80' rx='14'/><rect x='120' y='30' width='110' height='110' rx='18'/><rect x='260' y='10' width='60' height='60' rx='10'/></g></g></svg>");
+    background-repeat: no-repeat;
+    background-size: cover;
+    filter: saturate(0.95) contrast(1.02);
+    opacity: 0.95;
+    z-index: 0;
+}
+
+/* Make header content sit above the decorative background */
+#profile-header > div, #profile-header img, #profile-header h1, #profile-header p { position: relative; z-index: 2; }
+
+/* Avatar mask for Picasso theme (optional) */
+.theme-picasso .profile-title + img, .theme-picasso #profile-image {
+    /* no forced transform here, but allow optional CSS mask via admin setting */
+}
+
 /* Animation Keyframes */
 @keyframes fadeInUp {
     from {

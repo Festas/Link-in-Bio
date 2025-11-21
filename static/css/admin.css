@@ -81,6 +81,23 @@ body.theme-sunset {
     background: linear-gradient(to bottom right, #be123c, #c2410c, #b45309);
 }
 
+/* Picasso theme for admin preview */
+body.theme-picasso {
+    --color-bg: #F6F0E8;
+    --color-text: #2B2B2B;
+    --color-text-muted: #6B6B6B;
+    --color-item-bg: rgba(255,255,255,0.85);
+    --color-item-bg-hover: rgba(255,255,255,0.95);
+    --color-item-text: #111827;
+    --color-item-shadow: rgba(0,0,0,0.05);
+    --color-border: rgba(43,43,43,0.06);
+}
+
+/* Picasso profile header preview in admin */
+#profile-header::before { display: none; }
+/* but we give the admin preview a subtle canvas */
+body.theme-picasso .glass-card { box-shadow: 0 6px 24px rgba(0,0,0,0.06); border-radius: 12px; }
+
 .animate-entry {
     animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     opacity: 0;

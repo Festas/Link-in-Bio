@@ -26,46 +26,8 @@ body.theme-picasso {
 }
 
 /* Decorative profile header for Picasso theme */
-#profile-header {
-    position: relative;
-    overflow: visible;
-}
-#profile-header::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: -20px;
-    transform: translateX(-50%);
-    width: 120%;
-    height: 220px;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 220'><defs><linearGradient id='g1' x1='0' x2='1'><stop offset='0' stop-color='%23f8e3c6'/><stop offset='0.5' stop-color='%23e6d4f7'/><stop offset='1' stop-color='%23fde9cc'/></linearGradient></defs><g fill='none' fill-rule='evenodd'><path d='M0 120 C150 20 300 220 450 120 C600 20 750 220 800 120 L800 220 L0 220 Z' fill='url(%23g1)' opacity='0.95'/><g transform='translate(40,10)' fill='%232B2B2B' opacity='0.06'><rect x='0' y='0' width='80' height='80' rx='14'/><rect x='120' y='30' width='110' height='110' rx='18'/><rect x='260' y='10' width='60' height='60' rx='10'/></g></g></svg>");
-    background-repeat: no-repeat;
-    background-size: cover;
-    filter: saturate(0.95) contrast(1.02);
-    opacity: 0.95;
-    z-index: 0;
-}
-
-/* Make header content sit above the decorative background */
-#profile-header > div, #profile-header img, #profile-header h1, #profile-header p { position: relative; z-index: 2; }
-
-/* Avatar mask for Picasso theme (optional) */
-.theme-picasso .profile-title + img, .theme-picasso #profile-image {
-    /* no forced transform here, but allow optional CSS mask via admin setting */
-}
-
-/* Picasso avatar effect: geometric mask + subtle color filter */
-body.theme-picasso .picasso-avatar {
-    display: inline-block;
-    clip-path: polygon(10% 0%, 90% 0%, 100% 30%, 85% 100%, 15% 100%, 0% 30%);
-    transform: rotate(-2deg) scale(1.02);
-    filter: saturate(1.08) contrast(1.05) brightness(0.98) drop-shadow(0 8px 18px rgba(0,0,0,0.08));
-    transition: transform 0.35s ease, filter 0.35s ease;
-}
-body.theme-picasso .picasso-avatar:hover {
-    transform: rotate(0deg) scale(1.04);
-}
+/* Removed decorative profile header and picasso avatar styles per user request. */
+/* Previous Picasso decorative header and avatar mask/styles removed to keep header minimal. */
 
 /* Animation Keyframes */
 @keyframes fadeInUp {

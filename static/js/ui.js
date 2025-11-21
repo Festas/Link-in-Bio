@@ -165,14 +165,7 @@ export function applyTheme(settings) {
         customStyle.innerHTML = `body.theme-custom { --color-bg: ${escapeHTML(settings.custom_bg_color)}; --color-text: ${escapeHTML(settings.custom_text_color)}; --color-text-muted: ${escapeHTML(settings.custom_text_color)}CC; --color-item-bg: ${escapeHTML(settings.custom_button_color)}CC; --color-item-text: ${escapeHTML(settings.custom_button_text_color)}; --color-item-bg-hover: ${pSBC(-0.10, settings.custom_button_color)}DD; --color-item-shadow: rgba(0, 0, 0, 0.2); --color-border: ${pSBC(-0.20, settings.custom_button_color)}55; } body.theme-custom .countdown-box { background-color: rgba(0, 0, 0, 0.1); } body.theme-custom .email-input { color: #111; } body.theme-custom .email-submit-button { background-color: var(--color-item-text); color: var(--color-item-bg); }`;
     } else { document.body.classList.add(settings.theme || 'theme-dark'); }
     document.body.classList.add(settings.button_style || 'style-rounded');
-    // Picasso avatar effect: apply class to profile image when enabled
-    try {
-        const picEnabled = !!settings.picasso_avatar_effect && settings.theme === 'theme-picasso';
-        const img = document.getElementById('profile-image');
-        if (img) {
-            if (picEnabled) img.classList.add('picasso-avatar'); else img.classList.remove('picasso-avatar');
-        }
-    } catch (e) {}
+    // Picasso avatar & decorative header removed — no runtime class toggling.
 }
 
 // KORRIGIERT: Render Profile Header mit Smart Links
@@ -215,7 +208,8 @@ export function renderProfileHeader(settings) {
     });
 
     header.style.position = 'relative'; 
-    header.innerHTML = `<div class="absolute top-0 right-0 mt-0 mr-0"><button id="share-profile-btn" class="p-2 rounded-full glass-card hover:bg-white hover:bg-opacity-20 transition-colors" style="color: var(--color-text);" title="Profil teilen"><i data-lucide="share-2" class="w-5 h-5"></i></button></div><div class="animate-entry" style="animation-delay: 0ms;"><img id="profile-image" src="${escapeHTML(settings.image_url || 'https://placehold.co/100x100/374151/FFFFFF?text=Bild')}" alt="Profilbild" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 shadow-lg" style="border-color: var(--color-border);" onerror="this.src='https://placehold.co/100x100/374151/FFFFFF?text=Bild'; this.onerror=null;"><h1 id="profile-title" class="profile-title text-2xl text-shadow-md">${escapeHTML(settings.title || 'Titel')}</h1><p id="profile-bio" class="profile-bio text-sm mt-2 opacity-90">${escapeHTML(settings.bio || 'Bio')}</p></div><div id="social-links" class="flex justify-center space-x-3 mt-5 animate-entry" style="animation-delay: 100ms;">${socialLinksHTML}</div><div class="mt-6 animate-entry" style="animation-delay: 150ms;"><a href="/api/contact.vcf" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-full transition-colors glass-card hover:bg-white hover:bg-opacity-10" style="color: var(--color-text);"><i data-lucide="user-plus" class="w-4 h-4 mr-2"></i>Kontakt speichern</a></div>`;
+    // Render header with left-aligned profile image (no automatic centering)
+    header.innerHTML = `<div class="absolute top-0 right-0 mt-0 mr-0"><button id="share-profile-btn" class="p-2 rounded-full glass-card hover:bg-white hover:bg-opacity-20 transition-colors" style="color: var(--color-text);" title="Profil teilen"><i data-lucide="share-2" class="w-5 h-5"></i></button></div><div class="animate-entry text-left" style="animation-delay: 0ms;"><img id="profile-image" src="${escapeHTML(settings.image_url || 'https://placehold.co/100x100/374151/FFFFFF?text=Bild')}" alt="Profilbild" class="w-24 h-24 rounded-full mb-4 object-cover border-4 shadow-lg" style="border-color: var(--color-border);" onerror="this.src='https://placehold.co/100x100/374151/FFFFFF?text=Bild'; this.onerror=null;"><h1 id="profile-title" class="profile-title text-2xl text-shadow-md">${escapeHTML(settings.title || 'Titel')}</h1><p id="profile-bio" class="profile-bio text-sm mt-2 opacity-90">${escapeHTML(settings.bio || 'Bio')}</p></div><div id="social-links" class="flex justify-start space-x-3 mt-5 animate-entry" style="animation-delay: 100ms;">${socialLinksHTML}</div><div class="mt-6 animate-entry" style="animation-delay: 150ms;"><a href="/api/contact.vcf" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-full transition-colors glass-card hover:bg-white hover:bg-opacity-10" style="color: var(--color-text);"><i data-lucide="user-plus" class="w-4 h-4 mr-2"></i>Kontakt speichern</a></div>`;
     header.classList.remove('opacity-0');
     
     const shareBtn = header.querySelector('#share-profile-btn');

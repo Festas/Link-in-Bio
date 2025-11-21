@@ -93,9 +93,7 @@ body.theme-picasso {
     --color-border: rgba(43,43,43,0.06);
 }
 
-/* Picasso profile header preview in admin */
-#profile-header::before { display: none; }
-/* but we give the admin preview a subtle canvas */
+/* Admin preview: Picasso decorative header removed from main styles; keep admin canvas subtle */
 body.theme-picasso .glass-card { box-shadow: 0 6px 24px rgba(0,0,0,0.06); border-radius: 12px; }
 
 .animate-entry {

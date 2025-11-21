@@ -165,10 +165,27 @@ body {
    Images are centered inside each slide and use aspect-ratio to remain 1:1.
    This reduces the perceived height while preserving layout and overlays. */
 .swiper .swiper-slide > a { display: flex; align-items: center; justify-content: center; }
-.swiper .swiper-slide img { width: 50%; aspect-ratio: 1 / 1; height: auto; object-fit: cover; border-radius: 0.5rem; }
+
+/* Cap slide size so each slide box is smaller (keeps square aspect) */
+:root { --swiper-slide-max: 220px; }
+.swiper { --slide-max-size: var(--swiper-slide-max); }
+.swiper .swiper-wrapper { align-items: center; }
+.swiper .swiper-slide {
+    max-width: var(--slide-max-size) !important;
+    width: auto !important;
+    flex: 0 0 auto !important;
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* Make image fill the (smaller) slide square */
+.swiper .swiper-slide img { width: 100%; aspect-ratio: 1 / 1; height: auto; object-fit: cover; border-radius: 0.5rem; }
 
 /* Reduce gradient overlay height inside slider slides so it matches the smaller image */
-.swiper .swiper-slide .bg-gradient-to-t { height: 50% !important; }
+.swiper .swiper-slide .bg-gradient-to-t { height: 40% !important; }
+
+/* Responsive tweaks: larger screens slightly bigger slides */
+@media (min-width: 1024px) { :root { --swiper-slide-max: 260px; } }
+@media (max-width: 640px) { :root { --swiper-slide-max: 140px; } }
 
 /* Countdown Grid */
 .countdown-grid {

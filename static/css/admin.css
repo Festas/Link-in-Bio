@@ -198,23 +198,18 @@ body.style-pill .item-product {
 /* Admin: make slider images visually smaller but square in the preview */
 .swiper .swiper-slide > a { display: flex; align-items: center; justify-content: center; }
 
-/* Cap admin-preview slide size so preview boxes are smaller */
-:root { --swiper-slide-max: 220px; }
-.swiper { --slide-max-size: var(--swiper-slide-max); }
+/* Allow Swiper to set slide widths so admin preview can show 2 slides per view; keep square */
 .swiper .swiper-wrapper { align-items: center; }
 .swiper .swiper-slide {
-    max-width: var(--slide-max-size) !important;
-    width: auto !important;
-    flex: 0 0 auto !important;
-    display: flex; align-items: center; justify-content: center;
-    /* ensure admin preview slides are square so anchors/captions have height */
-    aspect-ratio: 1 / 1;
+     width: auto !important;
+     flex: 0 0 auto !important;
+     display: flex; align-items: center; justify-content: center;
+     aspect-ratio: 1 / 1;
+     max-width: none !important;
 }
 .swiper .swiper-slide > a { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
 .swiper .swiper-slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; }
 .swiper .swiper-slide .bg-gradient-to-t { height: 40% !important; }
-@media (min-width: 1024px) { :root { --swiper-slide-max: 260px; } }
-@media (max-width: 640px) { :root { --swiper-slide-max: 140px; } }
 
 /* Countdown Grid */
 .countdown-grid {

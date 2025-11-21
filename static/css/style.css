@@ -166,17 +166,15 @@ body {
    This reduces the perceived height while preserving layout and overlays. */
 .swiper .swiper-slide > a { display: flex; align-items: center; justify-content: center; }
 
-/* Cap slide size so each slide box is smaller (keeps square aspect) */
-:root { --swiper-slide-max: 220px; }
-.swiper { --slide-max-size: var(--swiper-slide-max); }
+/* Slides: let Swiper control widths so we can show 2 slides per view; keep slides square */
 .swiper .swiper-wrapper { align-items: center; }
 .swiper .swiper-slide {
-    max-width: var(--slide-max-size) !important;
+    /* allow Swiper to set width (slidesPerView), keep square aspect */
     width: auto !important;
     flex: 0 0 auto !important;
     display: flex; align-items: center; justify-content: center;
-    /* ensure slides are square so child anchors with h-full work */
     aspect-ratio: 1 / 1;
+    max-width: none !important;
 }
 
 /* Make image fill the (smaller) slide square */
@@ -186,9 +184,7 @@ body {
 /* Reduce gradient overlay height inside slider slides so it matches the smaller image */
 .swiper .swiper-slide .bg-gradient-to-t { height: 40% !important; }
 
-/* Responsive tweaks: larger screens slightly bigger slides */
-@media (min-width: 1024px) { :root { --swiper-slide-max: 260px; } }
-@media (max-width: 640px) { :root { --swiper-slide-max: 140px; } }
+/* Responsive adjustments are driven by Swiper's slidesPerView breakpoints in JS */
 
 /* Countdown Grid */
 .countdown-grid {

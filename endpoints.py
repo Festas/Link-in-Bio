@@ -52,7 +52,8 @@ async def background_scrape_and_update(item_id: int, url: str):
             cache.invalidate("items")
     except Exception as e:
         # Log error but don't crash - the item already exists with placeholder data
-        print(f"Background scraping failed for item {item_id}: {e}")
+        import logging
+        logging.error(f"Background scraping failed for item {item_id}: {e}")
 
 # --- Auth Check ---
 
@@ -73,7 +74,7 @@ def build_item_data(item_type, title, url=None, image_url=None, price=None, grid
 async def create_link(req: ItemCreate, background_tasks: BackgroundTasks, user=Depends(require_auth)):
     if not req.url: raise HTTPException(400, "URL fehlt")
     # Create item immediately with placeholder
-    data = build_item_data("link", req.url, req.url, None)
+    data = build_item_data("link", "Loading...", req.url, None)
     item_dict = create_item_in_db(data)
     # Schedule background scraping
     background_tasks.add_task(background_scrape_and_update, item_dict["id"], req.url)
@@ -123,7 +124,7 @@ async def create_testimonial(req: ItemCreate, user=Depends(require_auth)):
 async def create_product(req: ItemCreate, background_tasks: BackgroundTasks, user=Depends(require_auth)):
     if not req.url: raise HTTPException(400, "URL fehlt")
     # Create item immediately with placeholder
-    title = req.title if req.title else req.url
+    title = req.title if req.title else "Loading..."
     data = build_item_data("product", title, req.url, None, req.price)
     item_dict = create_item_in_db(data)
     # Schedule background scraping if no custom title was provided

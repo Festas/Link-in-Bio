@@ -61,5 +61,11 @@ def test_sitemap_xml():
 # Cleanup
 def teardown_module():
     """Clean up test database."""
-    os.close(test_db_fd)
-    os.unlink(test_db_path)
+    try:
+        os.close(test_db_fd)
+    except Exception:
+        pass
+    try:
+        os.unlink(test_db_path)
+    except Exception:
+        pass

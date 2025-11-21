@@ -14,12 +14,13 @@ from dotenv import load_dotenv
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 # Configure logging
+LOG_FILE = os.getenv('LOG_FILE_PATH', 'app.log')
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler('app.log') if not os.getenv('DISABLE_FILE_LOGGING') else logging.NullHandler()
+        logging.FileHandler(LOG_FILE) if not os.getenv('DISABLE_FILE_LOGGING') else logging.NullHandler()
     ]
 )
 logger = logging.getLogger(__name__)

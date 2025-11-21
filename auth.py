@@ -10,15 +10,23 @@ load_dotenv()
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
+# Common weak passwords to reject
+WEAK_PASSWORDS = {
+    "password", "123456", "12345678", "admin", "admin123", "password123",
+    "change-this-to-a-secure-password", "test", "qwerty", "letmein"
+}
+
 # Security: Require credentials to be set, no default passwords
 if not ADMIN_USERNAME or not ADMIN_PASSWORD:
     print("❌ FEHLER: ADMIN_USERNAME und ADMIN_PASSWORD müssen in der .env Datei gesetzt sein!")
     print("   Bitte erstellen Sie eine .env Datei basierend auf .env.example")
     sys.exit(1)
 
-if ADMIN_PASSWORD == "change-this-to-a-secure-password" or len(ADMIN_PASSWORD) < 12:
+# Check password strength
+if ADMIN_PASSWORD.lower() in WEAK_PASSWORDS or len(ADMIN_PASSWORD) < 12:
     print("⚠️  WARNUNG: Das Admin-Passwort ist unsicher!")
     print("   Bitte verwenden Sie ein starkes Passwort mit mindestens 12 Zeichen.")
+    print("   Vermeiden Sie häufige Passwörter wie 'password', 'admin123', etc.")
     # In production, this should exit, but for development we'll just warn
     if os.getenv("ENVIRONMENT") == "production":
         sys.exit(1)

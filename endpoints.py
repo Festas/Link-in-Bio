@@ -54,9 +54,14 @@ async def health_check():
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
+        # Log the full error for debugging but return generic message
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Health check failed: {e}", exc_info=True)
+        
         return {
             "status": "unhealthy",
-            "error": str(e),
+            "error": "Service unavailable",
             "timestamp": datetime.now().isoformat()
         }
 

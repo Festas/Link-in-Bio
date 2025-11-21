@@ -12,3 +12,4 @@ ddgs
 pydantic[email]
 email-validator
 duckduckgo_search
+aiosqlite

@@ -76,7 +76,7 @@ def configure_template_globals():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
+    await init_db()
     configure_template_globals()
     yield
 
@@ -112,7 +112,7 @@ async def get_service_worker():
 
 @app.get("/manifest.json", response_class=JSONResponse)
 async def get_manifest():
-    settings = get_settings_from_db()
+    settings = await get_settings_from_db()
     title = settings.get('title', 'Link-in-Bio')
     icon_src = settings.get('image_url') if settings.get('image_url') and settings.get('image_url').startswith('/static') else '/static/uploads/default-icon.png'
     if icon_src.startswith('http'):
@@ -162,7 +162,7 @@ async def get_login_page(request: Request):
     
 @app.get("/privacy", response_class=HTMLResponse)
 async def get_privacy_page(request: Request):
-    settings = get_settings_from_db()
+    settings = await get_settings_from_db()
     page_url = f"https://{APP_DOMAIN}/privacy" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/privacy"
     context = {
         "request": request,
@@ -177,7 +177,7 @@ async def get_privacy_page(request: Request):
 
 @app.get("/", response_class=HTMLResponse, dependencies=[Depends(limiter_standard)])
 async def get_index_html(request: Request):
-    settings = get_settings_from_db()
+    settings = await get_settings_from_db()
     page_title = settings.get('title', 'Link-in-Bio')
     page_description = settings.get('bio', 'Willkommen!')
     page_image_url = settings.get('image_url', '')

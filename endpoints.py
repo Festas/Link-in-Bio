@@ -1,6 +1,6 @@
 import os
 import zipfile
-import sqlite3
+import aiosqlite
 import csv
 import io
 from pathlib import Path
@@ -45,10 +45,10 @@ async def check_login(username: str = Depends(require_auth)):
 
 # --- Helper ---
 
-def build_item_data(item_type, title, url=None, image_url=None, price=None, grid_columns=2):
+async def build_item_data(item_type, title, url=None, image_url=None, price=None, grid_columns=2):
     # Reihenfolge muss exakt zur DB-Tabelle passen:
     # item_type, title, url, image_url, display_order, parent_id, click_count, is_featured, is_active, is_affiliate, publish_on, expires_on, price, grid_columns
-    return (item_type, title, url, image_url, get_next_display_order(), None, 0, 0, 1, 0, None, None, price, grid_columns)
+    return (item_type, title, url, image_url, await get_next_display_order(), None, 0, 0, 1, 0, None, None, price, grid_columns)
 
 # --- Item Creation Endpoints ---
 
@@ -56,106 +56,106 @@ def build_item_data(item_type, title, url=None, image_url=None, price=None, grid
 async def create_link(req: ItemCreate, user=Depends(require_auth)):
     if not req.url: raise HTTPException(400, "URL fehlt")
     details = await scrape_link_details(req.url)
-    data = build_item_data("link", details.get("title", "?"), details.get("url", req.url), details.get("image_url"))
+    data = await build_item_data("link", details.get("title", "?"), details.get("url", req.url), details.get("image_url"))
     cache.invalidate("items")
-    return Item(**create_item_in_db(data))
+    return Item(**await create_item_in_db(data))
 
 @router.post("/videos", response_model=Item)
 async def create_video(req: ItemCreate, user=Depends(require_auth)):
     if not req.url: raise HTTPException(400, "URL fehlt")
     embed = get_video_embed_url(req.url) or req.url
-    data = build_item_data("video", "Video", embed)
+    data = await build_item_data("video", "Video", embed)
     cache.invalidate("items")
-    return Item(**create_item_in_db(data))
+    return Item(**await create_item_in_db(data))
 
 @router.post("/headers", response_model=Item)
 async def create_header(req: ItemCreate, user=Depends(require_auth)):
     # Cache Invalidation hinzugefügt
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("header", req.title)))
+    return Item(**await create_item_in_db(await build_item_data("header", req.title)))
 
 @router.post("/slider_groups", response_model=Item)
 async def create_slider(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("slider_group", req.title)))
+    return Item(**await create_item_in_db(await build_item_data("slider_group", req.title)))
 
 @router.post("/grids", response_model=Item)
 async def create_grid(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("grid", req.title)))
+    return Item(**await create_item_in_db(await build_item_data("grid", req.title)))
 
 @router.post("/faqs", response_model=Item)
 async def create_faq(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("faq", req.title, ""))) 
+    return Item(**await create_item_in_db(await build_item_data("faq", req.title, ""))) 
 
 @router.post("/dividers", response_model=Item)
 async def create_divider(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("divider", req.title or "---")))
+    return Item(**await create_item_in_db(await build_item_data("divider", req.title or "---")))
 
 @router.post("/testimonials", response_model=Item)
 async def create_testimonial(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("testimonial", req.name, req.text))) 
+    return Item(**await create_item_in_db(await build_item_data("testimonial", req.name, req.text))) 
 
 @router.post("/products", response_model=Item)
 async def create_product(req: ItemCreate, user=Depends(require_auth)):
     if not req.url: raise HTTPException(400, "URL fehlt")
     details = await scrape_link_details(req.url)
     title = req.title if req.title else details.get("title", "Produkt")
-    data = build_item_data("product", title, req.url, details.get("image_url"), req.price)
+    data = await build_item_data("product", title, req.url, details.get("image_url"), req.price)
     cache.invalidate("items")
-    return Item(**create_item_in_db(data))
+    return Item(**await create_item_in_db(data))
 
 @router.post("/contact_form", response_model=Item)
 async def create_contact_form(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("contact_form", req.title)))
+    return Item(**await create_item_in_db(await build_item_data("contact_form", req.title)))
 
 @router.post("/email_form", response_model=Item)
 async def create_email_form(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("email_form", req.title)))
+    return Item(**await create_item_in_db(await build_item_data("email_form", req.title)))
 
 @router.post("/countdowns", response_model=Item)
 async def create_countdown(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("countdown", req.title, req.target_datetime)))
+    return Item(**await create_item_in_db(await build_item_data("countdown", req.title, req.target_datetime)))
 
 # --- Item Management ---
 
 @router.put("/items/{id}", response_model=Item)
 async def update_item(id: int, item: ItemUpdate, user=Depends(require_auth)):
-    updated = update_item_in_db(id, item.model_dump(exclude_unset=True))
+    updated = await update_item_in_db(id, item.model_dump(exclude_unset=True))
     if not updated: raise HTTPException(404, "Item nicht gefunden")
     cache.invalidate("items")
     return Item(**updated)
 
 @router.delete("/items/{id}")
 async def delete_item(id: int, user=Depends(require_auth)):
-    delete_item_from_db(id)
+    await delete_item_from_db(id)
     cache.invalidate("items")
     return Response(status_code=204)
 
 @router.put("/items/{id}/toggle_visibility", response_model=Item)
 async def toggle_visibility(id: int, user=Depends(require_auth)):
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("UPDATE items SET is_active = NOT is_active WHERE id = ?", (id,))
-        conn.commit()
-        cursor.execute("SELECT * FROM items WHERE id = ?", (id,))
-        updated = cursor.fetchone()
+    async with get_db_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("UPDATE items SET is_active = NOT is_active WHERE id = ?", (id,))
+        await conn.commit()
+        await cursor.execute("SELECT * FROM items WHERE id = ?", (id,))
+        updated = await cursor.fetchone()
     if not updated: raise HTTPException(404, "Item nicht gefunden")
     cache.invalidate("items")
     return Item(**dict(updated))
 
 @router.post("/items/reorder")
 async def reorder(req: ReorderRequest, user=Depends(require_auth)):
-    with get_db_connection() as conn:
+    async with get_db_connection() as conn:
         for idx, iid in enumerate(req.ids):
-            conn.execute("UPDATE items SET display_order = ? WHERE id = ?", (idx, iid))
-        conn.commit()
+            await conn.execute("UPDATE items SET display_order = ? WHERE id = ?", (idx, iid))
+        await conn.commit()
     cache.invalidate("items")
     return Response(status_code=204)
 
@@ -197,19 +197,19 @@ async def delete_media_file(filename: str, user=Depends(require_auth)):
 async def get_settings():
     cached = cache.get("settings")
     if cached: return cached
-    settings = Settings(**get_settings_from_db())
+    settings = Settings(**await get_settings_from_db())
     cache.set("settings", settings, ttl=300)
     return settings
 
 @router.put("/settings", response_model=Settings)
 async def update_settings(settings: Settings, user=Depends(require_auth)):
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
+    async with get_db_connection() as conn:
+        cursor = await conn.cursor()
         for k, v in settings.model_dump(exclude_unset=True).items():
-            if v is not None: cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (k, v))
-        conn.commit()
+            if v is not None: await cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (k, v))
+        await conn.commit()
     cache.invalidate("settings")
-    return Settings(**get_settings_from_db())
+    return Settings(**await get_settings_from_db())
 
 @router.get("/backup/download")
 async def download_backup(user=Depends(require_auth)):
@@ -229,44 +229,49 @@ async def download_backup(user=Depends(require_auth)):
 
 @router.get("/analytics", response_model=AnalyticsData)
 async def get_analytics(user=Depends(require_auth)):
-    with get_db_connection() as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT COUNT(id) FROM clicks")
-        total_clicks = cur.fetchone()[0] or 0
-        cur.execute("SELECT COUNT(id) FROM subscribers")
-        total_subs = cur.fetchone()[0] or 0
+    async with get_db_connection() as conn:
+        cur = await conn.cursor()
+        await cur.execute("SELECT COUNT(id) FROM clicks")
+        result = await cur.fetchone()
+        total_clicks = result[0] or 0
+        await cur.execute("SELECT COUNT(id) FROM subscribers")
+        result = await cur.fetchone()
+        total_subs = result[0] or 0
         
-        cur.execute("SELECT date(timestamp) as day, COUNT(id) as clicks FROM clicks WHERE timestamp >= date('now', '-30 days') GROUP BY day ORDER BY day ASC")
-        clicks_per_day = [dict(r) for r in cur.fetchall()]
+        await cur.execute("SELECT date(timestamp) as day, COUNT(id) as clicks FROM clicks WHERE timestamp >= date('now', '-30 days') GROUP BY day ORDER BY day ASC")
+        clicks_per_day = [dict(r) for r in await cur.fetchall()]
         
-        cur.execute("SELECT i.id, i.title, COUNT(c.id) as clicks FROM clicks c JOIN items i ON c.item_id = i.id GROUP BY i.id, i.title ORDER BY clicks DESC LIMIT 10")
-        top_links = [dict(r) for r in cur.fetchall()]
+        await cur.execute("SELECT i.id, i.title, COUNT(c.id) as clicks FROM clicks c JOIN items i ON c.item_id = i.id GROUP BY i.id, i.title ORDER BY clicks DESC LIMIT 10")
+        top_links = [dict(r) for r in await cur.fetchall()]
         
-        cur.execute("SELECT CASE WHEN referer IS NULL OR referer = '' THEN '(Direkt)' ELSE referer END as referer_domain, COUNT(id) as clicks FROM clicks GROUP BY referer_domain ORDER BY clicks DESC LIMIT 10")
-        top_referers = [dict(r) for r in cur.fetchall()]
+        await cur.execute("SELECT CASE WHEN referer IS NULL OR referer = '' THEN '(Direkt)' ELSE referer END as referer_domain, COUNT(id) as clicks FROM clicks GROUP BY referer_domain ORDER BY clicks DESC LIMIT 10")
+        top_referers = [dict(r) for r in await cur.fetchall()]
         
-        cur.execute("SELECT CASE WHEN country_code IS NULL THEN 'Unbekannt' ELSE country_code END as country, COUNT(id) as clicks FROM clicks GROUP BY country ORDER BY clicks DESC LIMIT 10")
-        top_countries = [dict(r) for r in cur.fetchall()]
+        await cur.execute("SELECT CASE WHEN country_code IS NULL THEN 'Unbekannt' ELSE country_code END as country, COUNT(id) as clicks FROM clicks GROUP BY country ORDER BY clicks DESC LIMIT 10")
+        top_countries = [dict(r) for r in await cur.fetchall()]
         
         return AnalyticsData(total_clicks=total_clicks, clicks_per_day=clicks_per_day, top_links=top_links, top_referers=top_referers, top_countries=top_countries, total_subscribers=total_subs)
 
 @router.get("/subscribers", response_model=List[Subscriber])
 async def get_subscribers(user=Depends(require_auth)):
-    with get_db_connection() as conn:
-        conn.cursor().execute("SELECT id, email, subscribed_at FROM subscribers ORDER BY subscribed_at DESC")
-        return [dict(r) for r in conn.cursor().fetchall()]
+    async with get_db_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT id, email, subscribed_at FROM subscribers ORDER BY subscribed_at DESC")
+        return [dict(r) for r in await cursor.fetchall()]
 
 @router.delete("/subscribers/{id}")
 async def delete_subscriber(id: int, user=Depends(require_auth)):
-    with get_db_connection() as conn:
-        conn.execute("DELETE FROM subscribers WHERE id = ?", (id,))
-        conn.commit()
+    async with get_db_connection() as conn:
+        await conn.execute("DELETE FROM subscribers WHERE id = ?", (id,))
+        await conn.commit()
     return Response(status_code=204)
 
 @router.get("/subscribers/export")
 async def export_subscribers(user=Depends(require_auth)):
-    with get_db_connection() as conn:
-        subs = conn.execute("SELECT email, subscribed_at FROM subscribers ORDER BY subscribed_at DESC").fetchall()
+    async with get_db_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT email, subscribed_at FROM subscribers ORDER BY subscribed_at DESC")
+        subs = await cursor.fetchall()
     
     stream = io.StringIO()
     writer = csv.writer(stream)
@@ -279,15 +284,16 @@ async def export_subscribers(user=Depends(require_auth)):
 
 @router.get("/messages", response_model=List[Message])
 async def get_messages(user=Depends(require_auth)):
-    with get_db_connection() as conn:
-        conn.cursor().execute("SELECT id, name, email, message, sent_at FROM messages ORDER BY sent_at DESC")
-        return [dict(r) for r in conn.cursor().fetchall()]
+    async with get_db_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT id, name, email, message, sent_at FROM messages ORDER BY sent_at DESC")
+        return [dict(r) for r in await cursor.fetchall()]
 
 @router.delete("/messages/{id}")
 async def delete_message(id: int, user=Depends(require_auth)):
-    with get_db_connection() as conn:
-        conn.execute("DELETE FROM messages WHERE id = ?", (id,))
-        conn.commit()
+    async with get_db_connection() as conn:
+        await conn.execute("DELETE FROM messages WHERE id = ?", (id,))
+        await conn.commit()
     return Response(status_code=204)
 
 # --- Public Endpoints ---
@@ -304,8 +310,10 @@ async def get_public_items(request: Request):
         query += " WHERE is_active = 1 AND (publish_on IS NULL OR publish_on <= datetime('now', 'localtime')) AND (expires_on IS NULL OR expires_on >= datetime('now', 'localtime'))"
     query += " ORDER BY display_order ASC"
     
-    with get_db_connection() as conn:
-        rows = conn.execute(query).fetchall()
+    async with get_db_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute(query)
+        rows = await cursor.fetchall()
     
     items_dict = {}
     nested = []
@@ -334,9 +342,9 @@ async def track_click(item_id: int, request: Request):
         domain = urlparse(referer).netloc if referer else "(Direkt)"
         ip = request.client.host
         country = await get_country_from_ip(ip)
-        with get_db_connection() as conn:
-            conn.execute("INSERT INTO clicks (item_id, referer, country_code) VALUES (?, ?, ?)", (item_id, domain, country))
-            conn.commit()
+        async with get_db_connection() as conn:
+            await conn.execute("INSERT INTO clicks (item_id, referer, country_code) VALUES (?, ?, ?)", (item_id, domain, country))
+            await conn.commit()
     except: pass
     return Response(status_code=204)
 
@@ -344,31 +352,31 @@ async def track_click(item_id: int, request: Request):
 async def subscribe(req: SubscribeRequest):
     if not req.privacy_agreed: raise HTTPException(400, "Datenschutz nicht akzeptiert")
     try:
-        with get_db_connection() as conn:
-            conn.execute("INSERT INTO subscribers (email) VALUES (?)", (req.email,))
-            conn.commit()
+        async with get_db_connection() as conn:
+            await conn.execute("INSERT INTO subscribers (email) VALUES (?)", (req.email,))
+            await conn.commit()
         return {"message": "Abonniert!"}
-    except sqlite3.IntegrityError: return {"message": "Bereits registriert."}
+    except aiosqlite.IntegrityError: return {"message": "Bereits registriert."}
 
 @router.post("/contact", dependencies=[Depends(limiter_strict)])
 async def contact(req: ContactRequest):
     if not req.privacy_agreed: raise HTTPException(400, "Datenschutz nicht akzeptiert")
-    with get_db_connection() as conn:
-        conn.execute("INSERT INTO messages (name, email, message) VALUES (?, ?, ?)", (req.name, req.email, req.message))
-        conn.commit()
+    async with get_db_connection() as conn:
+        await conn.execute("INSERT INTO messages (name, email, message) VALUES (?, ?, ?)", (req.name, req.email, req.message))
+        await conn.commit()
     return {"message": "Gesendet!"}
 
 # --- Tools ---
 
 @router.get("/social/card.png")
 async def social_card():
-    settings = get_settings_from_db()
+    settings = await get_settings_from_db()
     img = await generate_social_card(settings)
     return StreamingResponse(img, media_type="image/png")
 
 @router.get("/contact.vcf", dependencies=[Depends(limiter_standard)])
 async def vcard():
-    s = get_settings_from_db()
+    s = await get_settings_from_db()
     vcf = f"BEGIN:VCARD\nVERSION:3.0\nFN:{s.get('title')}\nEMAIL:{s.get('social_email')}\nURL:https://{APP_DOMAIN}\nNOTE:{s.get('bio')}\nEND:VCARD"
     return Response(content=vcf, media_type="text/vcard", headers={"Content-Disposition": "attachment; filename=contact.vcf"})
 

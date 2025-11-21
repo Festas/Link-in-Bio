@@ -153,14 +153,21 @@ async function initAdmin() {
 
                 if (isGroup(rootItem)) {
                     const childContainer = rendered.childrenContainer;
-                    const childList = childrenMap[String(rootItem.id)];
-                    if (childList && childList.length > 0) {
-                        childContainer.querySelector('.empty-placeholder').style.display = 'none';
-                        childList.forEach(c => {
-                            const cr = UI.renderAdminItem(c, groupItems);
-                            childContainer.appendChild(cr.itemEl);
-                            setupItemEvents(c, cr);
-                        });
+                    // Always clear childrenContainer before rendering
+                    if (childContainer) {
+                        childContainer.innerHTML = '<div class="empty-placeholder text-xs text-gray-500 text-center py-2 pointer-events-none">Hier Elemente ablegen</div>';
+                        const childList = childrenMap[String(rootItem.id)];
+                        if (childList && childList.length > 0) {
+                            childContainer.querySelector('.empty-placeholder').style.display = 'none';
+                            childList.forEach(c => {
+                                const cr = UI.renderAdminItem(c, groupItems);
+                                childContainer.appendChild(cr.itemEl);
+                                setupItemEvents(c, cr);
+                            });
+                        } else {
+                            // Show placeholder if no children
+                            childContainer.querySelector('.empty-placeholder').style.display = 'block';
+                        }
                     }
                 }
             });

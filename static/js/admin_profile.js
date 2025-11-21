@@ -5,10 +5,9 @@ export function initProfile() {
     const form = document.getElementById('profile-form');
     const socialContainer = document.getElementById('social-inputs-container');
 
-    // 1. Social Media Felder definieren und rendern
-    // Jetzt mit klaren Placeholdern ("Benutzername" statt URL)
+    // 1. Social Media Felder definieren und rendern (mit korrekten Placeholdern)
     const socialFields = [
-        { id: 'youtube', label: 'YouTube', icon: 'youtube', placeholder: 'Benutzername' },
+        { id: 'youtube', label: 'YouTube', icon: 'youtube', placeholder: 'Benutzername oder Link' },
         { id: 'instagram', label: 'Instagram', icon: 'instagram', placeholder: 'Benutzername' },
         { id: 'tiktok', label: 'TikTok', icon: 'music', placeholder: 'Benutzername' },
         { id: 'twitch', label: 'Twitch', icon: 'twitch', placeholder: 'Kanalname' },
@@ -61,8 +60,6 @@ export function initProfile() {
 async function loadProfileSettings() {
     try {
         const s = await API.fetchSettings();
-        
-        // Helper
         const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
         
         setVal('profile-title', s.title);
@@ -74,7 +71,6 @@ async function loadProfileSettings() {
         setVal('custom-html-head', s.custom_html_head);
         setVal('custom-html-body', s.custom_html_body);
         
-        // Colors
         setVal('custom-bg-color', s.custom_bg_color || '#111827');
         setVal('custom-text-color', s.custom_text_color || '#F9FAFB');
         setVal('custom-button-color', s.custom_button_color || '#1F2937');
@@ -90,7 +86,7 @@ async function loadProfileSettings() {
 
         toggleCustomThemeSettings(s.theme);
         
-        // WICHTIG: Styling anwenden, NACHDEM alles gerendert ist
+        // FIX: Styling anwenden, NACHDEM alles befüllt ist
         applyStyles();
 
     } catch(e) { console.error("Settings Load Error", e); }
@@ -100,22 +96,20 @@ function applyStyles() {
     const form = document.getElementById('profile-form');
     if (!form) return;
 
-    // Alle Inputs, Selects und Textareas im Formular selektieren
-    // Auch input[type="color"], input[type="url"], etc.
-    const inputs = form.querySelectorAll('input, textarea, select');
-    inputs.forEach(el => {
-        // Wir setzen die Klasse nur, wenn sie nicht schon da ist
-        // UI.STYLES.input enthält die graue Hintergrundfarbe etc.
-        if (!el.className.includes('bg-gray-700')) {
+    // Alle Inputs (auch Socials!) dunkel färben
+    form.querySelectorAll('input, textarea, select').forEach(el => {
+        // UI.STYLES.input enthält die Tailwind-Klassen für den dunklen Look
+        // Wir überschreiben vorhandene Klassen, um sicherzugehen
+        if (!el.classList.contains('bg-gray-700')) {
              el.className = UI.STYLES.input;
         }
-        // Spezialfall für Color-Picker: Etwas anpassen
+        // Color Picker Sonderbehandlung
         if (el.type === 'color') {
             el.className = "h-10 w-full bg-transparent border border-gray-600 rounded cursor-pointer";
         }
     });
 
-    // Button stylen
+    // Button
     const btn = form.querySelector('button[type="submit"]');
     if(btn) btn.className = UI.STYLES.btnPrimary + " mt-6 w-full";
 }
@@ -151,14 +145,14 @@ function setupBackup() {
     if(!btn) return;
     btn.onclick = async () => {
         const st = document.getElementById('backup-status');
-        if(st) st.textContent = 'Lade...';
+        if(st) { st.textContent = 'Lade...'; st.className = 'text-sm text-blue-400'; }
         try {
             const r = await API.downloadBackup();
             const b = await r.blob();
             const u = window.URL.createObjectURL(b);
             const a = document.createElement('a'); a.style.display='none'; a.href=u; a.download=`backup_${Date.now()}.zip`;
             document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(u); a.remove();
-            if(st) st.textContent = 'Fertig!';
-        } catch(e) { if(st) st.textContent = 'Fehler'; }
+            if(st) { st.textContent = 'Fertig!'; st.className = 'text-sm text-green-400'; }
+        } catch(e) { if(st) { st.textContent = 'Fehler'; st.className = 'text-sm text-red-400'; } }
     }
 }

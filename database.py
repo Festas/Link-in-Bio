@@ -1,27 +1,27 @@
-import sqlite3
+import aiosqlite
 import os
 from typing import Dict, Any, Optional
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from datetime import datetime
 
 load_dotenv()
 DATABASE_FILE = "linktree.db"
 
-@contextmanager
-def get_db_connection():
-    conn = sqlite3.connect(DATABASE_FILE)
-    conn.row_factory = sqlite3.Row 
+@asynccontextmanager
+async def get_db_connection():
+    conn = await aiosqlite.connect(DATABASE_FILE)
+    conn.row_factory = aiosqlite.Row 
     try: yield conn
-    finally: conn.close()
+    finally: await conn.close()
 
-def init_db():
+async def init_db():
     print("Initialisiere Datenbank...")
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
+    async with get_db_connection() as conn:
+        cursor = await conn.cursor()
         
         # Create Table (Updated)
-        cursor.execute("""CREATE TABLE IF NOT EXISTS items (
+        await cursor.execute("""CREATE TABLE IF NOT EXISTS items (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
             item_type TEXT NOT NULL, 
             title TEXT NOT NULL, 
@@ -40,17 +40,17 @@ def init_db():
             FOREIGN KEY (parent_id) REFERENCES items(id) ON DELETE SET NULL
         )""")
         
-        cursor.execute("""CREATE TABLE IF NOT EXISTS clicks (id INTEGER PRIMARY KEY AUTOINCREMENT, item_id INTEGER NOT NULL, timestamp DATETIME DEFAULT (datetime('now', 'localtime')), referer TEXT, country_code TEXT, FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE)""")
-        cursor.execute("""CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)""")
-        cursor.execute("""CREATE TABLE IF NOT EXISTS subscribers (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE, subscribed_at DATETIME DEFAULT (datetime('now', 'localtime')))""")
-        cursor.execute("""CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, message TEXT NOT NULL, sent_at DATETIME DEFAULT (datetime('now', 'localtime')))""")
+        await cursor.execute("""CREATE TABLE IF NOT EXISTS clicks (id INTEGER PRIMARY KEY AUTOINCREMENT, item_id INTEGER NOT NULL, timestamp DATETIME DEFAULT (datetime('now', 'localtime')), referer TEXT, country_code TEXT, FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE)""")
+        await cursor.execute("""CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)""")
+        await cursor.execute("""CREATE TABLE IF NOT EXISTS subscribers (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE, subscribed_at DATETIME DEFAULT (datetime('now', 'localtime')))""")
+        await cursor.execute("""CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, message TEXT NOT NULL, sent_at DATETIME DEFAULT (datetime('now', 'localtime')))""")
         
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_display_order ON items(display_order)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_item_id ON clicks(item_id)")
+        await cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_display_order ON items(display_order)")
+        await cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_item_id ON clicks(item_id)")
         
         # Migrationen (Fix für grid_columns)
-        cursor.execute("PRAGMA table_info(items)")
-        columns_items = [col[1] for col in cursor.fetchall()]
+        await cursor.execute("PRAGMA table_info(items)")
+        columns_items = [col[1] for col in await cursor.fetchall()]
         
         migrations = {
             'price': "ALTER TABLE items ADD COLUMN price TEXT DEFAULT NULL",
@@ -64,60 +64,61 @@ def init_db():
         
         for col, sql in migrations.items():
             if col not in columns_items:
-                try: cursor.execute(sql)
+                try: await cursor.execute(sql)
                 except: pass
 
         # Clicks Migration
-        cursor.execute("PRAGMA table_info(clicks)")
-        click_cols = [c[1] for c in cursor.fetchall()]
+        await cursor.execute("PRAGMA table_info(clicks)")
+        click_cols = [c[1] for c in await cursor.fetchall()]
         if 'country_code' not in click_cols:
-            cursor.execute("ALTER TABLE clicks ADD COLUMN country_code TEXT DEFAULT NULL")
+            await cursor.execute("ALTER TABLE clicks ADD COLUMN country_code TEXT DEFAULT NULL")
 
         default_settings = {'title': 'Mein Link-in-Bio', 'theme': 'theme-dark', 'button_style': 'style-rounded'}
         for key, value in default_settings.items():
-            cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (key, value))
-        conn.commit()
+            await cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (key, value))
+        await conn.commit()
 
-def get_next_display_order() -> int:
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT MAX(display_order) FROM items")
-        result = cursor.fetchone()
+async def get_next_display_order() -> int:
+    async with get_db_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT MAX(display_order) FROM items")
+        result = await cursor.fetchone()
         return (result[0] if result and result[0] else 0) + 1
 
-def get_settings_from_db() -> Dict[str, Any]:
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT key, value FROM settings")
-        return {row['key']: row['value'] for row in cursor.fetchall()}
+async def get_settings_from_db() -> Dict[str, Any]:
+    async with get_db_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT key, value FROM settings")
+        return {row['key']: row['value'] for row in await cursor.fetchall()}
 
-def create_item_in_db(item_data: tuple) -> dict:
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
+async def create_item_in_db(item_data: tuple) -> dict:
+    async with get_db_connection() as conn:
+        cursor = await conn.cursor()
         # 14 Parameter inkl grid_columns
-        cursor.execute("""INSERT INTO items (
+        await cursor.execute("""INSERT INTO items (
             item_type, title, url, image_url, display_order, parent_id, 
             click_count, is_featured, is_active, is_affiliate, 
             publish_on, expires_on, price, grid_columns
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", item_data)
-        conn.commit()
-        cursor.execute("SELECT * FROM items WHERE id = ?", (cursor.lastrowid,))
-        return dict(cursor.fetchone())
+        await conn.commit()
+        await cursor.execute("SELECT * FROM items WHERE id = ?", (cursor.lastrowid,))
+        return dict(await cursor.fetchone())
 
-def update_item_in_db(item_id: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+async def update_item_in_db(item_id: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     if not data: return None
     set_clauses = [f"{key} = ?" for key in data.keys()]
     query = f"UPDATE items SET {', '.join(set_clauses)} WHERE id = ?"
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute(query, list(data.values()) + [item_id])
-        conn.commit()
-        cursor.execute("SELECT * FROM items WHERE id = ?", (item_id,))
-        return dict(cursor.fetchone()) if cursor.fetchone() else None
+    async with get_db_connection() as conn:
+        cursor = await conn.cursor()
+        await cursor.execute(query, list(data.values()) + [item_id])
+        await conn.commit()
+        await cursor.execute("SELECT * FROM items WHERE id = ?", (item_id,))
+        result = await cursor.fetchone()
+        return dict(result) if result else None
 
-def delete_item_from_db(item_id: int):
-    with get_db_connection() as conn:
-        conn.execute("DELETE FROM items WHERE id = ?", (item_id,))
-        conn.commit()
+async def delete_item_from_db(item_id: int):
+    async with get_db_connection() as conn:
+        await conn.execute("DELETE FROM items WHERE id = ?", (item_id,))
+        await conn.commit()
 
 

@@ -3,6 +3,7 @@ import zipfile
 import sqlite3
 import csv
 import io
+import logging
 from pathlib import Path
 # KORREKTUR: datetime Klasse direkt importieren
 from datetime import datetime
@@ -52,7 +53,6 @@ async def background_scrape_and_update(item_id: int, url: str):
             cache.invalidate("items")
     except Exception as e:
         # Log error but don't crash - the item already exists with placeholder data
-        import logging
         logging.error(f"Background scraping failed for item {item_id}: {e}")
 
 # --- Auth Check ---

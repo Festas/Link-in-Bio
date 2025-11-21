@@ -37,7 +37,13 @@ async function initAdmin() {
         });
         
         document.querySelectorAll('.tab-content').forEach(el => {
-            el.classList.toggle('active', el.id === `tab-content-${tabName}`);
+                if (el.id === `tab-content-${tabName}`) {
+                    el.classList.add('active');
+                    el.style.display = 'block';
+                } else {
+                    el.classList.remove('active');
+                    el.style.display = 'none';
+                }
         });
 
         if (tabName === 'media') initializeMediaManager();

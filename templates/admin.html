@@ -220,6 +220,39 @@
             }, 1000);
         });
         </script>
+    <!-- Ensure only the active tab is visible on load -->
+    <script>
+    window.addEventListener('DOMContentLoaded', function() {
+        // Hide all tab-content except the one with .active
+        var tabs = document.querySelectorAll('.tab-content');
+        var anyActive = false;
+        tabs.forEach(function(tab) {
+            if(tab.classList.contains('active')) {
+                tab.style.display = 'block';
+                anyActive = true;
+            } else {
+                tab.style.display = 'none';
+            }
+        });
+        // Fallback: If no tab is active, show the first
+        if (!anyActive && tabs.length > 0) {
+            tabs[0].style.display = 'block';
+            tabs[0].classList.add('active');
+        }
+        // If the main tab logic fails, show fallback controls
+        setTimeout(function() {
+            var stillAllVisible = Array.from(tabs).every(e => e.style.display !== 'none');
+            if (stillAllVisible) {
+                document.getElementById('js-fallback-message').style.display = 'block';
+                document.getElementById('js-fallback-tabs').style.display = 'flex';
+                tabs.forEach(function(tab, i) {
+                    if(i === 0) tab.style.display = 'block';
+                    else tab.style.display = 'none';
+                });
+            }
+        }, 1000);
+    });
+    </script>
     
     <script type="module">
         import { initPWA } from '/static/js/consent.js?v={{ version }}';

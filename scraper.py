@@ -4,6 +4,7 @@ import json
 import random
 import asyncio
 import os
+import time
 import logging
 import warnings
 from bs4 import BeautifulSoup
@@ -80,7 +81,6 @@ class SmartScraper:
 
     def _get_from_cache(self, url: str) -> dict | None:
         """Get cached scrape result if still valid."""
-        import time
         key = self._get_cache_key(url)
         if key in self._cache:
             cached_data, timestamp = self._cache[key]
@@ -94,7 +94,6 @@ class SmartScraper:
 
     def _save_to_cache(self, url: str, data: dict):
         """Save scrape result to cache."""
-        import time
         key = self._get_cache_key(url)
         self._cache[key] = (data.copy(), time.time())
         # Simple cache size limit - keep only last 1000 entries

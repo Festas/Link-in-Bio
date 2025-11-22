@@ -1,0 +1,300 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <div class="w-full max-w-2xl mx-auto pb-12 pt-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold mb-2" style="color: var(--color-text);">Kontakt</h1>
+            <p class="text-sm opacity-70" style="color: var(--color-text-muted);">
+                Lass uns in Verbindung treten! 🤝
+            </p>
+            <div class="mt-6">
+                <a href="/" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-full transition-colors glass-card hover:bg-white hover:bg-opacity-10" style="color: var(--color-text);">
+                    <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                    Zurück zur Startseite
+                </a>
+            </div>
+        </header>
+
+        <div class="glass-card p-6 md:p-8 rounded-xl mb-8 text-left">
+            
+            <div class="space-y-6 text-sm leading-relaxed" style="color: var(--color-text);">
+                
+                <section>
+                    <h2 class="text-xl font-semibold mb-3 border-b border-gray-600 pb-2">Du möchtest mich kontaktieren?</h2>
+                    <p class="opacity-90 leading-7">
+                        Egal ob du ein Follower bist, der Fragen hat, oder eine Brand, die an einer Zusammenarbeit interessiert ist – 
+                        ich freue mich von dir zu hören! Nutze einfach das Formular unten oder schreib mir direkt über meine Social Media Kanäle.
+                    </p>
+                </section>
+
+                <!-- Contact Form Tabs -->
+                <div class="mt-8">
+                    <div class="flex border-b border-gray-700 mb-6">
+                        <button id="follower-tab" class="contact-tab px-4 py-2 font-medium border-b-2 border-cyan-400 text-cyan-400 transition-colors">
+                            <i data-lucide="users" class="w-4 h-4 inline-block mr-2"></i>
+                            Follower / Fan
+                        </button>
+                        <button id="brand-tab" class="contact-tab px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300 transition-colors ml-4">
+                            <i data-lucide="briefcase" class="w-4 h-4 inline-block mr-2"></i>
+                            Brand / Kooperation
+                        </button>
+                    </div>
+
+                    <!-- Follower Form -->
+                    <form id="follower-form" class="contact-form space-y-4">
+                        <div>
+                            <label for="follower-name" class="block text-sm font-medium mb-2">Dein Name</label>
+                            <input 
+                                type="text" 
+                                id="follower-name" 
+                                name="name" 
+                                required
+                                class="w-full px-4 py-2 bg-white/5 border border-gray-700 rounded-lg focus:outline-none focus:border-cyan-400 transition-colors"
+                                placeholder="Wie heißt du?"
+                            >
+                        </div>
+
+                        <div>
+                            <label for="follower-email" class="block text-sm font-medium mb-2">E-Mail Adresse</label>
+                            <input 
+                                type="email" 
+                                id="follower-email" 
+                                name="email" 
+                                required
+                                class="w-full px-4 py-2 bg-white/5 border border-gray-700 rounded-lg focus:outline-none focus:border-cyan-400 transition-colors"
+                                placeholder="deine@email.de"
+                            >
+                        </div>
+
+                        <div>
+                            <label for="follower-message" class="block text-sm font-medium mb-2">Deine Nachricht</label>
+                            <textarea 
+                                id="follower-message" 
+                                name="message" 
+                                required
+                                rows="5"
+                                class="w-full px-4 py-2 bg-white/5 border border-gray-700 rounded-lg focus:outline-none focus:border-cyan-400 transition-colors resize-vertical"
+                                placeholder="Was möchtest du mir mitteilen?"
+                            ></textarea>
+                        </div>
+
+                        <div class="flex items-start">
+                            <input 
+                                type="checkbox" 
+                                id="follower-privacy" 
+                                name="privacy_agreed" 
+                                required
+                                class="mt-1 mr-3"
+                            >
+                            <label for="follower-privacy" class="text-xs opacity-80">
+                                Ich habe die <a href="/datenschutz" class="text-cyan-400 hover:text-cyan-300 underline">Datenschutzerklärung</a> gelesen und akzeptiere diese.
+                            </label>
+                        </div>
+
+                        <button 
+                            type="submit" 
+                            class="w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
+                        >
+                            <i data-lucide="send" class="w-4 h-4 inline-block mr-2"></i>
+                            Nachricht senden
+                        </button>
+                    </form>
+
+                    <!-- Brand Form -->
+                    <form id="brand-form" class="contact-form space-y-4 hidden">
+                        <div>
+                            <label for="brand-company" class="block text-sm font-medium mb-2">Unternehmen / Brand</label>
+                            <input 
+                                type="text" 
+                                id="brand-company" 
+                                name="company" 
+                                required
+                                class="w-full px-4 py-2 bg-white/5 border border-gray-700 rounded-lg focus:outline-none focus:border-cyan-400 transition-colors"
+                                placeholder="Name deines Unternehmens"
+                            >
+                        </div>
+
+                        <div>
+                            <label for="brand-name" class="block text-sm font-medium mb-2">Ansprechpartner</label>
+                            <input 
+                                type="text" 
+                                id="brand-name" 
+                                name="name" 
+                                required
+                                class="w-full px-4 py-2 bg-white/5 border border-gray-700 rounded-lg focus:outline-none focus:border-cyan-400 transition-colors"
+                                placeholder="Dein Name"
+                            >
+                        </div>
+
+                        <div>
+                            <label for="brand-email" class="block text-sm font-medium mb-2">E-Mail Adresse</label>
+                            <input 
+                                type="email" 
+                                id="brand-email" 
+                                name="email" 
+                                required
+                                class="w-full px-4 py-2 bg-white/5 border border-gray-700 rounded-lg focus:outline-none focus:border-cyan-400 transition-colors"
+                                placeholder="kontakt@unternehmen.de"
+                            >
+                        </div>
+
+                        <div>
+                            <label for="brand-type" class="block text-sm font-medium mb-2">Art der Zusammenarbeit</label>
+                            <select 
+                                id="brand-type" 
+                                name="cooperation_type"
+                                class="w-full px-4 py-2 bg-white/5 border border-gray-700 rounded-lg focus:outline-none focus:border-cyan-400 transition-colors"
+                            >
+                                <option value="">Bitte auswählen...</option>
+                                <option value="sponsored-content">Sponsored Content</option>
+                                <option value="product-review">Produktreview</option>
+                                <option value="brand-ambassador">Brand Ambassador</option>
+                                <option value="affiliate">Affiliate-Partnerschaft</option>
+                                <option value="event">Event / Messeauftritt</option>
+                                <option value="other">Sonstiges</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="brand-message" class="block text-sm font-medium mb-2">Deine Anfrage</label>
+                            <textarea 
+                                id="brand-message" 
+                                name="message" 
+                                required
+                                rows="5"
+                                class="w-full px-4 py-2 bg-white/5 border border-gray-700 rounded-lg focus:outline-none focus:border-cyan-400 transition-colors resize-vertical"
+                                placeholder="Beschreibe deine Idee für eine Zusammenarbeit..."
+                            ></textarea>
+                        </div>
+
+                        <div class="flex items-start">
+                            <input 
+                                type="checkbox" 
+                                id="brand-privacy" 
+                                name="privacy_agreed" 
+                                required
+                                class="mt-1 mr-3"
+                            >
+                            <label for="brand-privacy" class="text-xs opacity-80">
+                                Ich habe die <a href="/datenschutz" class="text-cyan-400 hover:text-cyan-300 underline">Datenschutzerklärung</a> gelesen und akzeptiere diese.
+                            </label>
+                        </div>
+
+                        <button 
+                            type="submit" 
+                            class="w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
+                        >
+                            <i data-lucide="briefcase" class="w-4 h-4 inline-block mr-2"></i>
+                            Kooperationsanfrage senden
+                        </button>
+                    </form>
+
+                    <!-- Success Message -->
+                    <div id="success-message" class="hidden mt-6 p-4 bg-green-500/20 border border-green-500/50 rounded-lg">
+                        <div class="flex items-center">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-green-400 mr-3"></i>
+                            <p class="text-sm">Vielen Dank! Deine Nachricht wurde erfolgreich gesendet. Ich melde mich schnellstmöglich bei dir!</p>
+                        </div>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div id="error-message" class="hidden mt-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg">
+                        <div class="flex items-center">
+                            <i data-lucide="alert-circle" class="w-5 h-5 text-red-400 mr-3"></i>
+                            <p class="text-sm">Oops! Da ist etwas schiefgelaufen. Bitte versuche es später erneut.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="mt-8 bg-gradient-to-br from-cyan-900/20 to-pink-900/20 p-4 rounded-lg border border-cyan-500/30">
+                    <div class="flex items-start">
+                        <i data-lucide="info" class="w-5 h-5 text-cyan-400 mr-3 mt-0.5 flex-shrink-0"></i>
+                        <div>
+                            <p class="text-sm opacity-90 leading-6">
+                                <strong>Tipp:</strong> Für schnelle Fragen erreichst du mich auch direkt über meine Social Media Kanäle! 
+                                Links findest du auf der <a href="/" class="text-cyan-400 hover:text-cyan-300 underline">Startseite</a>.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        const followerTab = document.getElementById('follower-tab');
+        const brandTab = document.getElementById('brand-tab');
+        const followerForm = document.getElementById('follower-form');
+        const brandForm = document.getElementById('brand-form');
+
+        followerTab.addEventListener('click', () => {
+            followerTab.classList.add('border-cyan-400', 'text-cyan-400');
+            followerTab.classList.remove('border-transparent', 'text-gray-400');
+            brandTab.classList.remove('border-cyan-400', 'text-cyan-400');
+            brandTab.classList.add('border-transparent', 'text-gray-400');
+            followerForm.classList.remove('hidden');
+            brandForm.classList.add('hidden');
+        });
+
+        brandTab.addEventListener('click', () => {
+            brandTab.classList.add('border-cyan-400', 'text-cyan-400');
+            brandTab.classList.remove('border-transparent', 'text-gray-400');
+            followerTab.classList.remove('border-cyan-400', 'text-cyan-400');
+            followerTab.classList.add('border-transparent', 'text-gray-400');
+            brandForm.classList.remove('hidden');
+            followerForm.classList.add('hidden');
+        });
+
+        // Form submission
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            const formData = new FormData(form);
+            const data = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                message: formData.get('message'),
+                privacy_agreed: formData.get('privacy_agreed') === 'on'
+            };
+
+            // Add company and cooperation_type for brand form
+            if (form.id === 'brand-form') {
+                data.message = `Unternehmen: ${formData.get('company')}\nArt der Zusammenarbeit: ${formData.get('cooperation_type')}\n\n${data.message}`;
+            }
+
+            try {
+                const response = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    document.getElementById('success-message').classList.remove('hidden');
+                    document.getElementById('error-message').classList.add('hidden');
+                    form.reset();
+                    
+                    // Scroll to success message
+                    setTimeout(() => {
+                        document.getElementById('success-message').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                } else {
+                    throw new Error('Failed to send message');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('error-message').classList.remove('hidden');
+                document.getElementById('success-message').classList.add('hidden');
+            }
+        }
+
+        followerForm.addEventListener('submit', handleFormSubmit);
+        brandForm.addEventListener('submit', handleFormSubmit);
+    </script>
+{% endblock %}

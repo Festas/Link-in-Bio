@@ -28,34 +28,44 @@
     {% endif %}
     
 </head>
-<body class="min-h-screen flex flex-col justify-between p-4" data-page-id="{{ page_id or '' }}">
+<body class="min-h-screen flex flex-col" data-page-id="{{ page_id or '' }}">
 
-    <div class="flex-grow flex justify-center">
+    <div class="flex-grow flex justify-center p-4">
         {% block content %}{% endblock %}
     </div>
     
-    <!-- Global Footer -->
-    <footer class="global-footer mt-12 mb-4">
-        <div class="w-full max-w-md mx-auto text-center">
-            <!-- Footer Links -->
-            <nav class="footer-links flex justify-center items-center gap-4 mb-4 text-xs flex-wrap">
-                <a href="/ueber-mich" class="footer-link transition-all duration-200 hover:text-cyan-400">
-                    Über mich
-                </a>
-                <span class="text-gray-600">•</span>
-                <a href="/datenschutz" class="footer-link transition-all duration-200 hover:text-cyan-400">
-                    Datenschutz
-                </a>
-                <span class="text-gray-600">•</span>
-                <a href="/impressum" class="footer-link transition-all duration-200 hover:text-cyan-400">
-                    Impressum
-                </a>
-            </nav>
-            
-            <!-- Copyright -->
-            <p class="text-xs text-gray-500 opacity-60 hover:opacity-100 transition-opacity">
-                &copy; 2024 Eric | Tech & Gaming aus Hamburg 🎮⚡ | Made with 💙
-            </p>
+    <!-- Global Footer - Full Width Banner -->
+    <footer class="global-footer w-full mt-auto border-t border-gray-800/50">
+        <div class="w-full py-6 px-4">
+            <div class="max-w-4xl mx-auto">
+                <!-- Footer Links -->
+                <nav class="footer-links flex justify-center items-center gap-4 mb-4 text-xs flex-wrap">
+                    <a href="/ueber-mich" class="footer-link transition-all duration-200 hover:text-cyan-400">
+                        Über mich
+                    </a>
+                    <span class="text-gray-600">•</span>
+                    <a href="/kontakt" class="footer-link transition-all duration-200 hover:text-cyan-400">
+                        Kontakt
+                    </a>
+                    <span class="text-gray-600">•</span>
+                    <a href="/mediakit" class="footer-link transition-all duration-200 hover:text-cyan-400">
+                        Media Kit
+                    </a>
+                    <span class="text-gray-600">•</span>
+                    <a href="/datenschutz" class="footer-link transition-all duration-200 hover:text-cyan-400">
+                        Datenschutz
+                    </a>
+                    <span class="text-gray-600">•</span>
+                    <a href="/impressum" class="footer-link transition-all duration-200 hover:text-cyan-400">
+                        Impressum
+                    </a>
+                </nav>
+                
+                <!-- Copyright -->
+                <p class="text-xs text-gray-500 opacity-60 hover:opacity-100 transition-opacity text-center">
+                    &copy; 2024 Eric | Tech & Gaming aus Hamburg 🎮⚡ | Made with 💙
+                </p>
+            </div>
         </div>
     </footer>
     

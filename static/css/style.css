@@ -1271,11 +1271,14 @@ button:focus-visible, a:focus-visible {
     text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
 }
 
-/* Global Footer Styles */
+/* Global Footer Styles - Full Width Banner */
 .global-footer {
     width: 100%;
     position: relative;
     z-index: 10;
+    background: rgba(17, 24, 39, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .footer-links {

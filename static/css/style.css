@@ -11,11 +11,11 @@
     --color-item-text: #ffffff;
     --color-item-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     --color-border: rgba(255, 255, 255, 0.15);
-    --color-accent: #00d9ff;
+    --color-accent: #00d9ff; /* Primary accent color - used for general UI elements */
     --color-accent-hover: #00b8d4;
     --color-accent-gradient: linear-gradient(135deg, #00d9ff 0%, #0099cc 100%);
-    --color-gaming-accent: #ff006e;
-    --color-tech-accent: #00d9ff;
+    --color-gaming-accent: #ff006e; /* Secondary gaming-themed accent */
+    --color-tech-accent: #00d9ff; /* Tech-themed accent (same as primary for consistency) */
 }
 
 /* --- THEME VARIATIONS --- */

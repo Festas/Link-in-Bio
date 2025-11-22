@@ -31,7 +31,7 @@ setup_logging(log_level=LOG_LEVEL, json_logs=JSON_LOGS)
 
 logger = get_logger(__name__)
 
-from database import init_db, get_settings_from_db
+from database import init_db, get_settings_from_db, get_page_by_slug
 from endpoints import router as api_router
 from services import APP_DOMAIN
 from rate_limit import limiter_standard
@@ -166,11 +166,22 @@ async def get_privacy_page(request: Request):
 
 @app.get("/", response_class=HTMLResponse, dependencies=[Depends(limiter_standard)])
 async def get_index_html(request: Request):
-    settings = get_settings_from_db()
-    page_title = settings.get("title", "Link-in-Bio")
-    page_description = settings.get("bio", "Willkommen!")
-    page_image_url = settings.get("image_url", "")
-    if page_image_url.startswith("/static"):
+    # Get the default page (slug = '')
+    page = get_page_by_slug("")
+    if not page:
+        # Fallback to settings if no page exists
+        settings = get_settings_from_db()
+        page_title = settings.get("title", "Link-in-Bio")
+        page_description = settings.get("bio", "Willkommen!")
+        page_image_url = settings.get("image_url", "")
+        page_id = None
+    else:
+        page_title = page.get("title", "Link-in-Bio")
+        page_description = page.get("bio", "Willkommen!")
+        page_image_url = page.get("image_url", "")
+        page_id = page.get("id")
+    
+    if page_image_url and page_image_url.startswith("/static"):
         base_url = f"{'https' if APP_DOMAIN != '127.0.0.1' else 'http'}://{APP_DOMAIN}"
         page_image_url = urljoin(base_url, page_image_url)
     else:
@@ -178,11 +189,49 @@ async def get_index_html(request: Request):
         page_image_url = urljoin(base_url, "/api/social/card.png")
 
     page_url = f"https://{APP_DOMAIN}" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}"
+    settings = get_settings_from_db()
     context = {
         "page_title": page_title,
         "page_description": page_description,
         "page_image": page_image_url,
         "page_url": page_url,
+        "page_id": page_id,
+        "custom_html_head": settings.get("custom_html_head", ""),
+        "custom_html_body": settings.get("custom_html_body", ""),
+    }
+    return templates.TemplateResponse(request=request, name="index.html", context=context)
+
+
+@app.get("/{page_slug}", response_class=HTMLResponse, dependencies=[Depends(limiter_standard)])
+async def get_page_html(request: Request, page_slug: str):
+    # Skip special routes
+    if page_slug in ["admin", "analytics", "login", "privacy", "health", "api", "static", "robots.txt", "sitemap.xml", "favicon.ico", "manifest.json", "sw.js"]:
+        raise HTTPException(404, "Not Found")
+    
+    page = get_page_by_slug(page_slug)
+    if not page or not page.get("is_active"):
+        raise HTTPException(404, "Seite nicht gefunden")
+    
+    page_title = page.get("title", "Link-in-Bio")
+    page_description = page.get("bio", "Willkommen!")
+    page_image_url = page.get("image_url", "")
+    page_id = page.get("id")
+    
+    if page_image_url and page_image_url.startswith("/static"):
+        base_url = f"{'https' if APP_DOMAIN != '127.0.0.1' else 'http'}://{APP_DOMAIN}"
+        page_image_url = urljoin(base_url, page_image_url)
+    else:
+        base_url = f"{'https' if APP_DOMAIN != '127.0.0.1' else 'http'}://{APP_DOMAIN}"
+        page_image_url = urljoin(base_url, "/api/social/card.png")
+
+    page_url = f"https://{APP_DOMAIN}/{page_slug}" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/{page_slug}"
+    settings = get_settings_from_db()
+    context = {
+        "page_title": page_title,
+        "page_description": page_description,
+        "page_image": page_image_url,
+        "page_url": page_url,
+        "page_id": page_id,
         "custom_html_head": settings.get("custom_html_head", ""),
         "custom_html_body": settings.get("custom_html_body", ""),
     }

@@ -3,6 +3,35 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 
 
+class Page(BaseModel):
+    id: int
+    slug: str
+    title: str
+    bio: Optional[str] = None
+    image_url: Optional[str] = None
+    bg_image_url: Optional[str] = None
+    is_active: bool = True
+    created_at: datetime
+    updated_at: datetime
+
+
+class PageCreate(BaseModel):
+    slug: str
+    title: str
+    bio: Optional[str] = None
+    image_url: Optional[str] = None
+    bg_image_url: Optional[str] = None
+
+
+class PageUpdate(BaseModel):
+    slug: Optional[str] = None
+    title: Optional[str] = None
+    bio: Optional[str] = None
+    image_url: Optional[str] = None
+    bg_image_url: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
 class ItemCreate(BaseModel):
     title: Optional[str] = None
     url: Optional[str] = None
@@ -12,6 +41,7 @@ class ItemCreate(BaseModel):
     text: Optional[str] = None
     email: Optional[EmailStr] = None
     grid_columns: Optional[int] = 2
+    page_id: Optional[int] = None
 
 
 class ItemUpdate(BaseModel):
@@ -25,6 +55,7 @@ class ItemUpdate(BaseModel):
     expires_on: Optional[str] = None
     price: Optional[str] = None
     grid_columns: Optional[int] = None
+    page_id: Optional[int] = None
 
 
 class Item(BaseModel):
@@ -43,6 +74,7 @@ class Item(BaseModel):
     expires_on: Optional[str] = None
     price: Optional[str] = None
     grid_columns: int = 2
+    page_id: Optional[int] = None
     children: List["Item"] = []
 
     def __init__(self, **data):

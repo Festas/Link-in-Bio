@@ -24,6 +24,21 @@ def init_db():
     with get_db_connection() as conn:
         cursor = conn.cursor()
 
+        # Create pages table
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS pages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            slug TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            bio TEXT,
+            image_url TEXT,
+            bg_image_url TEXT,
+            is_active BOOLEAN DEFAULT 1,
+            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
+
         # Create Table (Updated)
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS items (
@@ -42,7 +57,9 @@ def init_db():
             expires_on TEXT, 
             price TEXT, 
             grid_columns INTEGER DEFAULT 2,
-            FOREIGN KEY (parent_id) REFERENCES items(id) ON DELETE SET NULL
+            page_id INTEGER,
+            FOREIGN KEY (parent_id) REFERENCES items(id) ON DELETE SET NULL,
+            FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
         )"""
         )
 
@@ -59,6 +76,8 @@ def init_db():
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_display_order ON items(display_order)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_item_id ON clicks(item_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_page_id ON items(page_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pages_slug ON pages(slug)")
 
         # Migrationen (Fix für grid_columns)
         cursor.execute("PRAGMA table_info(items)")
@@ -72,6 +91,7 @@ def init_db():
             "is_featured": "ALTER TABLE items ADD COLUMN is_featured BOOLEAN DEFAULT 0",
             "is_affiliate": "ALTER TABLE items ADD COLUMN is_affiliate BOOLEAN DEFAULT 0",
             "parent_id": "ALTER TABLE items ADD COLUMN parent_id INTEGER DEFAULT NULL REFERENCES items(id) ON DELETE SET NULL",
+            "page_id": "ALTER TABLE items ADD COLUMN page_id INTEGER DEFAULT NULL REFERENCES pages(id) ON DELETE CASCADE",
         }
 
         for col, sql in migrations.items():
@@ -87,16 +107,36 @@ def init_db():
         if "country_code" not in click_cols:
             cursor.execute("ALTER TABLE clicks ADD COLUMN country_code TEXT DEFAULT NULL")
 
+        # Create default page if none exists (for backward compatibility)
+        cursor.execute("SELECT COUNT(*) FROM pages")
+        if cursor.fetchone()[0] == 0:
+            settings = get_settings_from_db()
+            default_title = settings.get("title", "Mein Link-in-Bio")
+            default_bio = settings.get("bio", "")
+            default_image = settings.get("image_url", "")
+            default_bg = settings.get("bg_image_url", "")
+            cursor.execute(
+                """INSERT INTO pages (slug, title, bio, image_url, bg_image_url, is_active) 
+                   VALUES ('', ?, ?, ?, ?, 1)""",
+                (default_title, default_bio, default_image, default_bg),
+            )
+            default_page_id = cursor.lastrowid
+            # Migrate existing items to default page
+            cursor.execute("UPDATE items SET page_id = ? WHERE page_id IS NULL", (default_page_id,))
+
         default_settings = {"title": "Mein Link-in-Bio", "theme": "theme-dark", "button_style": "style-rounded"}
         for key, value in default_settings.items():
             cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (key, value))
         conn.commit()
 
 
-def get_next_display_order() -> int:
+def get_next_display_order(page_id: Optional[int] = None) -> int:
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT MAX(display_order) FROM items")
+        if page_id:
+            cursor.execute("SELECT MAX(display_order) FROM items WHERE page_id = ?", (page_id,))
+        else:
+            cursor.execute("SELECT MAX(display_order) FROM items")
         result = cursor.fetchone()
         return (result[0] if result and result[0] else 0) + 1
 
@@ -111,13 +151,13 @@ def get_settings_from_db() -> Dict[str, Any]:
 def create_item_in_db(item_data: tuple) -> dict:
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        # 14 Parameter inkl grid_columns
+        # 15 Parameter inkl page_id
         cursor.execute(
             """INSERT INTO items (
             item_type, title, url, image_url, display_order, parent_id, 
             click_count, is_featured, is_active, is_affiliate, 
-            publish_on, expires_on, price, grid_columns
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            publish_on, expires_on, price, grid_columns, page_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             item_data,
         )
         conn.commit()
@@ -142,4 +182,67 @@ def update_item_in_db(item_id: int, data: Dict[str, Any]) -> Optional[Dict[str, 
 def delete_item_from_db(item_id: int):
     with get_db_connection() as conn:
         conn.execute("DELETE FROM items WHERE id = ?", (item_id,))
+        conn.commit()
+
+
+def get_page_by_slug(slug: str) -> Optional[Dict[str, Any]]:
+    """Get a page by its slug."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM pages WHERE slug = ?", (slug,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def get_page_by_id(page_id: int) -> Optional[Dict[str, Any]]:
+    """Get a page by its ID."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM pages WHERE id = ?", (page_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def get_all_pages() -> list:
+    """Get all pages."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM pages ORDER BY created_at ASC")
+        return [dict(row) for row in cursor.fetchall()]
+
+
+def create_page(slug: str, title: str, bio: str = "", image_url: str = "", bg_image_url: str = "") -> dict:
+    """Create a new page."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO pages (slug, title, bio, image_url, bg_image_url, is_active) 
+               VALUES (?, ?, ?, ?, ?, 1)""",
+            (slug, title, bio, image_url, bg_image_url),
+        )
+        conn.commit()
+        cursor.execute("SELECT * FROM pages WHERE id = ?", (cursor.lastrowid,))
+        return dict(cursor.fetchone())
+
+
+def update_page(page_id: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Update a page."""
+    if not data:
+        return None
+    data["updated_at"] = datetime.now().isoformat()
+    set_clauses = [f"{key} = ?" for key in data.keys()]
+    query = f"UPDATE pages SET {', '.join(set_clauses)} WHERE id = ?"
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(query, list(data.values()) + [page_id])
+        conn.commit()
+        cursor.execute("SELECT * FROM pages WHERE id = ?", (page_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def delete_page(page_id: int):
+    """Delete a page and all its items."""
+    with get_db_connection() as conn:
+        conn.execute("DELETE FROM pages WHERE id = ?", (page_id,))
         conn.commit()

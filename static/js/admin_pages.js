@@ -1,5 +1,4 @@
 import * as API from './admin_api.js';
-import { createLucideIcon } from './icons.js';
 
 let currentPageId = null;
 let allPages = [];

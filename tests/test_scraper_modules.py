@@ -10,8 +10,8 @@ from scraper_extractors import (
 from scraper_utils import URLNormalizer, TitleCleaner, ImageURLValidator
 from scraper_domains import (
     GitHubHandler, LinkedInHandler, TwitterHandler, InstagramHandler,
-    YouTubeHandler, AmazonHandler, RedditHandler, SpotifyHandler,
-    StackOverflowHandler, SpecialDomainRouter
+    YouTubeHandler, AmazonHandler, EbayHandler, EtsyHandler, AliExpressHandler,
+    RedditHandler, SpotifyHandler, StackOverflowHandler, SpecialDomainRouter
 )
 
 
@@ -388,6 +388,24 @@ class TestSpecialDomainRouter:
         router = SpecialDomainRouter()
         result = router.handle("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
         assert result['title'] == "YouTube Video"
+    
+    def test_routing_to_ebay(self):
+        """Test routing eBay URLs to EbayHandler."""
+        router = SpecialDomainRouter()
+        result = router.handle("https://www.ebay.com/itm/Vintage-Camera-Rare/123456789")
+        assert "Vintage Camera Rare" in result['title']
+    
+    def test_routing_to_etsy(self):
+        """Test routing Etsy URLs to EtsyHandler."""
+        router = SpecialDomainRouter()
+        result = router.handle("https://www.etsy.com/listing/123456/handmade-necklace")
+        assert "Handmade Necklace" in result['title']
+    
+    def test_routing_to_aliexpress(self):
+        """Test routing AliExpress URLs to AliExpressHandler."""
+        router = SpecialDomainRouter()
+        result = router.handle("https://www.aliexpress.com/item/123.html")
+        assert result['title'] == "AliExpress Product"
     
     def test_no_handler(self):
         """Test that unknown domains return empty dict."""

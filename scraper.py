@@ -354,25 +354,23 @@ class SmartScraper:
         data["url"] = str(r.url)
         html = r.text
 
-        # Amazon ASIN - special handling for Amazon
-        if "amazon" in data["url"] or "amzn" in data["url"]:
-            asin = self.extract_asin(data["url"]) or self.extract_asin(html)
-            if asin:
-                data["image_url"] = f"https://images-na.ssl-images-amazon.com/images/P/{asin}.01.MAIN._SCLZZZZZZZ_.jpg"
-                data["title"] = "Amazon Produkt"
-
         soup = BeautifulSoup(html, "html.parser")
         
         # Use the comprehensive extractor chain
         metadata = self.extract_metadata(soup, data["url"])
         
-        # Update data with extracted metadata
+        # Update data with extracted metadata (prioritize scraped data over fallbacks)
         if metadata.get("title"):
             data["title"] = metadata["title"]
         if metadata.get("image_url"):
             data["image_url"] = metadata["image_url"]
         if metadata.get("description"):
             data["description"] = metadata["description"]
+        
+        # Amazon-specific handling: try to extract additional metadata from HTML
+        # if the extractor chain didn't get good results
+        if "amazon" in data["url"].lower() or "amzn" in data["url"].lower():
+            self._enhance_amazon_data(data, soup, html)
 
     async def _apply_fallbacks(self, data, domain):
         """Apply intelligent fallbacks to ensure we always have usable data."""
@@ -401,6 +399,89 @@ class SmartScraper:
         # If no valid image, use Google favicon
         if not data["image_url"]:
             data["image_url"] = self.image_validator.get_fallback_image(data["url"])
+
+    def _enhance_amazon_data(self, data: dict, soup, html: str):
+        """Enhanced Amazon-specific data extraction.
+        
+        This method tries additional Amazon-specific selectors and patterns
+        to extract product titles and images when standard metadata is insufficient.
+        """
+        # Extract ASIN if not already done
+        asin = self.extract_asin(data["url"]) or self.extract_asin(html)
+        
+        # Try to get product title from Amazon-specific selectors if current title is generic
+        current_title = data.get("title", "")
+        if not current_title or current_title in ["Amazon Product", "Amazon Produkt", "Amazon"]:
+            # Try various Amazon product title selectors
+            title_selectors = [
+                "#productTitle",
+                "#btAsinTitle",
+                "h1.product-title",
+                "span#productTitle",
+                'h1[id="title"]',
+                ".product-title-word-break",
+            ]
+            
+            for selector in title_selectors:
+                title_elem = soup.select_one(selector)
+                if title_elem:
+                    title_text = title_elem.get_text(strip=True)
+                    if title_text and len(title_text) > 3:
+                        data["title"] = title_text
+                        logger.info(f"Extracted Amazon title using selector {selector}: {title_text[:50]}")
+                        break
+        
+        # Try to enhance image URL with ASIN-based URLs if no good image found
+        if asin:
+            current_image = data.get("image_url", "")
+            # If we only have favicon or no image, use ASIN-based image
+            if not current_image or "favicon" in current_image.lower() or "google.com/s2" in current_image:
+                # Try multiple Amazon image URL formats
+                image_urls = [
+                    f"https://images-na.ssl-images-amazon.com/images/P/{asin}.01.LZZZZZZZ.jpg",
+                    f"https://m.media-amazon.com/images/I/{asin}.jpg",
+                    f"https://images-na.ssl-images-amazon.com/images/P/{asin}.01.MAIN._SCLZZZZZZZ_.jpg",
+                ]
+                
+                # Use the first format as default
+                data["image_url"] = image_urls[0]
+                data["_amazon_image_alternatives"] = image_urls[1:]
+                logger.info(f"Using ASIN-based image URL for Amazon product {asin}")
+            
+            # Try to extract actual image from page HTML
+            img_selectors = [
+                "#landingImage",
+                "#imgBlkFront",
+                "#main-image",
+                "img.a-dynamic-image",
+                'img[data-a-dynamic-image]',
+            ]
+            
+            for selector in img_selectors:
+                img_elem = soup.select_one(selector)
+                if img_elem:
+                    # Try data-a-dynamic-image attribute (Amazon's lazy loading)
+                    dynamic_img = img_elem.get("data-a-dynamic-image")
+                    if dynamic_img:
+                        try:
+                            import json
+                            img_data = json.loads(dynamic_img)
+                            # Get the largest image (last in the dict usually)
+                            if img_data:
+                                largest_url = list(img_data.keys())[-1]
+                                if largest_url:
+                                    data["image_url"] = largest_url
+                                    logger.info(f"Extracted Amazon image from data-a-dynamic-image")
+                                    break
+                        except (json.JSONDecodeError, IndexError, KeyError):
+                            pass
+                    
+                    # Fallback to src attribute
+                    img_src = img_elem.get("src")
+                    if img_src and "data:image" not in img_src:
+                        data["image_url"] = img_src
+                        logger.info(f"Extracted Amazon image from {selector}")
+                        break
 
     def get_google_favicon(self, domain: str) -> str:
         """Get Google favicon URL for domain - kept for backward compatibility."""

@@ -4,16 +4,30 @@ Eine moderne, selbst-gehostete Link-in-Bio Lösung ähnlich wie Linktree & Beaco
 
 ## ✨ Features
 
+### Core Features
 - 🎨 **Professionelles Gaming/Tech Design**: Moderne Glassmorphism-Effekte mit Neon-Akzenten
 - 🔗 **Vielseitige Content-Typen**: Links, Videos, Produkte, FAQs, Testimonials, Countdowns und mehr
-- 📊 **Analytics**: Eingebaute Analytics mit Click-Tracking, Referer-Tracking und Geo-Location
+- 📊 **Advanced Analytics**: Conversion tracking, UTM campaigns, funnel analysis, real-time dashboard
 - 📧 **Community Features**: Newsletter-Abonnements und Kontaktformular
 - 🖼️ **Media Management**: Bild-Upload mit automatischer Optimierung
 - 🎯 **SEO-Optimiert**: Meta-Tags, Sitemap, Robots.txt und Social Cards
-- 🚀 **Performance**: Async/Await, Caching und optimiertes Rendering
-- 🔒 **Sicher**: Rate Limiting, Security Headers, Input Validation
+- 🚀 **High Performance**: Redis caching, async/await, connection pooling, optimized queries
+- 🔒 **Enterprise Security**: Bcrypt password hashing, 2FA, session management, CSRF protection
 - 📱 **PWA-Ready**: Service Worker und Manifest für Installation als App
 - 🐳 **Docker-Ready**: Vollständige Docker-Compose-Konfiguration mit Caddy
+
+### 🆕 NEW: Enhanced Features (v2.0)
+- 🔐 **Password Hashing**: Bcrypt-based secure password storage
+- 🔑 **Two-Factor Auth**: TOTP-based 2FA for extra security
+- ⚡ **Redis Caching**: Distributed caching for horizontal scaling
+- 📈 **Conversion Tracking**: Track and optimize conversion goals
+- 🎯 **Funnel Analytics**: Multi-step conversion funnel analysis
+- 🔗 **UTM Tracking**: Campaign performance tracking
+- 📊 **Real-Time Analytics**: Live dashboard with current activity
+- 🎨 **Event System**: Custom event tracking for any action
+- 🔄 **Session Management**: Secure session-based authentication
+
+👉 **[See all enhanced features](./ENHANCED_FEATURES.md)** | **[Competitive analysis vs Beacons.ai](./OPTIMIZATION_ANALYSIS.md)**
 
 ## 🚀 Quick Start
 
@@ -44,7 +58,13 @@ pip install -r requirements.txt
 4. **Umgebungsvariablen konfigurieren**
 ```bash
 cp .env.example .env
-# .env bearbeiten und Passwort + Domain setzen
+
+# Option 1: Use interactive setup (recommended)
+python setup_enhanced.py
+
+# Option 2: Manual configuration
+# Edit .env and set password + domain
+# Generate password hash: python -c "from app.auth_enhanced import hash_password; print(hash_password('your-password'))"
 ```
 
 5. **Entwicklungsserver starten**

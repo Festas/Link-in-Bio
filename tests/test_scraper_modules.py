@@ -10,8 +10,8 @@ from scraper_extractors import (
 from scraper_utils import URLNormalizer, TitleCleaner, ImageURLValidator
 from scraper_domains import (
     GitHubHandler, LinkedInHandler, TwitterHandler, InstagramHandler,
-    YouTubeHandler, AmazonHandler, RedditHandler, SpotifyHandler,
-    StackOverflowHandler, SpecialDomainRouter
+    YouTubeHandler, AmazonHandler, EbayHandler, EtsyHandler, AliExpressHandler,
+    RedditHandler, SpotifyHandler, StackOverflowHandler, SpecialDomainRouter
 )
 
 
@@ -357,6 +357,60 @@ class TestSpecialDomainHandlers:
         assert result['title'] == "Amazon Product"
         assert "B08N5WRWNW" in result['image_url']
     
+    def test_amazon_handler_with_slug(self):
+        """Test Amazon product handler with URL slug."""
+        handler = AmazonHandler()
+        url = "https://www.amazon.com/PlayStation-5-Console/dp/B0CL61F39G"
+        parsed = urlparse(url)
+        result = handler.handle(url, parsed)
+        title_lower = result['title'].lower()
+        assert "playstation" in title_lower
+        assert "5" in result['title']
+        assert "console" in title_lower
+        assert "B0CL61F39G" in result['image_url']
+    
+    def test_amazon_handler_different_formats(self):
+        """Test Amazon handler with different URL formats."""
+        handler = AmazonHandler()
+        
+        # Test /gp/product/ format
+        url1 = "https://amazon.com/gp/product/B08N5WRWNW"
+        parsed1 = urlparse(url1)
+        result1 = handler.handle(url1, parsed1)
+        assert "B08N5WRWNW" in result1['image_url']
+        
+        # Test with product name
+        url2 = "https://www.amazon.de/Sony-PlayStation-5-Digital/dp/B08H98GVK8"
+        parsed2 = urlparse(url2)
+        result2 = handler.handle(url2, parsed2)
+        title_lower = result2['title'].lower()
+        assert "sony" in title_lower
+        assert "playstation" in title_lower
+    
+    def test_ebay_handler_with_slug(self):
+        """Test eBay handler with product slug."""
+        handler = EbayHandler()
+        url = "https://www.ebay.com/itm/Vintage-Camera-Nikon/123456789"
+        parsed = urlparse(url)
+        result = handler.handle(url, parsed)
+        assert "Vintage Camera Nikon" in result['title']
+    
+    def test_etsy_handler_with_slug(self):
+        """Test Etsy handler with product slug."""
+        handler = EtsyHandler()
+        url = "https://www.etsy.com/listing/123456/handmade-silver-necklace"
+        parsed = urlparse(url)
+        result = handler.handle(url, parsed)
+        assert "Handmade Silver Necklace" in result['title']
+    
+    def test_aliexpress_handler(self):
+        """Test AliExpress handler."""
+        handler = AliExpressHandler()
+        url = "https://www.aliexpress.com/item/123.html"
+        parsed = urlparse(url)
+        result = handler.handle(url, parsed)
+        assert "AliExpress" in result['title']
+    
     def test_twitter_handler(self):
         """Test Twitter profile handler."""
         handler = TwitterHandler()
@@ -388,6 +442,24 @@ class TestSpecialDomainRouter:
         router = SpecialDomainRouter()
         result = router.handle("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
         assert result['title'] == "YouTube Video"
+    
+    def test_routing_to_ebay(self):
+        """Test routing eBay URLs to EbayHandler."""
+        router = SpecialDomainRouter()
+        result = router.handle("https://www.ebay.com/itm/Vintage-Camera-Rare/123456789")
+        assert "Vintage Camera Rare" in result['title']
+    
+    def test_routing_to_etsy(self):
+        """Test routing Etsy URLs to EtsyHandler."""
+        router = SpecialDomainRouter()
+        result = router.handle("https://www.etsy.com/listing/123456/handmade-necklace")
+        assert "Handmade Necklace" in result['title']
+    
+    def test_routing_to_aliexpress(self):
+        """Test routing AliExpress URLs to AliExpressHandler."""
+        router = SpecialDomainRouter()
+        result = router.handle("https://www.aliexpress.com/item/123.html")
+        assert result['title'] == "AliExpress Product"
     
     def test_no_handler(self):
         """Test that unknown domains return empty dict."""

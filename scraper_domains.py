@@ -5,6 +5,7 @@ Each handler provides optimized extraction for specific domains.
 
 import re
 import logging
+import urllib.parse
 from typing import Dict, Optional
 from urllib.parse import urlparse, parse_qs
 
@@ -169,7 +170,7 @@ class YouTubeHandler(SpecialDomainHandler):
 
 
 class AmazonHandler(SpecialDomainHandler):
-    """Handler for Amazon product URLs."""
+    """Handler for Amazon product URLs with enhanced title and image extraction."""
     
     def can_handle(self, url: str, parsed_url) -> bool:
         netloc = parsed_url.netloc.lower()
@@ -182,24 +183,126 @@ class AmazonHandler(SpecialDomainHandler):
         asin = self._extract_asin(url)
         
         if asin:
-            data["title"] = "Amazon Product"
-            data["image_url"] = f"https://images-na.ssl-images-amazon.com/images/P/{asin}.01.MAIN._SCLZZZZZZZ_.jpg"
+            # Try to extract product title from URL slug
+            title = self._extract_title_from_url(url, parsed_url)
+            if title:
+                data["title"] = title
+            else:
+                data["title"] = "Amazon Product"
+            
+            # Provide multiple image URL options - the scraper will validate them
+            # Try high-res first, then medium-res as fallback
+            data["image_url"] = f"https://images-na.ssl-images-amazon.com/images/P/{asin}.01.LZZZZZZZ.jpg"
+            # Alternative formats stored as metadata for potential fallback
+            data["_amazon_image_alternatives"] = [
+                f"https://images-na.ssl-images-amazon.com/images/P/{asin}.01.MAIN._SCLZZZZZZZ_.jpg",
+                f"https://m.media-amazon.com/images/I/{asin}.jpg",
+                f"https://ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&ASIN={asin}&Format=_SL250_",
+            ]
         
         return data
     
     def _extract_asin(self, url: str) -> Optional[str]:
-        """Extract Amazon ASIN from URL."""
-        # Pattern: /dp/ASIN or /gp/product/ASIN
+        """Extract Amazon ASIN from URL.
+        
+        Amazon Standard Identification Numbers (ASINs) are 10-character alphanumeric IDs.
+        Product ASINs typically start with 'B' followed by 9 alphanumeric characters.
+        Examples: B08N5WRWNW, B0CL61F39G
+        """
+        # Pattern: /dp/ASIN or /gp/product/ASIN or /d/ASIN
+        # Matches common Amazon URL formats with ASIN after path segment
         match = re.search(r"/(dp|gp/product|d)/(B[A-Z0-9]{9})", url)
         if match:
             return match.group(2)
         
-        # Pattern: /ASIN
+        # Pattern: /ASIN in path (for shorter URLs)
+        # Verifies it starts with 'B' and is exactly 10 characters
         match = re.search(r"/([A-Z0-9]{10})(?:[/?]|$)", url)
         if match and match.group(1).startswith("B"):
             return match.group(1)
         
         return None
+    
+    def _extract_title_from_url(self, url: str, parsed_url) -> Optional[str]:
+        """Extract product title from URL slug.
+        
+        Amazon URLs often contain the product name in the path:
+        https://www.amazon.com/Product-Name-Here/dp/B08N5WRWNW
+        """
+        path = parsed_url.path
+        
+        # Split path and look for the product name segment before /dp/ or /gp/
+        # Common patterns:
+        # /Product-Name/dp/ASIN
+        # /Product-Name-Here/dp/ASIN/ref=...
+        # /gp/product/ASIN?keywords=Product+Name
+        
+        # Try to find the segment before /dp/ or /gp/
+        match = re.search(r'/([^/]+)/(dp|gp/product|d)/', path)
+        if match:
+            slug = match.group(1)
+            # Clean up the slug
+            title = self._clean_product_slug(slug)
+            if title and len(title) > 3:
+                return title
+        
+        # Alternative: look for product name in the first path segment after domain
+        parts = [p for p in path.split('/') if p and p not in ['dp', 'gp', 'product', 'd']]
+        if parts and len(parts) > 0:
+            # First non-ASIN part is likely the product name
+            first_part = parts[0]
+            # Check if it's not an ASIN itself
+            if not re.match(r'^B[A-Z0-9]{9}$', first_part):
+                title = self._clean_product_slug(first_part)
+                if title and len(title) > 3:
+                    return title
+        
+        return None
+    
+    def _clean_product_slug(self, slug: str) -> str:
+        """Clean Amazon product URL slug to make it readable.
+        
+        Amazon slugs use hyphens to separate words.
+        Example: 'PlayStation-5-Console' -> 'PlayStation 5 Console'
+        """
+        # Replace hyphens with spaces
+        title = slug.replace('-', ' ')
+        
+        # Replace underscores with spaces
+        title = title.replace('_', ' ')
+        
+        # Remove URL encoding artifacts
+        title = title.replace('+', ' ')
+        
+        # Decode common URL encodings
+        try:
+            title = urllib.parse.unquote(title)
+        except (UnicodeDecodeError, ValueError, AttributeError):
+            # If URL decoding fails, use the title as-is
+            pass
+        
+        # Remove multiple spaces
+        title = re.sub(r'\s+', ' ', title)
+        
+        # Capitalize appropriately - title case for better readability
+        # But preserve all-caps words (like brand names)
+        words = title.split()
+        cleaned_words = []
+        for word in words:
+            if word.isupper() and len(word) > 1:
+                # Keep all-caps words as is (likely acronyms or brand names)
+                cleaned_words.append(word)
+            elif len(word) > 0:
+                # Title case for normal words
+                cleaned_words.append(word[0].upper() + word[1:].lower())
+        
+        title = ' '.join(cleaned_words)
+        
+        # Truncate if too long
+        if len(title) > 100:
+            title = title[:97] + "..."
+        
+        return title.strip()
 
 
 class RedditHandler(SpecialDomainHandler):
@@ -281,6 +384,147 @@ class StackOverflowHandler(SpecialDomainHandler):
         return data
 
 
+class EbayHandler(SpecialDomainHandler):
+    """Handler for eBay product URLs."""
+    
+    def can_handle(self, url: str, parsed_url) -> bool:
+        netloc = parsed_url.netloc.lower()
+        return "ebay." in netloc
+    
+    def handle(self, url: str, parsed_url) -> Dict[str, Optional[str]]:
+        data = {}
+        path = parsed_url.path
+        
+        # Try to extract title from URL slug
+        # eBay URLs often have format: /itm/Product-Name-Here/itemId
+        match = re.search(r'/itm/([^/]+)', path)
+        if match:
+            slug = match.group(1)
+            # Clean the slug (similar to Amazon)
+            title = self._clean_slug(slug)
+            if title and len(title) > 3:
+                data["title"] = title
+            else:
+                data["title"] = "eBay Listing"
+        else:
+            data["title"] = "eBay Listing"
+        
+        return data
+    
+    def _clean_slug(self, slug: str) -> str:
+        """Clean eBay product slug."""
+        # Remove item ID if present (usually numeric)
+        slug = re.sub(r'/?\d{10,}.*$', '', slug)
+        
+        # Replace hyphens and underscores with spaces
+        title = slug.replace('-', ' ').replace('_', ' ')
+        title = title.replace('+', ' ')
+        
+        # Decode URL encoding
+        try:
+            title = urllib.parse.unquote(title)
+        except (UnicodeDecodeError, ValueError, AttributeError):
+            # If URL decoding fails, use the title as-is
+            pass
+        
+        # Remove multiple spaces
+        title = re.sub(r'\s+', ' ', title)
+        
+        # Title case
+        title = title.title()
+        
+        # Truncate if too long
+        if len(title) > 100:
+            title = title[:97] + "..."
+        
+        return title.strip()
+
+
+class EtsyHandler(SpecialDomainHandler):
+    """Handler for Etsy product URLs."""
+    
+    def can_handle(self, url: str, parsed_url) -> bool:
+        netloc = parsed_url.netloc.lower()
+        # Exact match to prevent URL substring sanitization vulnerabilities
+        return netloc == "etsy.com" or netloc == "www.etsy.com"
+    
+    def handle(self, url: str, parsed_url) -> Dict[str, Optional[str]]:
+        data = {}
+        path = parsed_url.path
+        
+        # Etsy URLs: /listing/listingId/product-name-here
+        match = re.search(r'/listing/\d+/([^/?]+)', path)
+        if match:
+            slug = match.group(1)
+            title = self._clean_slug(slug)
+            if title and len(title) > 3:
+                data["title"] = title
+            else:
+                data["title"] = "Etsy Listing"
+        else:
+            data["title"] = "Etsy Listing"
+        
+        return data
+    
+    def _clean_slug(self, slug: str) -> str:
+        """Clean Etsy product slug."""
+        # Replace hyphens with spaces
+        title = slug.replace('-', ' ').replace('_', ' ')
+        
+        # Decode URL encoding
+        try:
+            title = urllib.parse.unquote(title)
+        except (UnicodeDecodeError, ValueError, AttributeError):
+            # If URL decoding fails, use the title as-is
+            pass
+        
+        # Remove multiple spaces
+        title = re.sub(r'\s+', ' ', title)
+        
+        # Title case
+        title = title.title()
+        
+        # Truncate if too long
+        if len(title) > 100:
+            title = title[:97] + "..."
+        
+        return title.strip()
+
+
+class AliExpressHandler(SpecialDomainHandler):
+    """Handler for AliExpress product URLs."""
+    
+    def can_handle(self, url: str, parsed_url) -> bool:
+        netloc = parsed_url.netloc.lower()
+        # Exact match to prevent URL substring sanitization vulnerabilities
+        # Support multiple AliExpress domains
+        return netloc in [
+            "aliexpress.com", "www.aliexpress.com",
+            "aliexpress.us", "www.aliexpress.us",
+            "aliexpress.ru", "www.aliexpress.ru",
+            "1688.com", "www.1688.com"
+        ]
+    
+    def handle(self, url: str, parsed_url) -> Dict[str, Optional[str]]:
+        data = {}
+        
+        # Try to extract from URL parameters (AliExpress often uses query params)
+        query = parse_qs(parsed_url.query)
+        
+        # Look for title in SearchText or keywords parameter
+        for param in ['SearchText', 'keywords', 'title']:
+            if param in query and query[param]:
+                title = query[param][0]
+                if title and len(title) > 3:
+                    data["title"] = title[:100]
+                    return data
+        
+        # Fallback to generic title
+        data["title"] = "AliExpress Product"
+        
+        return data
+
+
 class SpecialDomainRouter:
     """Routes URLs to appropriate special handlers."""
     
@@ -292,6 +536,9 @@ class SpecialDomainRouter:
             InstagramHandler(),
             YouTubeHandler(),
             AmazonHandler(),
+            EbayHandler(),
+            EtsyHandler(),
+            AliExpressHandler(),
             RedditHandler(),
             SpotifyHandler(),
             StackOverflowHandler(),

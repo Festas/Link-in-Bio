@@ -131,8 +131,8 @@ def init_db():
             cursor.execute("UPDATE items SET page_id = ? WHERE page_id IS NULL", (default_page_id,))
 
         default_settings = {
-            "title": os.getenv("DEFAULT_PROFILE_NAME", "festas_builds"),
-            "bio": os.getenv("DEFAULT_PROFILE_BIO", "Tech & Gaming Influencer aus Hamburg 🎮 | Content Creator seit 4 Jahren | Eric"),
+            "title": os.getenv("DEFAULT_PROFILE_NAME", "Eric | Tech & Gaming"),
+            "bio": os.getenv("DEFAULT_PROFILE_BIO", "Tech & Gaming Influencer aus Hamburg 🎮⚡ | Ingenieur & Content Creator | Ästhetik trifft Innovation"),
             "theme": "theme-dark",
             "button_style": "style-rounded",
             "social_youtube": "",

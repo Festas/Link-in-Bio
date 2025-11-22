@@ -111,7 +111,7 @@ Coordinates all extractors:
 
 ### 3. `scraper_domains.py` - Special Domain Handlers
 
-Contains 9 specialized handlers for popular websites:
+Contains 12 specialized handlers for popular websites and e-commerce platforms:
 
 #### Supported Domains:
 
@@ -138,24 +138,42 @@ Contains 9 specialized handlers for popular websites:
    - Provides high-quality thumbnail: `https://i.ytimg.com/vi/{video_id}/maxresdefault.jpg`
    - Channels: `youtube.com/channel/...` → `"YouTube Channel"`
 
-6. **AmazonHandler**
-   - Extracts ASIN from product URLs
-   - Provides product image: `https://images-na.ssl-images-amazon.com/images/P/{asin}.01.MAIN._SCLZZZZZZZ_.jpg`
-   - Supports multiple URL formats: /dp/, /gp/product/, /d/
+6. **AmazonHandler** ⭐ ENHANCED
+   - **URL Slug Extraction**: Extracts product title from URL path
+     - Example: `/PlayStation-5-Console/dp/B0CL61F39G` → `"PlayStation 5 Console"`
+   - **Smart Title Cleaning**: Preserves capitalization, handles hyphens and URL encoding
+   - **High-Resolution Images**: Uses improved image URL format with fallback alternatives
+   - **ASIN Extraction**: Supports multiple URL formats: /dp/, /gp/product/, /d/
+   - **Fallback Chain**: URL slug → HTML selectors → ASIN-based images
 
-7. **RedditHandler**
-   - Subreddits: `reddit.com/r/subreddit` → `"r/subreddit"`
-   - Users: `reddit.com/u/user` → `"u/user on Reddit"`
+7. **EbayHandler** ⭐ NEW
+   - Extracts product title from URL slug
+   - Pattern: `/itm/Product-Name-Here/itemId` → `"Product Name Here"`
+   - Cleans slugs to create readable titles
 
-8. **SpotifyHandler**
-   - Tracks: `open.spotify.com/track/...` → `"Spotify Track"`
-   - Albums: `open.spotify.com/album/...` → `"Spotify Album"`
-   - Playlists: `open.spotify.com/playlist/...` → `"Spotify Playlist"`
-   - Artists: `open.spotify.com/artist/...` → `"Spotify Artist"`
+8. **EtsyHandler** ⭐ NEW
+   - Extracts product title from listing URL
+   - Pattern: `/listing/listingId/product-name` → `"Product Name"`
+   - Handles URL encoding and special characters
 
-9. **StackOverflowHandler**
-   - Questions: `stackoverflow.com/questions/...` → `"Stack Overflow Question"`
-   - User profiles: `stackoverflow.com/users/...` → `"Stack Overflow User"`
+9. **AliExpressHandler** ⭐ NEW
+   - Handles AliExpress product URLs
+   - Attempts to extract title from query parameters
+   - Fallback to generic "AliExpress Product"
+
+10. **RedditHandler**
+    - Subreddits: `reddit.com/r/subreddit` → `"r/subreddit"`
+    - Users: `reddit.com/u/user` → `"u/user on Reddit"`
+
+11. **SpotifyHandler**
+    - Tracks: `open.spotify.com/track/...` → `"Spotify Track"`
+    - Albums: `open.spotify.com/album/...` → `"Spotify Album"`
+    - Playlists: `open.spotify.com/playlist/...` → `"Spotify Playlist"`
+    - Artists: `open.spotify.com/artist/...` → `"Spotify Artist"`
+
+12. **StackOverflowHandler**
+    - Questions: `stackoverflow.com/questions/...` → `"Stack Overflow Question"`
+    - User profiles: `stackoverflow.com/users/...` → `"Stack Overflow User"`
 
 #### SpecialDomainRouter
 
@@ -172,13 +190,28 @@ The main scraper now orchestrates all components:
 
 1. **URL Validation**: Validates URLs before attempting to scrape
 2. **Modular Extraction**: Uses `ExtractorChain` instead of hardcoded extraction
+3. **Enhanced Amazon Support** ⭐ NEW:
+   - `_enhance_amazon_data()` method for Amazon-specific extraction
+   - Product title extraction from HTML selectors: `#productTitle`, `#btAsinTitle`, etc.
+   - Dynamic image extraction from `data-a-dynamic-image` JSON attribute
+   - Multiple ASIN-based image URL formats with fallbacks
+4. **Intelligent Fallbacks**: 
+   - Special domain handlers provide instant fallbacks
+   - DuckDuckGo search fallback for bad titles
+   - Google favicon fallback for missing images
+   - Always returns meaningful data, never fails
+5. **Better Error Handling**: Each component has isolated error handling
+6. **Cleaner Code**: Delegated responsibilities to modular components
+
+1. **URL Validation**: Validates URLs before attempting to scrape
+2. **Modular Extraction**: Uses `ExtractorChain` instead of hardcoded extraction
 3. **Intelligent Fallbacks**: 
    - Special domain handlers provide instant fallbacks
    - DuckDuckGo search fallback for bad titles
    - Google favicon fallback for missing images
    - Always returns meaningful data, never fails
 4. **Better Error Handling**: Each component has isolated error handling
-5. **Cleaner Code**: ~200 lines removed, delegated to modules
+5. **Cleaner Code**: Delegated responsibilities to modular components
 
 ## Success Guarantee
 
@@ -187,20 +220,22 @@ The scraper **guarantees** to always return:
 - A valid image URL (never empty)
 - The final URL (after redirects)
 
-### Fallback Chain for Titles:
+### Fallback Chain for Titles (Enhanced):
+
+1. Special domain handler (if applicable) - **includes URL slug extraction for e-commerce sites**
+2. Scrape page → ExtractorChain (6 extractors)
+3. **Amazon-specific HTML selectors** (for Amazon URLs)
+4. Clean title with TitleCleaner
+5. If bad title: DuckDuckGo search
+6. Last resort: Domain name
+
+### Fallback Chain for Images (Enhanced):
 
 1. Special domain handler (if applicable)
 2. Scrape page → ExtractorChain (6 extractors)
-3. Clean title with TitleCleaner
-4. If bad title: DuckDuckGo search
-5. Last resort: Domain name
-
-### Fallback Chain for Images:
-
-1. Special domain handler (if applicable)
-2. Scrape page → ExtractorChain (6 extractors)
-3. Validate image URL (HEAD request)
-4. If invalid: Google favicon
+3. **Amazon-specific image extraction** (data-a-dynamic-image, multiple ASIN formats)
+4. Validate image URL (HEAD request)
+5. If invalid: Google favicon
 
 ## Performance Improvements
 
@@ -211,9 +246,9 @@ The scraper **guarantees** to always return:
 
 ## Testing
 
-- **55 total tests** covering all components
+- **61+ total tests** covering all components
 - **21 legacy tests** updated for new architecture
-- **34 new tests** for modular components
+- **40+ new tests** for modular components and e-commerce enhancements
 - **100% test coverage** for critical paths
 
 ### Test Categories:
@@ -222,8 +257,9 @@ The scraper **guarantees** to always return:
 2. **URL Utilities**: Normalization, validation, domain extraction
 3. **Title Cleaning**: Pattern removal, separator handling, truncation, bad title detection
 4. **Image Validation**: Skip patterns, trusted domains, fallback generation
-5. **Special Domains**: 9 handlers + routing
-6. **End-to-End**: Cache, always-returns-data, configuration
+5. **Special Domains**: 12 handlers (including Amazon, eBay, Etsy, AliExpress) + routing
+6. **E-commerce Enhancements**: Amazon URL slug extraction, eBay/Etsy title extraction
+7. **End-to-End**: Cache, always-returns-data, configuration
 
 ## Migration Guide
 
@@ -257,15 +293,30 @@ Potential improvements building on this foundation:
 6. ✅ **Debuggable**: Each component logs its actions
 7. ✅ **Fast**: Early exit and caching optimizations
 8. ✅ **Reliable**: Never fails to return data
+9. ✅ **E-commerce Ready**: Enhanced support for Amazon, eBay, Etsy, AliExpress
 
 ## Conclusion
 
 The modularized web scraper is now **bulletproof** with:
 - 6 metadata extractors
-- 9 special domain handlers
-- 3 intelligent fallback mechanisms
+- **12 special domain handlers** (including enhanced e-commerce support)
+- **Enhanced Amazon scraping** with URL slug extraction and HTML parsing
+- Multiple intelligent fallback mechanisms
 - 100% success rate in returning meaningful data
-- Comprehensive test coverage
+- Comprehensive test coverage (61+ tests)
 - Clean, maintainable code
 
-This architecture ensures the web scraper can handle **any URL** reliably and always provide usable titles and images.
+### Key Enhancements for E-commerce:
+
+**Amazon**: 
+- Extracts product titles from URL slugs (e.g., "PlayStation-5-Console" → "PlayStation 5 Console")
+- Multiple image URL formats with high-resolution options
+- HTML selector-based extraction when page loads successfully
+- ASIN-based fallbacks ensure images always available
+
+**eBay/Etsy/AliExpress**:
+- URL slug extraction for better product titles
+- Handles URL encoding and special characters
+- Provides meaningful fallbacks
+
+This architecture ensures the web scraper can handle **any URL** reliably and always provide usable titles and images, with **special optimizations for e-commerce platforms**.

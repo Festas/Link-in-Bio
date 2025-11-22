@@ -1,16 +1,17 @@
-/* Admin Panel - Modern Beacons.ai Inspired Design */
+/* Admin Panel - Professional Gaming/Tech Influencer Design */
 
 :root {
-    --admin-bg: #0f1419;
-    --admin-bg-secondary: #1a1f2e;
+    --admin-bg: #0a0a0f;
+    --admin-bg-secondary: #1a1a2e;
     --admin-surface: #252d3d;
     --admin-surface-hover: #2d3548;
     --admin-border: rgba(255, 255, 255, 0.08);
     --admin-text: #ffffff;
     --admin-text-muted: #94a3b8;
-    --admin-accent: #667eea;
-    --admin-accent-hover: #764ba2;
-    --admin-accent-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --admin-accent: #00d9ff;
+    --admin-accent-hover: #00b8d4;
+    --admin-accent-gradient: linear-gradient(135deg, #00d9ff 0%, #0099cc 100%);
+    --admin-gaming-accent: #ff006e;
     --admin-success: #10b981;
     --admin-warning: #f59e0b;
     --admin-danger: #ef4444;
@@ -39,12 +40,13 @@ header {
 }
 
 header h1 {
-    background: var(--admin-accent-gradient);
+    background: linear-gradient(135deg, #ffffff 0%, var(--admin-accent) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     font-weight: 800;
     letter-spacing: -0.02em;
+    text-shadow: 0 0 40px rgba(0, 217, 255, 0.3);
 }
 
 /* Button Enhancements */
@@ -68,11 +70,11 @@ button:not(:disabled):active, .btn:active {
 .bg-blue-600, button[type="submit"] {
     background: var(--admin-accent-gradient) !important;
     border: none;
-    box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 14px rgba(0, 217, 255, 0.4);
 }
 
 .bg-blue-600:hover, button[type="submit"]:hover {
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    box-shadow: 0 6px 20px rgba(0, 217, 255, 0.5);
 }
 
 /* Input Fields Enhancement */
@@ -96,7 +98,7 @@ input:focus,
 textarea:focus,
 select:focus {
     border-color: var(--admin-accent) !important;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15) !important;
+    box-shadow: 0 0 0 4px rgba(0, 217, 255, 0.15) !important;
     outline: none !important;
     background: var(--admin-surface-hover) !important;
 }
@@ -117,7 +119,7 @@ textarea::placeholder {
 }
 
 .bg-gray-800:hover, section:hover {
-    border-color: rgba(102, 126, 234, 0.3) !important;
+    border-color: rgba(0, 217, 255, 0.3) !important;
     box-shadow: var(--admin-shadow-lg) !important;
 }
 
@@ -199,7 +201,7 @@ textarea::placeholder {
 
 .manage-item-card:hover {
     border-color: var(--admin-accent);
-    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 217, 255, 0.2);
     transform: translateX(4px);
 }
 

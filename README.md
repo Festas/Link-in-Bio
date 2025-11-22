@@ -1,10 +1,10 @@
-# Link-in-Bio 🔗
+# Link-in-Bio 🎮⚡
 
-Eine moderne, selbst-gehostete Link-in-Bio Lösung ähnlich wie Linktree - gebaut mit FastAPI und modernen Web-Technologien.
+Eine moderne, selbst-gehostete Link-in-Bio Lösung ähnlich wie Linktree & Beacons.ai - gebaut mit FastAPI und modernen Web-Technologien. Optimiert für Content Creators, Influencer und Gaming-Enthusiasten.
 
 ## ✨ Features
 
-- 🎨 **Anpassbares Design**: Verschiedene Themes und vollständige Anpassung von Farben
+- 🎨 **Professionelles Gaming/Tech Design**: Moderne Glassmorphism-Effekte mit Neon-Akzenten
 - 🔗 **Vielseitige Content-Typen**: Links, Videos, Produkte, FAQs, Testimonials, Countdowns und mehr
 - 📊 **Analytics**: Eingebaute Analytics mit Click-Tracking, Referer-Tracking und Geo-Location
 - 📧 **Community Features**: Newsletter-Abonnements und Kontaktformular

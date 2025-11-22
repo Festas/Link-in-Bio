@@ -124,7 +124,18 @@ def init_db():
             # Migrate existing items to default page
             cursor.execute("UPDATE items SET page_id = ? WHERE page_id IS NULL", (default_page_id,))
 
-        default_settings = {"title": "Mein Link-in-Bio", "theme": "theme-dark", "button_style": "style-rounded"}
+        default_settings = {
+            "title": os.getenv("DEFAULT_PROFILE_NAME", "festas_builds"),
+            "bio": os.getenv("DEFAULT_PROFILE_BIO", "Tech & Gaming Influencer aus Hamburg 🎮 | Content Creator seit 4 Jahren | Eric"),
+            "theme": "theme-dark",
+            "button_style": "style-rounded",
+            "social_youtube": "",
+            "social_instagram": "",
+            "social_tiktok": "",
+            "social_twitch": "",
+            "social_x": "",
+            "social_discord": "",
+        }
         for key, value in default_settings.items():
             cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (key, value))
         conn.commit()

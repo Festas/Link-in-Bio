@@ -1,4 +1,6 @@
 """Tests for enhanced scraper functionality."""
+import os
+import time
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
 from scraper import SmartScraper
@@ -185,7 +187,6 @@ class TestCaching:
     
     def test_cache_expiry(self, scraper):
         """Test cache expiry."""
-        import time
         scraper._cache_ttl = 1  # 1 second TTL
         
         url = "https://example.com"

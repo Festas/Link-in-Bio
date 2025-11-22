@@ -24,11 +24,20 @@ from exceptions import custom_http_exception_handler, general_exception_handler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from auth import validate_admin_password
     init_db()
     configure_template_globals()
+    validate_admin_password()  # Check password security on startup
     yield
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    title="Link-in-Bio API",
+    description="Eine moderne, selbst-gehostete Link-in-Bio Lösung",
+    version="1.1.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc"
+)
 
 app.middleware("http")(add_security_headers)
 
@@ -37,6 +46,15 @@ app.include_router(api_router, prefix="/api")
 
 app.exception_handler(StarletteHTTPException)(custom_http_exception_handler)
 app.exception_handler(500)(general_exception_handler)
+
+# Health Check Endpoint
+@app.get("/health", tags=["System"])
+async def health_check():
+    """Health check endpoint for monitoring and container orchestration."""
+    return {
+        "status": "healthy",
+        "version": "1.1.0"
+    }
 
 @app.get("/sw.js", response_class=FileResponse)
 async def get_service_worker():
@@ -82,22 +100,21 @@ async def get_sitemap():
 
 @app.get("/admin", response_class=HTMLResponse)
 async def get_admin_page(request: Request):
-    return templates.TemplateResponse("admin.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="admin.html")
 
 @app.get("/analytics", response_class=HTMLResponse)
 async def get_analytics_page(request: Request):
-    return templates.TemplateResponse("analytics.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="analytics.html")
 
 @app.get("/login", response_class=HTMLResponse)
 async def get_login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="login.html")
     
 @app.get("/privacy", response_class=HTMLResponse)
 async def get_privacy_page(request: Request):
     settings = get_settings_from_db()
     page_url = f"https://{APP_DOMAIN}/privacy" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/privacy"
     context = {
-        "request": request,
         "page_title": "Datenschutzerklärung",
         "page_description": "Datenschutzbestimmungen",
         "page_image": "", 
@@ -105,7 +122,7 @@ async def get_privacy_page(request: Request):
         "custom_html_head": settings.get('custom_html_head', ''),
         "custom_html_body": settings.get('custom_html_body', '')
     }
-    return templates.TemplateResponse("privacy.html", context)
+    return templates.TemplateResponse(request=request, name="privacy.html", context=context)
 
 @app.get("/", response_class=HTMLResponse, dependencies=[Depends(limiter_standard)])
 async def get_index_html(request: Request):
@@ -122,7 +139,6 @@ async def get_index_html(request: Request):
     
     page_url = f"https://{APP_DOMAIN}" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}"
     context = {
-        "request": request,
         "page_title": page_title,
         "page_description": page_description,
         "page_image": page_image_url,
@@ -130,7 +146,7 @@ async def get_index_html(request: Request):
         "custom_html_head": settings.get('custom_html_head', ''),
         "custom_html_body": settings.get('custom_html_body', '')
     }
-    return templates.TemplateResponse("index.html", context)
+    return templates.TemplateResponse(request=request, name="index.html", context=context)
 
 if __name__ == "__main__":
     print(f"Starte Server auf http://127.0.0.1:8000")

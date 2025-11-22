@@ -1,8 +1,15 @@
 import uvicorn
 import sys
 import asyncio
+import os
 from fastapi import FastAPI, Request, Response, Depends
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse, RedirectResponse
+from fastapi.responses import (
+    HTMLResponse,
+    JSONResponse,
+    PlainTextResponse,
+    FileResponse,
+    RedirectResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from urllib.parse import urljoin
@@ -14,12 +21,22 @@ if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 # ---------------------------------
 
+# Setup logging early
+from logging_config import setup_logging, get_logger
+
+# Configure logging based on environment
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+JSON_LOGS = os.getenv("JSON_LOGS", "false").lower() in ("true", "1", "yes")
+setup_logging(log_level=LOG_LEVEL, json_logs=JSON_LOGS)
+
+logger = get_logger(__name__)
+
 from database import init_db, get_settings_from_db
 from endpoints import router as api_router
 from services import APP_DOMAIN
 from rate_limit import limiter_standard
 from config import BASE_DIR, UPLOAD_DIR, templates, configure_template_globals
-from middleware import add_security_headers
+from middleware import add_security_headers, add_request_id
 from exceptions import custom_http_exception_handler, general_exception_handler
 
 
@@ -27,10 +44,13 @@ from exceptions import custom_http_exception_handler, general_exception_handler
 async def lifespan(app: FastAPI):
     from auth import validate_admin_password
 
+    logger.info("Starting Link-in-Bio application...")
     init_db()
     configure_template_globals()
     validate_admin_password()  # Check password security on startup
+    logger.info("Application startup complete")
     yield
+    logger.info("Application shutdown")
 
 
 app = FastAPI(
@@ -42,6 +62,7 @@ app = FastAPI(
     redoc_url="/api/redoc",
 )
 
+app.middleware("http")(add_request_id)
 app.middleware("http")(add_security_headers)
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")

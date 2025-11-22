@@ -1,5 +1,40 @@
 import os
+import uuid
 from fastapi import Request
+from logging_config import get_logger
+
+logger = get_logger(__name__)
+
+
+async def add_request_id(request: Request, call_next):
+    """Add unique request ID to each request for tracing."""
+    request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
+
+    # Log request
+    logger.info(
+        "Request started",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "url": str(request.url),
+            "client": request.client.host if request.client else None,
+        },
+    )
+
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+
+    # Log response
+    logger.info(
+        "Request completed",
+        extra={
+            "request_id": request_id,
+            "status_code": response.status_code,
+        },
+    )
+
+    return response
 
 
 async def add_security_headers(request: Request, call_next):

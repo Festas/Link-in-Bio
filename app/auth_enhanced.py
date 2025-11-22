@@ -8,7 +8,7 @@ import base64
 import logging
 import pyotp
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 from fastapi import Request, HTTPException, Depends
 from passlib.context import CryptContext
 from dotenv import load_dotenv

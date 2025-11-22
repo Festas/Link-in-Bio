@@ -22,13 +22,16 @@ from config import BASE_DIR, UPLOAD_DIR, templates, configure_template_globals
 from middleware import add_security_headers
 from exceptions import custom_http_exception_handler, general_exception_handler
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from auth import validate_admin_password
+
     init_db()
     configure_template_globals()
     validate_admin_password()  # Check password security on startup
     yield
+
 
 app = FastAPI(
     lifespan=lifespan,
@@ -36,7 +39,7 @@ app = FastAPI(
     description="Eine moderne, selbst-gehostete Link-in-Bio Lösung",
     version="1.1.0",
     docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    redoc_url="/api/redoc",
 )
 
 app.middleware("http")(add_security_headers)
@@ -47,25 +50,29 @@ app.include_router(api_router, prefix="/api")
 app.exception_handler(StarletteHTTPException)(custom_http_exception_handler)
 app.exception_handler(500)(general_exception_handler)
 
+
 # Health Check Endpoint
 @app.get("/health", tags=["System"])
 async def health_check():
     """Health check endpoint for monitoring and container orchestration."""
-    return {
-        "status": "healthy",
-        "version": "1.1.0"
-    }
+    return {"status": "healthy", "version": "1.1.0"}
+
 
 @app.get("/sw.js", response_class=FileResponse)
 async def get_service_worker():
     return FileResponse(BASE_DIR / "static" / "js" / "sw.js", media_type="application/javascript")
 
+
 @app.get("/manifest.json", response_class=JSONResponse)
 async def get_manifest():
     settings = get_settings_from_db()
-    title = settings.get('title', 'Link-in-Bio')
-    icon_src = settings.get('image_url') if settings.get('image_url') and settings.get('image_url').startswith('/static') else '/static/uploads/default-icon.png'
-    if icon_src.startswith('http'):
+    title = settings.get("title", "Link-in-Bio")
+    icon_src = (
+        settings.get("image_url")
+        if settings.get("image_url") and settings.get("image_url").startswith("/static")
+        else "/static/uploads/default-icon.png"
+    )
+    if icon_src.startswith("http"):
         icon_src = "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/layout-grid.svg"
     theme_color = "#111827"
     return {
@@ -75,41 +82,52 @@ async def get_manifest():
         "display": "standalone",
         "background_color": theme_color,
         "theme_color": theme_color,
-        "icons": [{"src": icon_src, "sizes": "192x192", "type": "image/png"}]
+        "icons": [{"src": icon_src, "sizes": "192x192", "type": "image/png"}],
     }
+
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def get_favicon():
     icon_path = UPLOAD_DIR / "default-icon.png"
     if icon_path.exists() and icon_path.stat().st_size > 0:
-         return FileResponse(icon_path)
+        return FileResponse(icon_path)
     return RedirectResponse("https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/link.svg")
+
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def get_robots_txt():
     return f"User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\nDisallow: /login\n\nSitemap: https://{APP_DOMAIN}/sitemap.xml\n"
 
+
 @app.get("/sitemap.xml", response_class=Response)
 async def get_sitemap():
     base_url = f"https://{APP_DOMAIN}"
-    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    xml_content += f'  <url><loc>{base_url}</loc><changefreq>daily</changefreq><priority>1.0</priority></url>\n'
-    xml_content += f'  <url><loc>{base_url}/privacy</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>\n'
-    xml_content += '</urlset>'
+    xml_content = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    )
+    xml_content += f"  <url><loc>{base_url}</loc><changefreq>daily</changefreq><priority>1.0</priority></url>\n"
+    xml_content += (
+        f"  <url><loc>{base_url}/privacy</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>\n"
+    )
+    xml_content += "</urlset>"
     return Response(content=xml_content, media_type="application/xml")
+
 
 @app.get("/admin", response_class=HTMLResponse)
 async def get_admin_page(request: Request):
     return templates.TemplateResponse(request=request, name="admin.html")
 
+
 @app.get("/analytics", response_class=HTMLResponse)
 async def get_analytics_page(request: Request):
     return templates.TemplateResponse(request=request, name="analytics.html")
 
+
 @app.get("/login", response_class=HTMLResponse)
 async def get_login_page(request: Request):
     return templates.TemplateResponse(request=request, name="login.html")
-    
+
+
 @app.get("/privacy", response_class=HTMLResponse)
 async def get_privacy_page(request: Request):
     settings = get_settings_from_db()
@@ -117,36 +135,38 @@ async def get_privacy_page(request: Request):
     context = {
         "page_title": "Datenschutzerklärung",
         "page_description": "Datenschutzbestimmungen",
-        "page_image": "", 
+        "page_image": "",
         "page_url": page_url,
-        "custom_html_head": settings.get('custom_html_head', ''),
-        "custom_html_body": settings.get('custom_html_body', '')
+        "custom_html_head": settings.get("custom_html_head", ""),
+        "custom_html_body": settings.get("custom_html_body", ""),
     }
     return templates.TemplateResponse(request=request, name="privacy.html", context=context)
+
 
 @app.get("/", response_class=HTMLResponse, dependencies=[Depends(limiter_standard)])
 async def get_index_html(request: Request):
     settings = get_settings_from_db()
-    page_title = settings.get('title', 'Link-in-Bio')
-    page_description = settings.get('bio', 'Willkommen!')
-    page_image_url = settings.get('image_url', '')
-    if page_image_url.startswith('/static'):
+    page_title = settings.get("title", "Link-in-Bio")
+    page_description = settings.get("bio", "Willkommen!")
+    page_image_url = settings.get("image_url", "")
+    if page_image_url.startswith("/static"):
         base_url = f"{'https' if APP_DOMAIN != '127.0.0.1' else 'http'}://{APP_DOMAIN}"
         page_image_url = urljoin(base_url, page_image_url)
     else:
         base_url = f"{'https' if APP_DOMAIN != '127.0.0.1' else 'http'}://{APP_DOMAIN}"
         page_image_url = urljoin(base_url, "/api/social/card.png")
-    
+
     page_url = f"https://{APP_DOMAIN}" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}"
     context = {
         "page_title": page_title,
         "page_description": page_description,
         "page_image": page_image_url,
         "page_url": page_url,
-        "custom_html_head": settings.get('custom_html_head', ''),
-        "custom_html_body": settings.get('custom_html_body', '')
+        "custom_html_head": settings.get("custom_html_head", ""),
+        "custom_html_body": settings.get("custom_html_body", ""),
     }
     return templates.TemplateResponse(request=request, name="index.html", context=context)
+
 
 if __name__ == "__main__":
     print(f"Starte Server auf http://127.0.0.1:8000")

@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
+
 class ItemCreate(BaseModel):
     title: Optional[str] = None
     url: Optional[str] = None
@@ -11,6 +12,7 @@ class ItemCreate(BaseModel):
     text: Optional[str] = None
     email: Optional[EmailStr] = None
     grid_columns: Optional[int] = 2
+
 
 class ItemUpdate(BaseModel):
     title: Optional[str] = None
@@ -24,6 +26,7 @@ class ItemUpdate(BaseModel):
     price: Optional[str] = None
     grid_columns: Optional[int] = None
 
+
 class Item(BaseModel):
     id: int
     item_type: str
@@ -32,7 +35,7 @@ class Item(BaseModel):
     image_url: Optional[str] = None
     display_order: int
     parent_id: Optional[int] = None
-    click_count: int 
+    click_count: int
     is_featured: bool = False
     is_active: bool = True
     is_affiliate: bool = False
@@ -40,14 +43,16 @@ class Item(BaseModel):
     expires_on: Optional[str] = None
     price: Optional[str] = None
     grid_columns: int = 2
-    children: List['Item'] = []
+    children: List["Item"] = []
 
     def __init__(self, **data):
         # Always create a new list for children to avoid shared reference bugs
-        data['children'] = list(data.get('children', []))
+        data["children"] = list(data.get("children", []))
         super().__init__(**data)
 
+
 Item.model_rebuild()
+
 
 class Settings(BaseModel):
     title: Optional[str] = None
@@ -70,6 +75,7 @@ class Settings(BaseModel):
     custom_html_head: Optional[str] = None
     custom_html_body: Optional[str] = None
 
+
 class AnalyticsData(BaseModel):
     total_clicks: int
     clicks_per_day: List[Dict[str, Any]]
@@ -78,11 +84,13 @@ class AnalyticsData(BaseModel):
     top_countries: List[Dict[str, Any]]
     total_subscribers: int
 
+
 class ContactRequest(BaseModel):
     name: str
     email: EmailStr
     message: str
     privacy_agreed: bool
+
 
 class Message(BaseModel):
     id: int
@@ -91,19 +99,21 @@ class Message(BaseModel):
     message: str
     sent_at: datetime
 
+
 class SubscribeRequest(BaseModel):
     email: EmailStr
     privacy_agreed: bool
+
 
 class Subscriber(BaseModel):
     id: int
     email: str
     subscribed_at: datetime
 
+
 class ReorderRequest(BaseModel):
     ids: List[int]
 
+
 class ImageUploadResponse(BaseModel):
     url: str
-
-

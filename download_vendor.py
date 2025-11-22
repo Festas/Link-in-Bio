@@ -13,12 +13,12 @@ libraries = {
     "sortable.min.js": "https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js",
     "chart.js": "https://cdn.jsdelivr.net/npm/chart.js",
     "swiper-bundle.min.css": "https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css",
-    "swiper-bundle.min.js": "https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"
+    "swiper-bundle.min.js": "https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js",
 }
 
 fonts = {
     "Roboto-Regular.ttf": "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Regular.ttf",
-    "Roboto-Bold.ttf": "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Bold.ttf"
+    "Roboto-Bold.ttf": "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Bold.ttf",
 }
 
 print(f"Lade Bibliotheken nach '{VENDOR_DIR}'...")

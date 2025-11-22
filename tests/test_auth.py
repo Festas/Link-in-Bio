@@ -1,7 +1,6 @@
 """
 Tests for authentication and authorization.
 """
-import pytest
 import base64
 
 

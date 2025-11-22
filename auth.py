@@ -13,12 +13,35 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "super-sicheres-passwort-123")
 
 # List of common weak passwords to warn about
 WEAK_PASSWORDS = {
-    "admin", "password", "123456", "12345678", "qwerty", "abc123",
-    "monkey", "1234567", "letmein", "trustno1", "dragon", "baseball",
-    "iloveyou", "master", "sunshine", "ashley", "bailey", "passw0rd",
-    "shadow", "123123", "654321", "superman", "qazwsx", "michael",
-    "football", "password1", "super-sicheres-passwort-123"
+    "admin",
+    "password",
+    "123456",
+    "12345678",
+    "qwerty",
+    "abc123",
+    "monkey",
+    "1234567",
+    "letmein",
+    "trustno1",
+    "dragon",
+    "baseball",
+    "iloveyou",
+    "master",
+    "sunshine",
+    "ashley",
+    "bailey",
+    "passw0rd",
+    "shadow",
+    "123123",
+    "654321",
+    "superman",
+    "qazwsx",
+    "michael",
+    "football",
+    "password1",
+    "super-sicheres-passwort-123",
 }
+
 
 def validate_admin_password():
     """Validate admin password on startup and warn if weak."""
@@ -36,22 +59,24 @@ def validate_admin_password():
             "Consider using a longer password for better security."
         )
 
+
 async def check_auth(request: Request):
     auth_header = request.headers.get("Authorization")
     if auth_header is None:
         return None
-    
+
     try:
         token = auth_header.split(" ")[1]
         decoded_token = base64.b64decode(token).decode("utf-8")
         username, password = decoded_token.split(":", 1)
-        
+
         if secrets.compare_digest(username, ADMIN_USERNAME) and secrets.compare_digest(password, ADMIN_PASSWORD):
             return username
         else:
             return None
     except Exception:
         return None
+
 
 def require_auth(username: str = Depends(check_auth)):
     if username is None:

@@ -84,6 +84,26 @@ async function initAdmin() {
     }
     if (qrModal) qrModal.onclick = (e) => { if (e.target === qrModal) qrModal.style.display = 'none'; };
 
+    // 5.5 Preview Modal
+    const previewModal = document.getElementById('preview-modal');
+    const previewBtn = document.getElementById('preview-button');
+    const previewRefreshBtn = document.getElementById('preview-refresh-button');
+    const previewCloseBtn = document.getElementById('preview-close-button');
+    const previewIframe = document.getElementById('preview-iframe');
+
+    function showPreview() {
+        previewIframe.src = `/?t=${Date.now()}`;
+        previewModal.classList.add('active');
+    }
+
+    if (previewBtn) previewBtn.onclick = showPreview;
+    if (previewCloseBtn) previewCloseBtn.onclick = () => { 
+        previewModal.classList.remove('active'); 
+        previewIframe.src = 'about:blank'; 
+    };
+    if (previewRefreshBtn) previewRefreshBtn.onclick = () => { previewIframe.src = `/?t=${Date.now()}`; };
+    if (previewModal) previewModal.onclick = (e) => { if (e.target === previewModal) previewCloseBtn.click(); };
+
     // 6. Forms (Items erstellen)
     const forms = ['add-link-form', 'add-header-form', 'add-slider-group-form', 'add-video-form', 'add-email-form', 'add-countdown-form', 'add-grid-form', 'add-faq-form', 'add-divider-form', 'add-testimonial-form', 'add-contact-form', 'add-product-form'];
     forms.forEach(id => {

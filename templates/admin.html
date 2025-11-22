@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin-Panel</title>
     
+    <!-- PWA Configuration -->
     <link rel="manifest" href="/manifest.json?v={{ version }}">
     <meta name="theme-color" content="#111827">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Admin">
     <link rel="apple-touch-icon" href="/static/uploads/icon-192.png">
     
     <script src="{{ vendor.tailwindcss }}?v={{ version }}"></script>
@@ -25,6 +29,11 @@
                 <p class="text-sm text-gray-400 mt-1">festas_builds Control Center</p>
             </div>
             <div class="flex space-x-4">
+                <button id="install-app-button" class="text-sm text-gray-400 hover:text-white flex items-center space-x-1" title="App installieren" style="display: none;">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">App installieren</span>
+                </button>
+                
                 <button id="qrcode-button" class="text-sm text-gray-400 hover:text-white flex items-center space-x-1" title="QR-Code anzeigen">
                     <i data-lucide="qr-code" class="w-4 h-4"></i>
                     <span class="hidden md:inline">QR-Code</span>
@@ -348,7 +357,7 @@
     </div>
     
     <!-- Preview Modal -->
-    <div id="preview-modal" class="modal" style="display: none;">
+    <div id="preview-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <div class="flex space-x-3"><h3 class="text-lg font-semibold">Live-Vorschau</h3><button id="preview-refresh-button" class="text-gray-400 hover:text-white"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button></div>

@@ -1,7 +1,7 @@
 import os
 import uuid
 from fastapi import Request
-from logging_config import get_logger
+from .logging_config import get_logger
 
 logger = get_logger(__name__)
 

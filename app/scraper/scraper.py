@@ -12,10 +12,10 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse, urlunparse
 
 # Import modular components
-from scraper_extractors import ExtractorChain
-from scraper_utils import URLNormalizer, TitleCleaner, ImageURLValidator
-from scraper_domains import SpecialDomainRouter
-from scraper_browser import get_browser_scraper
+from .scraper_extractors import ExtractorChain
+from .scraper_utils import URLNormalizer, TitleCleaner, ImageURLValidator
+from .scraper_domains import SpecialDomainRouter
+from .scraper_browser import get_browser_scraper
 
 try:
     from ddgs import DDGS

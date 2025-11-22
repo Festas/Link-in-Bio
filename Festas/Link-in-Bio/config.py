@@ -1,5 +1,0 @@
-# Configuration settings for the application
-
-DATABASE_URL = "your_database_url"
-SECRET_KEY = "your_secret_key"
-DEBUG = True

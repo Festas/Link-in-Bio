@@ -3,7 +3,10 @@ from pathlib import Path
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 
-BASE_DIR = Path(__file__).resolve().parent
+# BASE_DIR points to project root (parent of app/ directory)
+# This file is at: Link-in-Bio/app/config.py
+# Project root is: Link-in-Bio/
+BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 UPLOAD_DIR = BASE_DIR / "static" / "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)

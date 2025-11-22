@@ -9,7 +9,7 @@ This test file validates that the browser scraper can handle:
 
 import pytest
 import asyncio
-from scraper_browser import BrowserScraper, get_browser_scraper
+from app.scraper.scraper_browser import BrowserScraper, get_browser_scraper
 
 
 @pytest.fixture
@@ -93,7 +93,7 @@ class TestBrowserScraperIntegration:
     @pytest.mark.asyncio
     async def test_scraper_uses_browser_for_difficult_sites(self):
         """Test that main scraper uses browser fallback when needed."""
-        from scraper import SmartScraper
+        from app.scraper.scraper import SmartScraper
         
         scraper = SmartScraper()
         

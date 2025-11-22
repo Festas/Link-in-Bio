@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 
 # Importiere den neuen Scraper
-from scraper import scraper
+from .scraper.scraper import scraper
 
 load_dotenv()
 JSONLINK_API_KEY = os.getenv("JSONLINK_API_KEY", None)

@@ -22,7 +22,7 @@ from fastapi.responses import StreamingResponse
 from typing import List, Optional
 import qrcode
 
-from models import (
+from .models import (
     Item,
     ItemCreate,
     ItemUpdate,
@@ -38,7 +38,7 @@ from models import (
     PageCreate,
     PageUpdate,
 )
-from database import (
+from .database import (
     create_item_in_db,
     update_item_in_db,
     delete_item_from_db,
@@ -52,8 +52,8 @@ from database import (
     update_page,
     delete_page,
 )
-from auth import require_auth, check_auth
-from services import (
+from .auth import require_auth, check_auth
+from .services import (
     scrape_link_details,
     get_video_embed_url,
     save_optimized_image,
@@ -61,9 +61,9 @@ from services import (
     get_country_from_ip,
     APP_DOMAIN,
 )
-from rate_limit import limiter_strict, limiter_standard
-from cache import cache
-from config import BASE_DIR, UPLOAD_DIR
+from .rate_limit import limiter_strict, limiter_standard
+from .cache import cache
+from .config import BASE_DIR, UPLOAD_DIR
 
 router = APIRouter()
 

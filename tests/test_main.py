@@ -7,8 +7,8 @@ test_db_fd, test_db_path = tempfile.mkstemp()
 os.environ['DATABASE_FILE'] = test_db_path
 
 from main import app
-from database import init_db
-from config import configure_template_globals
+from app.database import init_db
+from app.config import configure_template_globals
 
 # Initialize database and templates for testing
 init_db()

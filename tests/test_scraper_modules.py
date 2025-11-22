@@ -2,13 +2,13 @@
 import pytest
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
-from scraper_extractors import (
+from app.scraper.scraper_extractors import (
     JSONLDExtractor, OpenGraphExtractor, TwitterCardExtractor,
     HTMLMetaExtractor, ContentImageExtractor, MicrodataExtractor,
     ExtractorChain
 )
-from scraper_utils import URLNormalizer, TitleCleaner, ImageURLValidator
-from scraper_domains import (
+from app.scraper.scraper_utils import URLNormalizer, TitleCleaner, ImageURLValidator
+from app.scraper.scraper_domains import (
     GitHubHandler, LinkedInHandler, TwitterHandler, InstagramHandler,
     YouTubeHandler, AmazonHandler, EbayHandler, EtsyHandler, AliExpressHandler,
     RedditHandler, SpotifyHandler, StackOverflowHandler, SpecialDomainRouter

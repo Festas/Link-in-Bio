@@ -31,9 +31,9 @@ export function initPWA() {
             if (!deferredPrompt) {
                 // Check if already installed
                 if (window.matchMedia('(display-mode: standalone)').matches) {
-                    alert('Die App ist bereits installiert!');
+                    showInfoMessage('Die App ist bereits installiert!');
                 } else {
-                    alert('Die App kann auf diesem Gerät oder Browser nicht installiert werden. Bitte verwenden Sie Chrome, Edge oder Safari auf iOS.');
+                    showInfoMessage('Die App kann auf diesem Gerät oder Browser nicht installiert werden. Bitte verwenden Sie Chrome, Edge oder Safari auf iOS.');
                 }
                 return;
             }
@@ -170,6 +170,19 @@ export function initCookieConsent() {
             banner.remove();
         });
     }
+}
+
+function showInfoMessage(message) {
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'fixed top-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-entry';
+    infoDiv.textContent = message;
+    document.body.appendChild(infoDiv);
+    
+    setTimeout(() => {
+        infoDiv.style.opacity = '0';
+        infoDiv.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => infoDiv.remove(), 300);
+    }, 3000);
 }
 
 function activateTrackingScripts() {

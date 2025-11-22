@@ -1,6 +1,5 @@
 import * as API from './admin_api.js';
 import * as UI from './admin_ui.js';
-import { initAvatarCropper, getAvatarOffsets, setAvatarImageSrc } from './avatar_cropper.js';
 
 export function initProfile() {
     const form = document.getElementById('profile-form');
@@ -42,17 +41,15 @@ export function initProfile() {
             socialContainer.querySelectorAll('input').forEach(i => socialData[i.name] = i.value);
 
             const val = (id) => document.getElementById(id)?.value;
-            const offsets = (typeof getAvatarOffsets === 'function') ? getAvatarOffsets() : { x: 0, y: 0 };
+            const checked = (id) => document.getElementById(id)?.checked || false;
             const payload = {
                 title: val('profile-title'), bio: val('profile-bio'),
                 image_url: val('profile-image-url'), bg_image_url: val('profile-bg-url'),
                 theme: val('profile-theme'), button_style: val('profile-button-style'),
                 ...socialData,
-                picasso_avatar_effect: document.getElementById('picasso-avatar-effect')?.checked ? true : false,
-                picasso_avatar_autocenter: document.getElementById('picasso-avatar-autocenter')?.checked ? true : false,
-                picasso_art_variant: document.getElementById('picasso-art-variant')?.value || 'a',
-                picasso_avatar_offset_x: offsets.x || 0,
-                picasso_avatar_offset_y: offsets.y || 0,
+                meta_description: val('meta-description'),
+                meta_keywords: val('meta-keywords'),
+                show_powered_by: checked('show-powered-by'),
                 custom_bg_color: val('custom-bg-color'), custom_text_color: val('custom-text-color'),
                 custom_button_color: val('custom-button-color'), custom_button_text_color: val('custom-button-text-color'),
                 custom_html_head: val('custom-html-head'), custom_html_body: val('custom-html-body'),
@@ -85,27 +82,11 @@ async function loadProfileSettings() {
         setVal('custom-button-color', s.custom_button_color || '#1F2937');
         setVal('custom-button-text-color', s.custom_button_text_color || '#FFFFFF');
 
-        // Picasso avatar effect checkbox
-        const picEl = document.getElementById('picasso-avatar-effect');
-        if (picEl) picEl.checked = !!s.picasso_avatar_effect;
-
-        // Auto-center
-        const autoCenterEl = document.getElementById('picasso-avatar-autocenter');
-        if (autoCenterEl) autoCenterEl.checked = !!s.picasso_avatar_autocenter;
-
-        // Artwork variant
-        const variantEl = document.getElementById('picasso-art-variant');
-        if (variantEl) variantEl.value = s.picasso_art_variant || 'a';
-
-        // Avatar preview + cropper
-        const previewImg = document.getElementById('profile-image-preview-img');
-        const imageInput = document.getElementById('profile-image-url');
-        if (previewImg && imageInput) {
-            setAvatarImageSrc('profile-image-preview-img', s.image_url || imageInput.value || '');
-            const initX = s.picasso_avatar_offset_x || 0;
-            const initY = s.picasso_avatar_offset_y || 0;
-            initAvatarCropper('profile-image-preview-img', 'profile-image-url', 'profile-image-reset', initX, initY);
-        }
+        // SEO & Social settings
+        setVal('meta-description', s.meta_description || '');
+        setVal('meta-keywords', s.meta_keywords || '');
+        const showPoweredBy = document.getElementById('show-powered-by');
+        if (showPoweredBy) showPoweredBy.checked = !!s.show_powered_by;
 
         // Socials
         const container = document.getElementById('social-inputs-container');
@@ -117,7 +98,6 @@ async function loadProfileSettings() {
 
         toggleCustomThemeSettings(s.theme);
         applyStyles();
-        // Picasso avatar effect removed per user request
 
     } catch(e) { console.error("Settings Load Error", e); }
 }

@@ -7,6 +7,7 @@ import os
 import time
 import logging
 import warnings
+from typing import Optional
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse, urlunparse
 
@@ -14,6 +15,7 @@ from urllib.parse import urljoin, urlparse, urlunparse
 from scraper_extractors import ExtractorChain
 from scraper_utils import URLNormalizer, TitleCleaner, ImageURLValidator
 from scraper_domains import SpecialDomainRouter
+from scraper_browser import get_browser_scraper
 
 try:
     from ddgs import DDGS
@@ -61,6 +63,9 @@ class SmartScraper:
         # Simple in-memory cache for scrape results
         self._cache = {}
         self._cache_ttl = int(os.getenv("SCRAPER_CACHE_TTL", "3600"))  # 1 hour default
+        
+        # Browser scraping configuration
+        self.use_browser_fallback = os.getenv("SCRAPER_BROWSER_FALLBACK", "true").lower() in ("1", "true", "yes")
         
         # Initialize modular components
         self.extractor_chain = ExtractorChain()
@@ -223,6 +228,21 @@ class SmartScraper:
                 await self._scrape_fallback(url, data, domain)
         except Exception as e:
             logger.error(f"Scraping failed for {url}: {e}", exc_info=True)
+        
+        # If standard scraping failed or returned poor results, try browser scraping
+        if self.use_browser_fallback and self._should_try_browser_scraping(data, domain):
+            logger.info(f"Attempting browser scraping for {url}")
+            browser_data = await self._scrape_with_browser(url)
+            if browser_data:
+                # Merge browser data with existing data (browser data takes precedence)
+                if browser_data.get('title') and browser_data['title'] != domain:
+                    data['title'] = browser_data['title']
+                if browser_data.get('image_url'):
+                    data['image_url'] = browser_data['image_url']
+                if browser_data.get('description'):
+                    data['description'] = browser_data['description']
+                if browser_data.get('final_url'):
+                    data['url'] = browser_data['final_url']
 
         # Apply intelligent fallbacks
         await self._apply_fallbacks(data, domain)
@@ -482,6 +502,63 @@ class SmartScraper:
                         data["image_url"] = img_src
                         logger.info(f"Extracted Amazon image from {selector}")
                         break
+    
+    def _should_try_browser_scraping(self, data: dict, domain: str) -> bool:
+        """
+        Determine if browser scraping should be attempted.
+        
+        Browser scraping is tried when:
+        - Title is still the domain name (no real title extracted)
+        - Title appears to be a bot challenge or error page
+        - No image URL was found
+        """
+        title = data.get("title", "")
+        has_image = bool(data.get("image_url")) and "favicon" not in data.get("image_url", "").lower()
+        
+        # Check if title is just the domain or looks like an error
+        title_is_poor = (
+            title == domain or
+            self.title_cleaner.is_bad_title(title, domain) or
+            any(x in title.lower() for x in ["cloudflare", "attention required", "captcha", "please wait"])
+        )
+        
+        # Try browser scraping if we have poor results
+        return title_is_poor or not has_image
+    
+    async def _scrape_with_browser(self, url: str) -> Optional[dict]:
+        """
+        Scrape URL using browser automation.
+        
+        Returns:
+            Dictionary with scraped data or None on failure
+        """
+        try:
+            browser_scraper = await get_browser_scraper()
+            browser_result = await browser_scraper.scrape(url)
+            
+            if not browser_result:
+                return None
+            
+            # Parse the HTML from browser
+            soup = BeautifulSoup(browser_result['html'], 'html.parser')
+            
+            # Extract metadata using our standard extractors
+            metadata = self.extract_metadata(soup, browser_result['final_url'])
+            
+            # Use browser page title as fallback
+            if not metadata.get('title') and browser_result.get('title'):
+                metadata['title'] = browser_result['title']
+            
+            # Add the final URL (after redirects)
+            metadata['final_url'] = browser_result['final_url']
+            
+            logger.info(f"Browser scraping extracted: title={metadata.get('title', 'N/A')[:50]}, image={bool(metadata.get('image_url'))}")
+            
+            return metadata
+            
+        except Exception as e:
+            logger.error(f"Browser scraping error: {e}", exc_info=True)
+            return None
 
     def get_google_favicon(self, domain: str) -> str:
         """Get Google favicon URL for domain - kept for backward compatibility."""

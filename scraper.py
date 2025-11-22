@@ -8,10 +8,16 @@ import logging
 import warnings
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse, urlunparse
-from duckduckgo_search import DDGS
+
+try:
+    from ddgs import DDGS
+except ImportError:
+    # Fallback to old package name if ddgs not available
+    from duckduckgo_search import DDGS
 
 # Warnung unterdrücken
 warnings.filterwarnings("ignore", category=RuntimeWarning, module="duckduckgo_search")
+warnings.filterwarnings("ignore", category=RuntimeWarning, module="ddgs")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

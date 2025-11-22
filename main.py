@@ -33,6 +33,7 @@ logger = get_logger(__name__)
 
 from app.database import init_db, get_settings_from_db, get_page_by_slug
 from app.endpoints import router as api_router
+from app.endpoints_enhanced import router as api_router_enhanced
 from app.services import APP_DOMAIN
 from app.rate_limit import limiter_standard
 from app.config import BASE_DIR, UPLOAD_DIR, templates, configure_template_globals
@@ -43,11 +44,13 @@ from app.exceptions import custom_http_exception_handler, general_exception_hand
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.auth import validate_admin_password
+    from app.auth_enhanced import validate_admin_password_on_startup
 
     logger.info("Starting Link-in-Bio application...")
     init_db()
     configure_template_globals()
-    validate_admin_password()  # Check password security on startup
+    validate_admin_password()  # Legacy password validation
+    validate_admin_password_on_startup()  # Enhanced password validation
     logger.info("Application startup complete")
     yield
     logger.info("Application shutdown")
@@ -67,6 +70,7 @@ app.middleware("http")(add_security_headers)
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.include_router(api_router, prefix="/api")
+app.include_router(api_router_enhanced, prefix="/api")
 
 app.exception_handler(StarletteHTTPException)(custom_http_exception_handler)
 app.exception_handler(500)(general_exception_handler)

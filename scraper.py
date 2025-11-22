@@ -10,6 +10,11 @@ import warnings
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse, urlunparse
 
+# Import modular components
+from scraper_extractors import ExtractorChain
+from scraper_utils import URLNormalizer, TitleCleaner, ImageURLValidator
+from scraper_domains import SpecialDomainRouter
+
 try:
     from ddgs import DDGS
 except ImportError:
@@ -56,6 +61,13 @@ class SmartScraper:
         # Simple in-memory cache for scrape results
         self._cache = {}
         self._cache_ttl = int(os.getenv("SCRAPER_CACHE_TTL", "3600"))  # 1 hour default
+        
+        # Initialize modular components
+        self.extractor_chain = ExtractorChain()
+        self.url_normalizer = URLNormalizer()
+        self.title_cleaner = TitleCleaner()
+        self.image_validator = ImageURLValidator()
+        self.domain_router = SpecialDomainRouter()
 
     def get_headers(self):
         return {
@@ -70,11 +82,8 @@ class SmartScraper:
         }
 
     def clean_url(self, url: str) -> str:
-        try:
-            return url.strip()
-        except (AttributeError, TypeError):
-            # url is not a string or doesn't have strip method
-            return url
+        """Clean and normalize URL."""
+        return self.url_normalizer.normalize(url)
 
     def _get_cache_key(self, url: str) -> str:
         """Generate cache key for URL."""
@@ -105,6 +114,7 @@ class SmartScraper:
                 del self._cache[old_key]
 
     def extract_asin(self, text: str) -> str | None:
+        """Extract Amazon ASIN - delegated to AmazonHandler in domains module."""
         match = re.search(r"/(dp|gp/product|d)/(B[A-Z0-9]{9})", text)
         if match:
             return match.group(2)
@@ -117,49 +127,9 @@ class SmartScraper:
         return None
 
     def extract_json_ld(self, soup) -> dict:
-        """Extract structured data from JSON-LD scripts with improved handling."""
-        data = {}
-        scripts = soup.find_all("script", type="application/ld+json")
-        for script in scripts:
-            try:
-                if not script.string:
-                    continue
-                content = json.loads(script.string)
-                items = content if isinstance(content, list) else [content]
-                for item in items:
-                    item_type = item.get("@type", "")
-                    if isinstance(item_type, list):
-                        item_type = item_type[0]
-                    if item_type in ["Product", "Article", "NewsArticle", "WebPage", "WebSite"]:
-                        # Extract title/name/headline
-                        title = item.get("name") or item.get("headline") or item.get("title")
-                        if title and not data.get("title"):
-                            data["title"] = title
-                        # Extract image with better handling
-                        img = item.get("image")
-                        if img and not data.get("image_url"):
-                            if isinstance(img, str):
-                                data["image_url"] = img
-                            elif isinstance(img, list) and img:
-                                # Get first valid image
-                                first_img = img[0]
-                                if isinstance(first_img, str):
-                                    data["image_url"] = first_img
-                                elif isinstance(first_img, dict):
-                                    data["image_url"] = first_img.get("url") or first_img.get("contentUrl")
-                            elif isinstance(img, dict):
-                                data["image_url"] = img.get("url") or img.get("contentUrl")
-                        # Extract description if available
-                        desc = item.get("description")
-                        if desc and not data.get("description"):
-                            data["description"] = desc
-                        # Prioritize Product type
-                        if item_type == "Product" and data.get("title"):
-                            return data
-            except (json.JSONDecodeError, KeyError, TypeError, AttributeError) as e:
-                logger.debug(f"Error parsing JSON-LD: {e}")
-                continue
-        return data
+        """Extract structured data from JSON-LD scripts - now handled by ExtractorChain."""
+        # Keep this method for backward compatibility but delegate to new implementation
+        return self.extractor_chain.extractors[0].extract(soup, "")
 
     def search_duckduckgo_title(self, query_url: str) -> str | None:
         try:
@@ -183,20 +153,13 @@ class SmartScraper:
             return False
         
         # Skip validation for known-good image services
-        trusted_domains = [
-            'opengraph.githubassets.com',
-            'images-na.ssl-images-amazon.com',
-            'og.image',
-            'graph.facebook.com',
-            'pbs.twimg.com',
-            'i.ytimg.com',
-            'www.google.com/s2/favicons',
-        ]
-        
-        parsed = urlparse(url)
-        if any(domain in parsed.netloc for domain in trusted_domains):
-            logger.debug(f"Skipping validation for trusted domain: {parsed.netloc}")
+        if self.image_validator.is_trusted_domain(url):
+            logger.debug(f"Skipping validation for trusted domain: {urlparse(url).netloc}")
             return True
+        
+        # Skip bad patterns
+        if self.image_validator.should_skip(url):
+            return False
         
         try:
             # Quick HEAD request to check if image exists
@@ -212,74 +175,23 @@ class SmartScraper:
         return False
 
     def extract_metadata(self, soup, base_url: str) -> dict:
-        """Extract all available metadata from HTML with comprehensive fallbacks."""
-        data = {}
-        
-        # Try Open Graph tags first (most reliable for social media sites)
-        og_title = soup.find("meta", property="og:title")
-        og_image = soup.find("meta", property="og:image")
-        og_desc = soup.find("meta", property="og:description")
-        
-        if og_title and og_title.get("content"):
-            data["title"] = og_title["content"].strip()
-        if og_image and og_image.get("content"):
-            data["image_url"] = urljoin(base_url, og_image["content"])
-        if og_desc and og_desc.get("content"):
-            data["description"] = og_desc["content"].strip()
-        
-        # Try Twitter Card tags as fallback
-        if not data.get("title"):
-            tw_title = soup.find("meta", attrs={"name": "twitter:title"}) or soup.find("meta", property="twitter:title")
-            if tw_title and tw_title.get("content"):
-                data["title"] = tw_title["content"].strip()
-        
-        if not data.get("image_url"):
-            tw_image = soup.find("meta", attrs={"name": "twitter:image"}) or soup.find("meta", property="twitter:image")
-            if tw_image and tw_image.get("content"):
-                data["image_url"] = urljoin(base_url, tw_image["content"])
-        
-        # Try standard meta description
-        if not data.get("description"):
-            meta_desc = soup.find("meta", attrs={"name": "description"})
-            if meta_desc and meta_desc.get("content"):
-                data["description"] = meta_desc["content"].strip()
-        
-        # Try title tag as last resort
-        if not data.get("title") and soup.title and soup.title.string:
-            data["title"] = soup.title.string.strip()
-        
-        # Try to find a good image from various sources
-        if not data.get("image_url"):
-            # Try apple-touch-icon
-            apple_icon = soup.find("link", rel="apple-touch-icon")
-            if apple_icon and apple_icon.get("href"):
-                data["image_url"] = urljoin(base_url, apple_icon["href"])
-            # Try first large image in content
-            elif soup.find("img"):
-                for img in soup.find_all("img", limit=10):
-                    src = img.get("src") or img.get("data-src")
-                    if src:
-                        # Skip small images, icons, tracking pixels
-                        width = img.get("width")
-                        height = img.get("height")
-                        if width and height:
-                            try:
-                                if int(width) < 200 or int(height) < 200:
-                                    continue
-                            except (ValueError, TypeError):
-                                # Width/height not valid integers, skip size check
-                                pass
-                        # Skip common icon/logo/tracking patterns
-                        if any(x in src.lower() for x in ["icon", "logo", "pixel", "tracking", "1x1"]):
-                            continue
-                        data["image_url"] = urljoin(base_url, src)
-                        break
-        
-        return data
+        """Extract all available metadata - now handled by ExtractorChain."""
+        # Use the comprehensive extractor chain
+        return self.extractor_chain.extract(soup, base_url)
 
     async def scrape(self, raw_url: str) -> dict:
         """Main scraping method with comprehensive fallbacks and error handling."""
         url = self.clean_url(raw_url)
+        
+        # Validate URL
+        if not self.url_normalizer.is_valid(url):
+            logger.warning(f"Invalid URL: {url}")
+            domain = self.url_normalizer.get_domain(url)
+            return {
+                "title": domain,
+                "image_url": self.image_validator.get_fallback_image(url),
+                "url": url
+            }
         
         # Check cache first
         cached = self._get_from_cache(url)
@@ -287,28 +199,32 @@ class SmartScraper:
             return cached
         
         parsed = urlparse(url)
-        domain = parsed.netloc.replace("www.", "").split(".")[0].capitalize()
+        domain = self.url_normalizer.get_domain(url)
         data = {"title": domain, "image_url": None, "url": url}
 
         # Check for special domain handling
-        special_data = self._handle_special_domains(url, parsed, domain)
+        special_data = self.domain_router.handle(url)
         if special_data:
             data.update(special_data)
             # Still try to scrape for better data, but we have fallback
         
-        # Entscheidung: High-End oder Standard?
-        if HAS_CURL_CFFI:
-            try:
-                async with AsyncSession(impersonate=self.impersonate) as s:
-                    r = await s.get(url, allow_redirects=True, timeout=15)
-                    await self._process_response(r, data, domain)
-            except Exception as e:
-                logger.error(f"Browser-Scraping Fehler: {e}. Versuche Fallback...")
+        # Try to fetch and parse the page
+        try:
+            # Entscheidung: High-End oder Standard?
+            if HAS_CURL_CFFI:
+                try:
+                    async with AsyncSession(impersonate=self.impersonate) as s:
+                        r = await s.get(url, allow_redirects=True, timeout=15)
+                        await self._process_response(r, data, domain)
+                except Exception as e:
+                    logger.error(f"Browser-Scraping Fehler: {e}. Versuche Fallback...")
+                    await self._scrape_fallback(url, data, domain)
+            else:
                 await self._scrape_fallback(url, data, domain)
-        else:
-            await self._scrape_fallback(url, data, domain)
+        except Exception as e:
+            logger.error(f"Scraping failed for {url}: {e}", exc_info=True)
 
-        # Fallbacks - now async
+        # Apply intelligent fallbacks
         await self._apply_fallbacks(data, domain)
         
         # Cache the result
@@ -317,35 +233,8 @@ class SmartScraper:
         return data
 
     def _handle_special_domains(self, url: str, parsed, domain: str) -> dict:
-        """Handle special cases for well-known domains."""
-        data = {}
-        netloc = parsed.netloc.lower()
-        
-        # GitHub repositories
-        if "github.com" in netloc:
-            path_parts = parsed.path.strip("/").split("/")
-            if len(path_parts) >= 2:
-                data["title"] = f"{path_parts[1]} by {path_parts[0]}"
-                data["image_url"] = f"https://opengraph.githubassets.com/1/{path_parts[0]}/{path_parts[1]}"
-        
-        # LinkedIn profiles
-        elif "linkedin.com" in netloc and "/in/" in parsed.path:
-            data["title"] = "LinkedIn Profile"
-            data["image_url"] = "https://static.licdn.com/sc/h/al2o9zrvru7aqj8e1x2rzsrca"
-        
-        # Twitter/X profiles
-        elif netloc in ["twitter.com", "x.com"] and parsed.path.count("/") == 1:
-            username = parsed.path.strip("/")
-            if username:
-                data["title"] = f"@{username} on X"
-        
-        # Instagram profiles
-        elif "instagram.com" in netloc:
-            username = parsed.path.strip("/").split("/")[0]
-            if username:
-                data["title"] = f"@{username} on Instagram"
-        
-        return data
+        """Handle special cases for well-known domains - now delegated to SpecialDomainRouter."""
+        return self.domain_router.handle(url)
 
     async def _scrape_fallback(self, url, data, domain):
         """Standard httpx Scraper als Backup"""
@@ -474,39 +363,29 @@ class SmartScraper:
 
         soup = BeautifulSoup(html, "html.parser")
         
-        # Try JSON-LD structured data first (most reliable)
-        json_data = self.extract_json_ld(soup)
-        if json_data.get("title"):
-            data["title"] = json_data["title"]
-        if json_data.get("image_url"):
-            data["image_url"] = json_data["image_url"]
-        if json_data.get("description"):
-            data["description"] = json_data.get("description")
-
-        # Extract comprehensive metadata (Open Graph, Twitter Cards, meta tags)
+        # Use the comprehensive extractor chain
         metadata = self.extract_metadata(soup, data["url"])
         
-        # Use metadata if we don't have good data yet
-        if not data.get("title") or data["title"] in [domain, "Amazon Produkt"]:
-            if metadata.get("title"):
-                data["title"] = metadata["title"]
-        
-        if not data.get("image_url"):
-            if metadata.get("image_url"):
-                data["image_url"] = metadata["image_url"]
-        
-        if not data.get("description") and metadata.get("description"):
+        # Update data with extracted metadata
+        if metadata.get("title"):
+            data["title"] = metadata["title"]
+        if metadata.get("image_url"):
+            data["image_url"] = metadata["image_url"]
+        if metadata.get("description"):
             data["description"] = metadata["description"]
 
     async def _apply_fallbacks(self, data, domain):
         """Apply intelligent fallbacks to ensure we always have usable data."""
-        bad_titles = [domain, "Amazon Produkt", "Robot Check", "Captcha", "Access Denied", "Error", "404"]
+        # Clean the title using TitleCleaner
+        if data.get("title"):
+            data["title"] = self.title_cleaner.clean(data["title"])
         
-        # Fallback for bad titles - try DuckDuckGo search
-        if not data.get("title") or any(bt.lower() in data["title"].lower() for bt in bad_titles):
+        # Check if title is bad and needs fallback
+        if self.title_cleaner.is_bad_title(data.get("title", ""), domain):
+            # Try DuckDuckGo search as fallback
             ddg = self.search_duckduckgo_title(data["url"])
             if ddg:
-                data["title"] = ddg
+                data["title"] = self.title_cleaner.clean(ddg)
             elif not data.get("title"):
                 # Last resort: use domain name as title
                 data["title"] = domain
@@ -521,48 +400,11 @@ class SmartScraper:
         
         # If no valid image, use Google favicon
         if not data["image_url"]:
-            data["image_url"] = self.get_google_favicon(urlparse(data["url"]).netloc)
+            data["image_url"] = self.image_validator.get_fallback_image(data["url"])
 
-        # Normalize title: strip Steam Workshop prefix if present
-        if data.get("title"):
-            data["title"] = self._strip_steam_prefix(data["title"])
-            # Also clean up common title suffixes
-            data["title"] = self._clean_title(data["title"])
-
-    def _strip_steam_prefix(self, title: str) -> str:
-        """Remove leading 'Steam Workshop::' (or variants like single/double colons) from titles.
-
-        Case-insensitive and tolerant of surrounding whitespace. Examples:
-        - 'Steam Workshop:: Cool Mod' -> 'Cool Mod'
-        - 'steam workshop: Another Mod' -> 'Another Mod'
-        """
-        if not title or not isinstance(title, str):
-            return title
-        # Remove leading 'Steam Workshop' followed by one or more colons and optional whitespace
-        new_title = re.sub(r"(?i)^\s*steam workshop:+\s*", "", title)
-        return new_title.strip()
-
-    def _clean_title(self, title: str) -> str:
-        """Clean up common title patterns and noise."""
-        if not title or not isinstance(title, str):
-            return title
-        
-        # Remove common separators and site names from end
-        # e.g., "Page Title | Site Name" -> "Page Title"
-        # e.g., "Page Title - Site Name" -> "Page Title"
-        for separator in [" | ", " - ", " – ", " — ", " :: "]:
-            if separator in title:
-                parts = title.split(separator)
-                # Take the longest part (usually the actual title)
-                if len(parts) > 1:
-                    title = max(parts, key=len).strip()
-                    break
-        
-        # Truncate extremely long titles
-        if len(title) > 200:
-            title = title[:197] + "..."
-        
-        return title.strip()
+    def get_google_favicon(self, domain: str) -> str:
+        """Get Google favicon URL for domain - kept for backward compatibility."""
+        return f"https://www.google.com/s2/favicons?domain={domain}&sz=128"
 
 
 scraper = SmartScraper()

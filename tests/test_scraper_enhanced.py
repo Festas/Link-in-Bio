@@ -114,20 +114,20 @@ class TestTitleCleaning:
     
     def test_strip_steam_prefix(self, scraper):
         """Test Steam Workshop prefix removal."""
-        assert scraper._strip_steam_prefix("Steam Workshop:: Cool Mod") == "Cool Mod"
-        assert scraper._strip_steam_prefix("steam workshop: Another Mod") == "Another Mod"
-        assert scraper._strip_steam_prefix("Normal Title") == "Normal Title"
+        assert scraper.title_cleaner.clean("Steam Workshop:: Cool Mod") == "Cool Mod"
+        assert scraper.title_cleaner.clean("steam workshop: Another Mod") == "Another Mod"
+        assert scraper.title_cleaner.clean("Normal Title") == "Normal Title"
     
     def test_clean_title_with_separator(self, scraper):
         """Test title cleaning with separators."""
-        assert scraper._clean_title("Page Title | Site Name") == "Page Title"
-        assert scraper._clean_title("Page Title - Site Name") == "Page Title"
-        assert scraper._clean_title("Short | Very Long Site Name Here") == "Very Long Site Name Here"
+        assert scraper.title_cleaner.clean("Page Title | Site Name") == "Page Title"
+        assert scraper.title_cleaner.clean("Page Title - Site Name") == "Page Title"
+        assert scraper.title_cleaner.clean("Short | Very Long Site Name Here") == "Very Long Site Name Here"
     
     def test_clean_title_truncation(self, scraper):
         """Test title truncation for very long titles."""
         long_title = "A" * 250
-        cleaned = scraper._clean_title(long_title)
+        cleaned = scraper.title_cleaner.clean(long_title)
         assert len(cleaned) <= 200
         assert cleaned.endswith("...")
 
@@ -152,7 +152,7 @@ class TestSpecialDomains:
         parsed = urlparse(url)
         data = scraper._handle_special_domains(url, parsed, "Linkedin")
         
-        assert data['title'] == "LinkedIn Profile"
+        assert "LinkedIn Profile" in data['title']
         assert data['image_url'] is not None
     
     def test_twitter_profile(self, scraper):

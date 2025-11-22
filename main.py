@@ -159,6 +159,8 @@ async def get_sitemap():
     xml_content += f"  <url><loc>{base_url}/datenschutz</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>\n"
     xml_content += f"  <url><loc>{base_url}/impressum</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>\n"
     xml_content += f"  <url><loc>{base_url}/ueber-mich</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n"
+    xml_content += f"  <url><loc>{base_url}/kontakt</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>\n"
+    xml_content += f"  <url><loc>{base_url}/mediakit</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>\n"
     
     xml_content += "</urlset>"
     return Response(content=xml_content, media_type="application/xml")
@@ -225,6 +227,36 @@ async def get_about_page(request: Request):
     return templates.TemplateResponse(request=request, name="ueber-mich.html", context=context)
 
 
+@app.get("/kontakt", response_class=HTMLResponse)
+async def get_contact_page(request: Request):
+    settings = get_settings_from_db()
+    page_url = f"https://{APP_DOMAIN}/kontakt" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/kontakt"
+    context = {
+        "page_title": "Kontakt - Eric | Tech & Gaming",
+        "page_description": "Kontaktiere mich für Kooperationen, Anfragen oder einfach nur zum Austauschen",
+        "page_image": "",
+        "page_url": page_url,
+        "custom_html_head": settings.get("custom_html_head", ""),
+        "custom_html_body": settings.get("custom_html_body", ""),
+    }
+    return templates.TemplateResponse(request=request, name="kontakt.html", context=context)
+
+
+@app.get("/mediakit", response_class=HTMLResponse)
+async def get_mediakit_page(request: Request):
+    settings = get_settings_from_db()
+    page_url = f"https://{APP_DOMAIN}/mediakit" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/mediakit"
+    context = {
+        "page_title": "Media Kit - Eric | Tech & Gaming",
+        "page_description": "Zahlen, Fakten und Kooperationsmöglichkeiten - Mein Media Kit für Brands und Partner",
+        "page_image": "",
+        "page_url": page_url,
+        "custom_html_head": settings.get("custom_html_head", ""),
+        "custom_html_body": settings.get("custom_html_body", ""),
+    }
+    return templates.TemplateResponse(request=request, name="mediakit.html", context=context)
+
+
 @app.get("/", response_class=HTMLResponse, dependencies=[Depends(limiter_standard)])
 async def get_index_html(request: Request):
     # Get the default page (slug = '')
@@ -266,7 +298,7 @@ async def get_index_html(request: Request):
 @app.get("/{page_slug}", response_class=HTMLResponse, dependencies=[Depends(limiter_standard)])
 async def get_page_html(request: Request, page_slug: str):
     # Skip special routes
-    if page_slug in ["admin", "analytics", "login", "privacy", "datenschutz", "impressum", "ueber-mich", "health", "api", "static", "robots.txt", "sitemap.xml", "favicon.ico", "manifest.json", "sw.js"]:
+    if page_slug in ["admin", "analytics", "login", "privacy", "datenschutz", "impressum", "ueber-mich", "kontakt", "mediakit", "health", "api", "static", "robots.txt", "sitemap.xml", "favicon.ico", "manifest.json", "sw.js"]:
         raise HTTPException(404, "Not Found")
     
     page = get_page_by_slug(page_slug)

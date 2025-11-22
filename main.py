@@ -31,7 +31,7 @@ setup_logging(log_level=LOG_LEVEL, json_logs=JSON_LOGS)
 
 logger = get_logger(__name__)
 
-from app.database import init_db, get_settings_from_db, get_page_by_slug
+from app.database import init_db, get_settings_from_db, get_page_by_slug, get_all_pages
 from app.endpoints import router as api_router
 from app.endpoints_enhanced import router as api_router_enhanced
 from app.services import APP_DOMAIN
@@ -147,9 +147,19 @@ async def get_sitemap():
         '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     )
     xml_content += f"  <url><loc>{base_url}</loc><changefreq>daily</changefreq><priority>1.0</priority></url>\n"
-    xml_content += (
-        f"  <url><loc>{base_url}/privacy</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>\n"
-    )
+    
+    # Add all active pages to sitemap
+    pages = get_all_pages()
+    for page in pages:
+        if page.get("is_active") and page.get("slug"):  # Skip main page (slug='')
+            slug = page.get("slug")
+            xml_content += f"  <url><loc>{base_url}/{slug}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>\n"
+    
+    # Add special legal pages
+    xml_content += f"  <url><loc>{base_url}/datenschutz</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>\n"
+    xml_content += f"  <url><loc>{base_url}/impressum</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>\n"
+    xml_content += f"  <url><loc>{base_url}/ueber-mich</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n"
+    
     xml_content += "</urlset>"
     return Response(content=xml_content, media_type="application/xml")
 
@@ -169,10 +179,11 @@ async def get_login_page(request: Request):
     return templates.TemplateResponse(request=request, name="login.html")
 
 
-@app.get("/privacy", response_class=HTMLResponse)
+@app.get("/datenschutz", response_class=HTMLResponse)
+@app.get("/privacy", response_class=HTMLResponse)  # Keep old route for backwards compatibility
 async def get_privacy_page(request: Request):
     settings = get_settings_from_db()
-    page_url = f"https://{APP_DOMAIN}/privacy" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/privacy"
+    page_url = f"https://{APP_DOMAIN}/datenschutz" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/datenschutz"
     context = {
         "page_title": "Datenschutzerklärung",
         "page_description": "Datenschutzbestimmungen",
@@ -182,6 +193,36 @@ async def get_privacy_page(request: Request):
         "custom_html_body": settings.get("custom_html_body", ""),
     }
     return templates.TemplateResponse(request=request, name="privacy.html", context=context)
+
+
+@app.get("/impressum", response_class=HTMLResponse)
+async def get_impressum_page(request: Request):
+    settings = get_settings_from_db()
+    page_url = f"https://{APP_DOMAIN}/impressum" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/impressum"
+    context = {
+        "page_title": "Impressum",
+        "page_description": "Impressum und rechtliche Angaben",
+        "page_image": "",
+        "page_url": page_url,
+        "custom_html_head": settings.get("custom_html_head", ""),
+        "custom_html_body": settings.get("custom_html_body", ""),
+    }
+    return templates.TemplateResponse(request=request, name="impressum.html", context=context)
+
+
+@app.get("/ueber-mich", response_class=HTMLResponse)
+async def get_about_page(request: Request):
+    settings = get_settings_from_db()
+    page_url = f"https://{APP_DOMAIN}/ueber-mich" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/ueber-mich"
+    context = {
+        "page_title": "Über mich - Eric | Tech & Gaming",
+        "page_description": "Tech & Gaming Enthusiast aus Hamburg - Erfahre mehr über mich und meine Projekte",
+        "page_image": "",
+        "page_url": page_url,
+        "custom_html_head": settings.get("custom_html_head", ""),
+        "custom_html_body": settings.get("custom_html_body", ""),
+    }
+    return templates.TemplateResponse(request=request, name="ueber-mich.html", context=context)
 
 
 @app.get("/", response_class=HTMLResponse, dependencies=[Depends(limiter_standard)])
@@ -225,7 +266,7 @@ async def get_index_html(request: Request):
 @app.get("/{page_slug}", response_class=HTMLResponse, dependencies=[Depends(limiter_standard)])
 async def get_page_html(request: Request, page_slug: str):
     # Skip special routes
-    if page_slug in ["admin", "analytics", "login", "privacy", "health", "api", "static", "robots.txt", "sitemap.xml", "favicon.ico", "manifest.json", "sw.js"]:
+    if page_slug in ["admin", "analytics", "login", "privacy", "datenschutz", "impressum", "ueber-mich", "health", "api", "static", "robots.txt", "sitemap.xml", "favicon.ico", "manifest.json", "sw.js"]:
         raise HTTPException(404, "Not Found")
     
     page = get_page_by_slug(page_slug)

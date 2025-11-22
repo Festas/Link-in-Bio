@@ -47,6 +47,67 @@
              </div>
         </div>
 
+        <!-- Page Selector -->
+        <div class="mb-6 bg-gray-800 p-4 rounded-lg">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4 flex-1">
+                    <label for="page-selector" class="text-sm font-medium text-gray-300">Aktive Seite:</label>
+                    <select id="page-selector" class="bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1 max-w-md">
+                        <option value="">Lade Seiten...</option>
+                    </select>
+                </div>
+                <button id="manage-pages-button" class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center space-x-2">
+                    <i data-lucide="layout" class="w-4 h-4"></i>
+                    <span>Seiten verwalten</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Page Management Modal -->
+        <div id="page-management-modal" class="modal" style="display: none; position: fixed; z-index: 60; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); overflow-y: auto;">
+            <div class="bg-gray-800 p-6 rounded-lg max-w-3xl mx-auto mt-10 mb-10">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-white">Seiten verwalten</h3>
+                    <button id="close-page-modal" class="text-gray-400 hover:text-white">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                
+                <!-- Create New Page Form -->
+                <div class="mb-6 p-4 bg-gray-700 rounded">
+                    <h4 class="text-lg font-semibold mb-4">Neue Seite erstellen</h4>
+                    <form id="create-page-form" class="space-y-3">
+                        <div>
+                            <label for="new-page-slug" class="block text-sm font-medium mb-1">URL-Slug (z.B. "meine-seite")</label>
+                            <input type="text" id="new-page-slug" class="w-full bg-gray-600 text-white rounded px-3 py-2" pattern="^[a-z0-9-]+$" required placeholder="meine-seite">
+                            <p class="text-xs text-gray-400 mt-1">Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt</p>
+                        </div>
+                        <div>
+                            <label for="new-page-title" class="block text-sm font-medium mb-1">Seitentitel</label>
+                            <input type="text" id="new-page-title" class="w-full bg-gray-600 text-white rounded px-3 py-2" required placeholder="Meine neue Seite">
+                        </div>
+                        <div>
+                            <label for="new-page-bio" class="block text-sm font-medium mb-1">Beschreibung (optional)</label>
+                            <textarea id="new-page-bio" class="w-full bg-gray-600 text-white rounded px-3 py-2" rows="2" placeholder="Beschreibung der Seite"></textarea>
+                        </div>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded w-full">
+                            Seite erstellen
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Existing Pages List -->
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Vorhandene Seiten</h4>
+                    <div id="pages-list" class="space-y-2">
+                        <div class="flex justify-center items-center p-4">
+                            <svg class="animate-spin h-6 w-6 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Tabs -->
         <div class="mb-6 border-b border-gray-700">
             <nav class="-mb-px flex space-x-6 overflow-x-auto" aria-label="Tabs">

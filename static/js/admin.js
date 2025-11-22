@@ -6,6 +6,7 @@ import * as API from './admin_api.js';
 import * as UI from './admin_ui.js';
 import { organizeItems, getSortableConfig, isGroup } from './groups.js';
 import { requireAuth, logout } from './utils.js';
+import { initializePageManagement, getCurrentPageId } from './admin_pages.js';
 
 // Helper für Fallback-Script-Loading
 function loadScript(src) {
@@ -117,6 +118,12 @@ async function initAdmin() {
                     }
                     
                     if(!payload) return;
+                    
+                    // Add current page_id to payload
+                    const pageId = getCurrentPageId();
+                    if (pageId) {
+                        payload.page_id = pageId;
+                    }
 
                     const apiMap = {
                         'add-link-form': '/api/links', 'add-video-form': '/api/videos', 'add-header-form': '/api/headers',
@@ -165,7 +172,8 @@ async function initAdmin() {
         listLoadingSpinner.style.display = 'flex';
         listContainer.innerHTML = '';
         try {
-            const items = await API.fetchItems();
+            const pageId = getCurrentPageId();
+            const items = await API.fetchItems(pageId);
             listLoadingSpinner.style.display = 'none';
             if (items.length === 0) { listContainer.innerHTML = '<p class="text-gray-400 text-center py-4">Leer.</p>'; return; }
 
@@ -290,7 +298,13 @@ async function initAdmin() {
     };
 
     // INITIAL START
+    initializePageManagement();
     loadItems();
+    
+    // Listen for page changes
+    window.addEventListener('page-changed', (e) => {
+        loadItems();
+    });
     
     // WICHTIG: Profil-Modul initialisieren (dieser Aufruf fehlte!)
     // Das lädt die Settings, Social Inputs und Stylings

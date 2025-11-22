@@ -21,8 +21,9 @@ export async function updateSettings(payload) {
     return await response.json();
 }
 
-export async function fetchItems() {
-    const response = await apiFetch('/api/items');
+export async function fetchItems(pageId = null) {
+    const url = pageId ? `/api/items?page_id=${pageId}` : '/api/items';
+    const response = await apiFetch(url);
     if (!response.ok) {
         throw new Error('Items konnten nicht geladen werden.');
     }
@@ -109,4 +110,56 @@ export async function downloadBackup() {
         throw new Error(errorData.detail || 'Backup-Erstellung fehlgeschlagen.');
     }
     return response; // Wir geben das Response-Objekt zurück, damit der Blob verarbeitet werden kann
+}
+
+// Page management functions
+export async function fetchPages() {
+    const response = await apiFetch('/api/pages');
+    if (!response.ok) {
+        throw new Error('Seiten konnten nicht geladen werden.');
+    }
+    return await response.json();
+}
+
+export async function fetchPage(pageId) {
+    const response = await apiFetch(`/api/pages/${pageId}`);
+    if (!response.ok) {
+        throw new Error('Seite konnte nicht geladen werden.');
+    }
+    return await response.json();
+}
+
+export async function createPage(payload) {
+    const response = await apiFetch('/api/pages', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Fehler beim Erstellen der Seite.');
+    }
+    return await response.json();
+}
+
+export async function updatePage(pageId, payload) {
+    const response = await apiFetch(`/api/pages/${pageId}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Fehler beim Aktualisieren der Seite.');
+    }
+    return await response.json();
+}
+
+export async function deletePage(pageId) {
+    const response = await apiFetch(`/api/pages/${pageId}`, {
+        method: 'DELETE'
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Fehler beim Löschen der Seite.');
+    }
+    return true;
 }

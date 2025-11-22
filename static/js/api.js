@@ -15,7 +15,10 @@ export async function getProfileSettings() {
 }
 
 export async function getItems() {
-    const response = await apiFetch('/api/items');
+    // Get page_id from body element if it exists
+    const pageId = document.body.dataset.pageId;
+    const url = pageId ? `/api/items?page_id=${pageId}` : '/api/items';
+    const response = await apiFetch(url);
     if (!response.ok) {
         throw new Error('Items konnten nicht geladen werden.');
     }

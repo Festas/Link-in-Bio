@@ -4,6 +4,7 @@ import sqlite3
 import csv
 import io
 import logging
+import re
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
@@ -18,7 +19,7 @@ from fastapi import (
     BackgroundTasks,
 )
 from fastapi.responses import StreamingResponse
-from typing import List
+from typing import List, Optional
 import qrcode
 
 from models import (
@@ -33,6 +34,9 @@ from models import (
     ContactRequest,
     ReorderRequest,
     ImageUploadResponse,
+    Page,
+    PageCreate,
+    PageUpdate,
 )
 from database import (
     create_item_in_db,
@@ -41,6 +45,12 @@ from database import (
     get_next_display_order,
     get_db_connection,
     get_settings_from_db,
+    get_page_by_slug,
+    get_page_by_id,
+    get_all_pages,
+    create_page,
+    update_page,
+    delete_page,
 )
 from auth import require_auth, check_auth
 from services import (
@@ -56,6 +66,9 @@ from cache import cache
 from config import BASE_DIR, UPLOAD_DIR
 
 router = APIRouter()
+
+# Slug validation pattern
+SLUG_PATTERN = re.compile(r'^[a-z0-9-]+$')
 
 # --- Background Task for Scraping ---
 
@@ -82,18 +95,91 @@ async def check_login(username: str = Depends(require_auth)):
     return {"status": "ok"}
 
 
+# --- Page Management ---
+
+
+@router.get("/pages", response_model=List[Page])
+async def get_pages(user=Depends(require_auth)):
+    """Get all pages."""
+    pages = get_all_pages()
+    return [Page(**page) for page in pages]
+
+
+@router.get("/pages/{page_id}", response_model=Page)
+async def get_page(page_id: int, user=Depends(require_auth)):
+    """Get a specific page by ID."""
+    page = get_page_by_id(page_id)
+    if not page:
+        raise HTTPException(404, "Page nicht gefunden")
+    return Page(**page)
+
+
+@router.post("/pages", response_model=Page)
+async def create_new_page(page_data: PageCreate, user=Depends(require_auth)):
+    """Create a new page."""
+    # Validate slug format
+    if not SLUG_PATTERN.match(page_data.slug):
+        raise HTTPException(400, "Slug darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten")
+    
+    # Check if slug already exists
+    existing = get_page_by_slug(page_data.slug)
+    if existing:
+        raise HTTPException(400, "Eine Seite mit diesem Slug existiert bereits")
+    page = create_page(
+        slug=page_data.slug,
+        title=page_data.title,
+        bio=page_data.bio or "",
+        image_url=page_data.image_url or "",
+        bg_image_url=page_data.bg_image_url or "",
+    )
+    cache.invalidate("items")
+    return Page(**page)
+
+
+@router.put("/pages/{page_id}", response_model=Page)
+async def update_existing_page(page_id: int, page_data: PageUpdate, user=Depends(require_auth)):
+    """Update a page."""
+    # If slug is being updated, validate and check it doesn't conflict
+    if page_data.slug:
+        if not SLUG_PATTERN.match(page_data.slug):
+            raise HTTPException(400, "Slug darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten")
+        existing = get_page_by_slug(page_data.slug)
+        if existing and existing["id"] != page_id:
+            raise HTTPException(400, "Eine Seite mit diesem Slug existiert bereits")
+    
+    updated = update_page(page_id, page_data.model_dump(exclude_unset=True))
+    if not updated:
+        raise HTTPException(404, "Page nicht gefunden")
+    cache.invalidate("items")
+    return Page(**updated)
+
+
+@router.delete("/pages/{page_id}")
+async def delete_existing_page(page_id: int, user=Depends(require_auth)):
+    """Delete a page and all its items."""
+    page = get_page_by_id(page_id)
+    if not page:
+        raise HTTPException(404, "Page nicht gefunden")
+    # Don't allow deleting the default page (slug = '')
+    if page["slug"] == "":
+        raise HTTPException(400, "Die Hauptseite kann nicht gelöscht werden")
+    delete_page(page_id)
+    cache.invalidate("items")
+    return Response(status_code=204)
+
+
 # --- Helper ---
 
 
-def build_item_data(item_type, title, url=None, image_url=None, price=None, grid_columns=2):
+def build_item_data(item_type, title, url=None, image_url=None, price=None, grid_columns=2, page_id=None):
     # Reihenfolge muss exakt zur DB-Tabelle passen:
-    # item_type, title, url, image_url, display_order, parent_id, click_count, is_featured, is_active, is_affiliate, publish_on, expires_on, price, grid_columns
+    # item_type, title, url, image_url, display_order, parent_id, click_count, is_featured, is_active, is_affiliate, publish_on, expires_on, price, grid_columns, page_id
     return (
         item_type,
         title,
         url,
         image_url,
-        get_next_display_order(),
+        get_next_display_order(page_id),
         None,
         0,
         0,
@@ -103,6 +189,7 @@ def build_item_data(item_type, title, url=None, image_url=None, price=None, grid
         None,
         price,
         grid_columns,
+        page_id,
     )
 
 
@@ -114,7 +201,7 @@ async def create_link(req: ItemCreate, background_tasks: BackgroundTasks, user=D
     if not req.url:
         raise HTTPException(400, "URL fehlt")
     # Create item immediately with placeholder
-    data = build_item_data("link", "Loading...", req.url, None)
+    data = build_item_data("link", "Loading...", req.url, None, page_id=req.page_id)
     item_dict = create_item_in_db(data)
     # Schedule background scraping
     background_tasks.add_task(background_scrape_and_update, item_dict["id"], req.url)
@@ -127,7 +214,7 @@ async def create_video(req: ItemCreate, user=Depends(require_auth)):
     if not req.url:
         raise HTTPException(400, "URL fehlt")
     embed = get_video_embed_url(req.url) or req.url
-    data = build_item_data("video", "Video", embed)
+    data = build_item_data("video", "Video", embed, page_id=req.page_id)
     cache.invalidate("items")
     return Item(**create_item_in_db(data))
 
@@ -136,37 +223,37 @@ async def create_video(req: ItemCreate, user=Depends(require_auth)):
 async def create_header(req: ItemCreate, user=Depends(require_auth)):
     # Cache Invalidation hinzugefügt
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("header", req.title)))
+    return Item(**create_item_in_db(build_item_data("header", req.title, page_id=req.page_id)))
 
 
 @router.post("/slider_groups", response_model=Item)
 async def create_slider(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("slider_group", req.title)))
+    return Item(**create_item_in_db(build_item_data("slider_group", req.title, page_id=req.page_id)))
 
 
 @router.post("/grids", response_model=Item)
 async def create_grid(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("grid", req.title)))
+    return Item(**create_item_in_db(build_item_data("grid", req.title, page_id=req.page_id)))
 
 
 @router.post("/faqs", response_model=Item)
 async def create_faq(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("faq", req.title, "")))
+    return Item(**create_item_in_db(build_item_data("faq", req.title, "", page_id=req.page_id)))
 
 
 @router.post("/dividers", response_model=Item)
 async def create_divider(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("divider", req.title or "---")))
+    return Item(**create_item_in_db(build_item_data("divider", req.title or "---", page_id=req.page_id)))
 
 
 @router.post("/testimonials", response_model=Item)
 async def create_testimonial(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("testimonial", req.name, req.text)))
+    return Item(**create_item_in_db(build_item_data("testimonial", req.name, req.text, page_id=req.page_id)))
 
 
 @router.post("/products", response_model=Item)
@@ -175,7 +262,7 @@ async def create_product(req: ItemCreate, background_tasks: BackgroundTasks, use
         raise HTTPException(400, "URL fehlt")
     # Create item immediately with placeholder
     title = req.title if req.title else "Loading..."
-    data = build_item_data("product", title, req.url, None, req.price)
+    data = build_item_data("product", title, req.url, None, req.price, page_id=req.page_id)
     item_dict = create_item_in_db(data)
     # Schedule background scraping if no custom title was provided
     if not req.title:
@@ -187,19 +274,19 @@ async def create_product(req: ItemCreate, background_tasks: BackgroundTasks, use
 @router.post("/contact_form", response_model=Item)
 async def create_contact_form(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("contact_form", req.title)))
+    return Item(**create_item_in_db(build_item_data("contact_form", req.title, page_id=req.page_id)))
 
 
 @router.post("/email_form", response_model=Item)
 async def create_email_form(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("email_form", req.title)))
+    return Item(**create_item_in_db(build_item_data("email_form", req.title, page_id=req.page_id)))
 
 
 @router.post("/countdowns", response_model=Item)
 async def create_countdown(req: ItemCreate, user=Depends(require_auth)):
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("countdown", req.title, req.target_datetime)))
+    return Item(**create_item_in_db(build_item_data("countdown", req.title, req.target_datetime, page_id=req.page_id)))
 
 
 # --- Item Management ---
@@ -427,20 +514,32 @@ async def delete_message(id: int, user=Depends(require_auth)):
 
 
 @router.get("/items", response_model=List[Item], dependencies=[Depends(limiter_standard)])
-async def get_public_items(request: Request):
+async def get_public_items(request: Request, page_id: Optional[int] = None):
     user = await check_auth(request)
-    cache_key = f"items_{'admin' if user else 'public'}"
+    cache_key = f"items_{'admin' if user else 'public'}_{page_id or 'all'}"
     cached = cache.get(cache_key)
     if cached:
         return cached
 
     query = "SELECT * FROM items"
+    params = []
+    conditions = []
+    
+    if page_id is not None:
+        conditions.append("page_id = ?")
+        params.append(page_id)
+    
     if user is None:
-        query += " WHERE is_active = 1 AND (publish_on IS NULL OR publish_on <= datetime('now', 'localtime')) AND (expires_on IS NULL OR expires_on >= datetime('now', 'localtime'))"
+        conditions.append("is_active = 1")
+        conditions.append("(publish_on IS NULL OR publish_on <= datetime('now', 'localtime'))")
+        conditions.append("(expires_on IS NULL OR expires_on >= datetime('now', 'localtime'))")
+    
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
     query += " ORDER BY display_order ASC"
 
     with get_db_connection() as conn:
-        rows = conn.execute(query).fetchall()
+        rows = conn.execute(query, params).fetchall()
 
     items_dict = {}
     nested = []

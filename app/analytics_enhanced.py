@@ -236,42 +236,42 @@ class EnhancedAnalytics:
             with self.get_db() as conn:
                 cursor = conn.cursor()
                 
-                # Build query
-                where_clauses = []
+                # Build WHERE clause more elegantly
+                where_conditions = []
                 params = []
                 
                 if start_date:
-                    where_clauses.append("timestamp >= ?")
+                    where_conditions.append("timestamp >= ?")
                     params.append(start_date)
                 
                 if end_date:
-                    where_clauses.append("timestamp <= ?")
+                    where_conditions.append("timestamp <= ?")
                     params.append(end_date)
                 
-                where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
-                
                 # Get total sessions (pageviews)
+                pageview_where = " AND ".join(where_conditions) if where_conditions else "1=1"
                 cursor.execute(f"""
                     SELECT COUNT(DISTINCT session_id)
                     FROM analytics_events
-                    WHERE event_type = 'pageview' AND {where_sql}
+                    WHERE event_type = 'pageview' AND ({pageview_where})
                 """, params)
                 total_sessions = cursor.fetchone()[0] or 0
                 
                 # Get conversions
-                conversion_where = where_sql
+                conversion_conditions = where_conditions.copy()
                 conversion_params = params.copy()
                 
                 if conversion_goal_id:
-                    conversion_where += " AND conversion_goal_id = ?"
+                    conversion_conditions.append("conversion_goal_id = ?")
                     conversion_params.append(conversion_goal_id)
                 
+                conversion_where = " AND ".join(conversion_conditions) if conversion_conditions else "1=1"
                 cursor.execute(f"""
                     SELECT 
                         COUNT(DISTINCT session_id) as conversions,
                         SUM(conversion_value) as total_value
                     FROM analytics_events
-                    WHERE event_type = 'conversion' AND {conversion_where}
+                    WHERE event_type = 'conversion' AND ({conversion_where})
                 """, conversion_params)
                 
                 row = cursor.fetchone()

@@ -52,7 +52,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-def validate_password_strength(password: str) -> tuple[bool, str]:
+def validate_password_strength(password: str) -> Tuple[bool, str]:
     """
     Validate password strength against security requirements.
     Returns (is_valid, error_message).

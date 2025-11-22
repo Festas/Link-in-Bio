@@ -6,7 +6,7 @@ import os
 import json
 import logging
 import hashlib
-from typing import Any, Optional, Callable, List
+from typing import Any, Optional, Callable, List, Tuple
 from datetime import datetime, timedelta
 from functools import wraps
 
@@ -145,7 +145,7 @@ class InMemoryCacheBackend(CacheBackend):
             "misses": self.misses,
             "hit_rate": f"{hit_rate:.2f}%",
             "keys_count": len(self._cache),
-            "memory_mb": "N/A",
+            "memory_mb": 0,  # Not available for in-memory backend
         }
 
 

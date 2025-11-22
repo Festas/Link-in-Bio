@@ -163,7 +163,7 @@ async def setup_2fa(username: str = Depends(require_auth)):
     qr_url = get_2fa_qr_code_url(username)
     
     if not qr_url:
-        raise HTTPException(500, "Fehler beim Generieren des 2FA Secrets")
+        raise HTTPException(500, "Fehler beim Generieren der QR-Code-URL")
     
     return Setup2FAResponse(secret=secret, qr_code_url=qr_url)
 

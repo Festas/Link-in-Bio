@@ -80,12 +80,17 @@ def update_env_file(password_hash):
     
     # Update or add ADMIN_PASSWORD_HASH
     hash_found = False
+    hash_line_index = -1
     new_lines = []
     
-    for line in lines:
+    for i, line in enumerate(lines):
         if line.startswith('ADMIN_PASSWORD_HASH='):
-            new_lines.append(f'ADMIN_PASSWORD_HASH={password_hash}\n')
-            hash_found = True
+            if not hash_found:  # Only update the first occurrence
+                new_lines.append(f'ADMIN_PASSWORD_HASH={password_hash}\n')
+                hash_found = True
+            else:
+                # Remove duplicate ADMIN_PASSWORD_HASH lines
+                continue
         elif line.startswith('ADMIN_PASSWORD=') and not line.startswith('ADMIN_PASSWORD_HASH='):
             # Comment out plain password
             new_lines.append(f'# {line}')

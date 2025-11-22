@@ -91,7 +91,22 @@ Siehe `.env.example` für alle verfügbaren Optionen:
 - `DATABASE_FILE`: Pfad zur SQLite-Datenbank (Standard: linktree.db)
 - `JSONLINK_API_KEY`: Optional für erweiterte Link-Vorschau
 - `SCRAPER_MAX_RETRIES`: Anzahl Retries beim Scraping (Standard: 5)
+- `SCRAPER_CACHE_TTL`: Cache-TTL für Scraping in Sekunden (Standard: 3600)
 - `SCRAPER_VERIFY_TLS`: TLS-Verifikation (Standard: true)
+- `SCRAPER_PROXIES`: Optional Proxy-Liste (komma-getrennt)
+
+### Enhanced Web Scraper
+
+Der Web Scraper wurde auf professionelles Niveau erweitert (ähnlich wie beacons.ai):
+
+- **Umfassende Metadaten-Extraktion**: JSON-LD, Open Graph, Twitter Cards, Meta Tags
+- **Intelligente Bild-Validierung**: Prüft ob Bilder wirklich existieren, automatische Fallbacks
+- **Smart Caching**: In-Memory Cache mit konfigurierbarer TTL für bessere Performance
+- **Spezial-Domain-Handling**: Optimierte Extraktion für GitHub, LinkedIn, Twitter, Instagram
+- **Mehrfache Fallback-Strategien**: Garantiert immer ein verwendbares Ergebnis
+- **Robuste Fehlerbehandlung**: Funktioniert auch bei schwierigen Websites
+
+Siehe [SCRAPER_DOCUMENTATION.md](SCRAPER_DOCUMENTATION.md) für Details.
 
 ## 📁 Projekt-Struktur
 

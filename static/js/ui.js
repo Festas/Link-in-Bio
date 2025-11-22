@@ -1,6 +1,6 @@
 import { escapeHTML, pSBC } from './utils.js';
 import { socialIconSVG } from './icons.js';
-import { trackClick, subscribeEmail } from './api.js';
+import { trackClick, subscribeEmail, apiFetch } from './api.js';
 
 const state = { countdownIntervals: [], delegationInitialized: false, swipers: [] };
 const CountdownManager = {
@@ -154,14 +154,78 @@ const ItemRenderers = {
         return wrapper;
     },
     email_form: (item) => {
-        const div = document.createElement('div'); div.className = 'item-email-form glass-card p-5 text-center';
-        div.innerHTML = `<h3 class="email-form-title text-lg font-semibold mb-3">${escapeHTML(item.title)}</h3><form class="subscribe-form space-y-3"><input type="email" class="email-input w-full p-2.5 rounded-md text-sm" placeholder="deine@email.com" required><div class="text-xs text-left" style="color: var(--color-text-muted);"><label class="flex items-start space-x-2"><input type="checkbox" class="privacy-check form-checkbox mt-0.5" required><span>Ich stimme der <a href="/privacy" target="_blank" class="underline hover:opacity-75">Datenschutzerklärung</a> zu.</span></label></div><button type="submit" class="email-submit-button w-full p-2.5 rounded-md text-sm font-bold">Abonnieren</button><p class="subscribe-status text-sm mt-2"></p></form>`;
-        const form = div.querySelector('.subscribe-form'); const emailInput = form.querySelector('.email-input'); const privacyCheck = form.querySelector('.privacy-check'); const statusEl = form.querySelector('.subscribe-status');
+        const div = document.createElement('div'); 
+        div.className = 'item-email-form glass-card p-5 text-center';
+        div.innerHTML = `
+            <h3 class="email-form-title text-lg font-semibold mb-3">${escapeHTML(item.title)}</h3>
+            <form class="subscribe-form space-y-3">
+                <input type="email" class="email-input w-full p-2.5 rounded-md text-sm" placeholder="deine@email.com" required>
+                <select class="redirect-page-select w-full p-2.5 rounded-md text-sm bg-white/10 border border-white/20 text-white">
+                    <option value="">Nach Anmeldung zur Hauptseite</option>
+                </select>
+                <div class="text-xs text-left" style="color: var(--color-text-muted);">
+                    <label class="flex items-start space-x-2">
+                        <input type="checkbox" class="privacy-check form-checkbox mt-0.5" required>
+                        <span>Ich stimme der <a href="/privacy" target="_blank" class="underline hover:opacity-75">Datenschutzerklärung</a> zu.</span>
+                    </label>
+                </div>
+                <button type="submit" class="email-submit-button w-full p-2.5 rounded-md text-sm font-bold">Abonnieren</button>
+                <p class="subscribe-status text-sm mt-2"></p>
+            </form>`;
+        
+        const form = div.querySelector('.subscribe-form');
+        const emailInput = form.querySelector('.email-input');
+        const privacyCheck = form.querySelector('.privacy-check');
+        const statusEl = form.querySelector('.subscribe-status');
+        const pageSelect = form.querySelector('.redirect-page-select');
+        
+        // Load available pages for the dropdown
+        apiFetch('/api/pages/public')
+            .then(response => response.json())
+            .then(pages => {
+                pages.forEach(page => {
+                    const option = document.createElement('option');
+                    option.value = page.id;
+                    option.textContent = `Nach Anmeldung zu: ${page.title}`;
+                    pageSelect.appendChild(option);
+                });
+            })
+            .catch(err => console.error('Failed to load pages:', err));
+        
         form.addEventListener('submit', async (e) => {
-            e.preventDefault(); if (!privacyCheck.checked) { statusEl.textContent = 'Bitte die Datenschutzerklärung akzeptieren.'; statusEl.style.color = 'var(--color-text-muted)'; return; }
-            statusEl.textContent = 'Sende...'; statusEl.style.color = 'var(--color-text-muted)';
-            try { const result = await subscribeEmail(emailInput.value, privacyCheck.checked); statusEl.textContent = result.message || 'Danke!'; statusEl.style.color = 'var(--color-text)'; emailInput.value = ''; privacyCheck.checked = false; } catch (error) { statusEl.textContent = error.message; statusEl.style.color = 'var(--color-text-muted)'; }
-        }); return div;
+            e.preventDefault();
+            if (!privacyCheck.checked) {
+                statusEl.textContent = 'Bitte die Datenschutzerklärung akzeptieren.';
+                statusEl.style.color = 'var(--color-text-muted)';
+                return;
+            }
+            
+            statusEl.textContent = 'Sende...';
+            statusEl.style.color = 'var(--color-text-muted)';
+            
+            try {
+                const redirectPageId = pageSelect.value ? parseInt(pageSelect.value) : null;
+                const result = await subscribeEmail(emailInput.value, privacyCheck.checked, redirectPageId);
+                
+                statusEl.textContent = result.message || 'Danke!';
+                statusEl.style.color = 'var(--color-text)';
+                emailInput.value = '';
+                privacyCheck.checked = false;
+                pageSelect.value = '';
+                
+                // Handle redirect if provided
+                if (result.redirect_url) {
+                    setTimeout(() => {
+                        window.location.href = result.redirect_url;
+                    }, 1500);
+                }
+            } catch (error) {
+                statusEl.textContent = error.message;
+                statusEl.style.color = 'var(--color-text-muted)';
+            }
+        });
+        
+        return div;
     },
     countdown: (item) => {
         const div = document.createElement('div'); div.className = 'item-countdown-wrapper glass-card p-5';
@@ -265,16 +329,8 @@ export function renderProfileHeader(settings) {
 
     header.style.position = 'relative'; 
     // Render header with left-aligned profile image (no automatic centering)
-    header.innerHTML = `<div class="absolute top-0 right-0 mt-0 mr-0"><button id="share-profile-btn" class="p-2 rounded-full glass-card hover:bg-white hover:bg-opacity-20 transition-colors" style="color: var(--color-text);" title="Profil teilen"><i data-lucide="share-2" class="w-5 h-5"></i></button></div><div class="animate-entry text-left" style="animation-delay: 0ms;"><img id="profile-image" src="${escapeHTML(settings.image_url || 'https://placehold.co/100x100/374151/FFFFFF?text=Bild')}" alt="Profilbild" class="w-24 h-24 rounded-full mb-4 object-cover border-4 shadow-lg" style="border-color: var(--color-border);" onerror="this.src='https://placehold.co/100x100/374151/FFFFFF?text=Bild'; this.onerror=null;"><h1 id="profile-title" class="profile-title text-2xl text-shadow-md">${escapeHTML(settings.title || 'Titel')}</h1><p id="profile-bio" class="profile-bio text-sm mt-2 opacity-90">${escapeHTML(settings.bio || 'Bio')}</p></div><div id="social-links" class="flex justify-start space-x-3 mt-5 animate-entry" style="animation-delay: 100ms;">${socialLinksHTML}</div>`;
+    header.innerHTML = `<div class="animate-entry text-left" style="animation-delay: 0ms;"><img id="profile-image" src="${escapeHTML(settings.image_url || 'https://placehold.co/100x100/374151/FFFFFF?text=Bild')}" alt="Profilbild" class="w-24 h-24 rounded-full mb-4 object-cover border-4 shadow-lg" style="border-color: var(--color-border);" onerror="this.src='https://placehold.co/100x100/374151/FFFFFF?text=Bild'; this.onerror=null;"><h1 id="profile-title" class="profile-title text-2xl text-shadow-md">${escapeHTML(settings.title || 'Titel')}</h1><p id="profile-bio" class="profile-bio text-sm mt-2 opacity-90">${escapeHTML(settings.bio || 'Bio')}</p></div><div id="social-links" class="flex justify-start space-x-3 mt-5 animate-entry" style="animation-delay: 100ms;">${socialLinksHTML}</div>`;
     header.classList.remove('opacity-0');
-    
-    const shareBtn = header.querySelector('#share-profile-btn');
-    if (shareBtn) {
-        shareBtn.addEventListener('click', () => {
-            const shareData = { title: settings.title || 'Link-in-Bio', text: settings.bio || 'Besuche mein Profil!', url: window.location.href };
-            if (navigator.share) { navigator.share(shareData).catch(err => console.log('Teilen abgebrochen', err)); } else { navigator.clipboard.writeText(window.location.href).then(() => { alert('Link in die Zwischenablage kopiert!'); }).catch(() => { prompt('Link kopieren:', window.location.href); }); }
-        });
-    }
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 

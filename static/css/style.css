@@ -1271,4 +1271,42 @@ button:focus-visible, a:focus-visible {
     text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
 }
 
+/* Global Footer Styles */
+.global-footer {
+    width: 100%;
+    position: relative;
+    z-index: 10;
+}
+
+.footer-links {
+    color: var(--color-text-muted);
+}
+
+.footer-link {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    position: relative;
+}
+
+.footer-link:hover {
+    color: var(--color-tech-accent);
+    text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+}
+
+.footer-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--color-tech-accent), var(--color-gaming-accent));
+    transition: width 0.3s ease;
+}
+
+.footer-link:hover::after {
+    width: 100%;
+}
+
 

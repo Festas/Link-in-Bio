@@ -94,19 +94,34 @@ Siehe `.env.example` für alle verfügbaren Optionen:
 - `SCRAPER_CACHE_TTL`: Cache-TTL für Scraping in Sekunden (Standard: 3600)
 - `SCRAPER_VERIFY_TLS`: TLS-Verifikation (Standard: true)
 - `SCRAPER_PROXIES`: Optional Proxy-Liste (komma-getrennt)
+- `SCRAPER_BROWSER_ENABLED`: Browser-Scraping aktivieren (Standard: true, **NEU**)
+- `SCRAPER_BROWSER_FALLBACK`: Browser als Fallback nutzen (Standard: true, **NEU**)
+- `SCRAPER_BROWSER_TIMEOUT`: Browser-Timeout in Sekunden (Standard: 30, **NEU**)
 
-### Enhanced Web Scraper
+### Enhanced Web Scraper mit Browser-Automatisierung 🌐
 
-Der Web Scraper wurde auf professionelles Niveau erweitert (ähnlich wie beacons.ai):
+Der Web Scraper wurde mit **Playwright-basierter Browser-Automatisierung** erweitert:
 
+**Standard-Scraping** (curl_cffi / httpx):
 - **Umfassende Metadaten-Extraktion**: JSON-LD, Open Graph, Twitter Cards, Meta Tags
 - **Intelligente Bild-Validierung**: Prüft ob Bilder wirklich existieren, automatische Fallbacks
 - **Smart Caching**: In-Memory Cache mit konfigurierbarer TTL für bessere Performance
-- **Spezial-Domain-Handling**: Optimierte Extraktion für GitHub, LinkedIn, Twitter, Instagram
+- **Spezial-Domain-Handling**: Optimierte Extraktion für GitHub, LinkedIn, Twitter, Instagram, Amazon, eBay, Etsy
 - **Mehrfache Fallback-Strategien**: Garantiert immer ein verwendbares Ergebnis
-- **Robuste Fehlerbehandlung**: Funktioniert auch bei schwierigen Websites
 
-Siehe [SCRAPER_DOCUMENTATION.md](SCRAPER_DOCUMENTATION.md) für Details.
+**NEU: Browser-Scraping** (Playwright / Chromium) 🆕:
+- ✅ **Shortlink-Auflösung**: Funktioniert perfekt mit bit.ly, t.co, goo.gl und allen anderen Diensten
+- ✅ **Bot-Erkennung umgehen**: Verwendet echten Chromium-Browser statt HTTP-Requests
+- ✅ **JavaScript-Rendering**: Scraped Single-Page-Applications (SPAs) korrekt
+- ✅ **Anti-Detection**: Entfernt WebDriver-Property, verwendet realistische Browser-Fingerprints
+- ✅ **Automatischer Fallback**: Wird nur aktiviert wenn Standard-Scraping fehlschlägt oder blockiert wird
+
+**Funktionsweise**:
+1. Versuch mit Standard-HTTP (schnell, < 1s)
+2. Bei Fehler/Bot-Block: Browser-Scraping (langsamer, 2-5s, aber zuverlässig)
+3. Bei allem Fehlschlag: Intelligente Fallbacks
+
+Siehe [SCRAPER_DOCUMENTATION.md](SCRAPER_DOCUMENTATION.md) und [BROWSER_SCRAPING_DE.md](BROWSER_SCRAPING_DE.md) für Details.
 
 ## 📁 Projekt-Struktur
 
@@ -119,7 +134,11 @@ Link-in-Bio/
 ├── endpoints.py            # API Endpoints
 ├── auth.py                 # Authentifizierung
 ├── services.py             # Business Logic
-├── scraper.py              # Web Scraping für Link-Vorschau
+├── scraper.py              # Web Scraping für Link-Vorschau (Orchestrator)
+├── scraper_browser.py      # Browser-basiertes Scraping (Playwright) 🆕
+├── scraper_extractors.py   # Metadaten-Extractoren
+├── scraper_utils.py        # Scraper Utilities
+├── scraper_domains.py      # Spezial-Domain-Handler
 ├── middleware.py           # Security Middleware
 ├── exceptions.py           # Exception Handlers
 ├── rate_limit.py           # Rate Limiting

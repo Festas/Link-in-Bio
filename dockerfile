@@ -20,10 +20,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 2. Code kopieren
+# 2. Playwright Browser installieren (mit allen Dependencies)
+RUN playwright install chromium --with-deps
+
+# 3. Code kopieren
 COPY . .
 
-# 3. Vendor laden
+# 4. Vendor laden
 RUN python download_vendor.py
 
 EXPOSE 8000

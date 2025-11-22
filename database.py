@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 
 load_dotenv()
-DATABASE_FILE = "linktree.db"
+DATABASE_FILE = os.getenv("DATABASE_FILE", "linktree.db")
 
 @contextmanager
 def get_db_connection():
@@ -113,7 +113,8 @@ def update_item_in_db(item_id: int, data: Dict[str, Any]) -> Optional[Dict[str, 
         cursor.execute(query, list(data.values()) + [item_id])
         conn.commit()
         cursor.execute("SELECT * FROM items WHERE id = ?", (item_id,))
-        return dict(cursor.fetchone()) if cursor.fetchone() else None
+        row = cursor.fetchone()
+        return dict(row) if row else None
 
 def delete_item_from_db(item_id: int):
     with get_db_connection() as conn:

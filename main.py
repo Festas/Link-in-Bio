@@ -1,15 +1,11 @@
 import uvicorn
-import os
 import sys
 import asyncio
-from pathlib import Path
 from fastapi import FastAPI, Request, Response, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
 from urllib.parse import urljoin
-from dotenv import load_dotenv
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 # --- WINDOWS FIX FÜR CURL_CFFI ---
@@ -22,57 +18,9 @@ from database import init_db, get_settings_from_db
 from endpoints import router as api_router
 from services import APP_DOMAIN
 from rate_limit import limiter_standard
-
-BASE_DIR = Path(__file__).resolve().parent
-load_dotenv() 
-UPLOAD_DIR = BASE_DIR / "static" / "uploads" 
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
-
-# --- VENDOR CONFIGURATION ---
-CDN_URLS = {
-    "tailwindcss": "https://cdn.tailwindcss.com",
-    "lucide": "https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js",
-    "sortable": "https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js",
-    "chartjs": "https://cdn.jsdelivr.net/npm/chart.js",
-    "swiper_css": "https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css",
-    "swiper_js": "https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"
-}
-
-LOCAL_URLS = {
-    "tailwindcss": "/static/vendor/tailwindcss.js",
-    "lucide": "/static/vendor/lucide.js",
-    "sortable": "/static/vendor/sortable.min.js",
-    "chartjs": "/static/vendor/chart.js",
-    "swiper_css": "/static/vendor/swiper-bundle.min.css",
-    "swiper_js": "/static/vendor/swiper-bundle.min.js"
-}
-
-VENDOR_DIR = BASE_DIR / "static" / "vendor"
-
-def configure_template_globals():
-    use_local = True
-    check_files = ["tailwindcss.js", "lucide.js", "sortable.min.js"]
-    
-    if not VENDOR_DIR.exists():
-        use_local = False
-    else:
-        for f_name in check_files:
-            f_path = VENDOR_DIR / f_name
-            if not f_path.exists():
-                use_local = False
-                break
-            
-    if use_local:
-        print("✅ Lokale Vendor-Dateien gefunden.")
-        templates.env.globals["vendor"] = LOCAL_URLS
-    else:
-        print("🌐 Nutze CDNs (Online-Modus).")
-        templates.env.globals["vendor"] = CDN_URLS
-    
-    # Version global
-    templates.env.globals["version"] = "1.1"
+from config import BASE_DIR, UPLOAD_DIR, templates, configure_template_globals
+from middleware import add_security_headers
+from exceptions import custom_http_exception_handler, general_exception_handler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -82,29 +30,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-@app.middleware("http")
-async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    return response
+app.middleware("http")(add_security_headers)
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.include_router(api_router, prefix="/api")
 
-@app.exception_handler(StarletteHTTPException)
-async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
-    if request.url.path.startswith("/api/"):
-        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
-    return templates.TemplateResponse("error.html", {"request": request, "status_code": exc.status_code, "detail": exc.detail}, status_code=exc.status_code)
-
-@app.exception_handler(500)
-async def general_exception_handler(request: Request, exc: Exception):
-    if request.url.path.startswith("/api/"):
-        return JSONResponse({"detail": "Interner Serverfehler"}, status_code=500)
-    return templates.TemplateResponse("error.html", {"request": request, "status_code": 500, "detail": "Interner Serverfehler"}, status_code=500)
+app.exception_handler(StarletteHTTPException)(custom_http_exception_handler)
+app.exception_handler(500)(general_exception_handler)
 
 @app.get("/sw.js", response_class=FileResponse)
 async def get_service_worker():

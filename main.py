@@ -31,7 +31,7 @@ setup_logging(log_level=LOG_LEVEL, json_logs=JSON_LOGS)
 
 logger = get_logger(__name__)
 
-from app.database import init_db, get_settings_from_db, get_page_by_slug
+from app.database import init_db, get_settings_from_db, get_page_by_slug, get_all_pages
 from app.endpoints import router as api_router
 from app.endpoints_enhanced import router as api_router_enhanced
 from app.services import APP_DOMAIN
@@ -142,7 +142,6 @@ async def get_robots_txt():
 
 @app.get("/sitemap.xml", response_class=Response)
 async def get_sitemap():
-    from app.database import get_all_pages
     base_url = f"https://{APP_DOMAIN}"
     xml_content = (
         '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'

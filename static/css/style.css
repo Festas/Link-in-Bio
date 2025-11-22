@@ -710,7 +710,7 @@ footer:hover {
 }
 
 /* ========================================
-   SLIDER GROUP STYLES - Beacons.ai Inspired
+   SLIDER GROUP STYLES - Modern Clean Design
    ======================================== */
 
 /* Slider Container */
@@ -721,7 +721,7 @@ footer:hover {
 
 /* Slider Cards */
 .swiper-slider-group .swiper-slide {
-    height: 280px;
+    height: 320px;
     border-radius: 1rem;
     overflow: hidden;
 }
@@ -732,39 +732,53 @@ footer:hover {
     height: 100%;
     border-radius: 1rem;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .slide-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+    border-color: rgba(102, 126, 234, 0.4);
 }
 
 .slide-card:active {
-    transform: translateY(-2px);
+    transform: translateY(-4px) scale(1.01);
 }
 
-/* Navigation Buttons */
+/* Image styling within slides */
+.slide-card img {
+    transition: transform 0.5s ease;
+}
+
+.slide-card:hover img {
+    transform: scale(1.08);
+}
+
+/* Navigation Buttons - Arrow Icons Only */
 .slider-nav-btn {
-    width: 44px !important;
-    height: 44px !important;
-    background: rgba(255, 255, 255, 0.9) !important;
-    backdrop-filter: blur(10px);
+    width: 40px !important;
+    height: 40px !important;
+    background: rgba(0, 0, 0, 0.65) !important;
+    backdrop-filter: blur(12px);
     border-radius: 50%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .slider-nav-btn:hover {
-    background: rgba(255, 255, 255, 1) !important;
-    transform: scale(1.1);
+    background: rgba(0, 0, 0, 0.85) !important;
+    transform: scale(1.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .slider-nav-btn:after {
-    font-size: 18px !important;
+    font-size: 16px !important;
     font-weight: bold;
-    color: #334155;
+    color: #ffffff;
 }
 
 .slider-nav-btn.swiper-button-disabled {
@@ -781,15 +795,16 @@ footer:hover {
 .swiper-pagination-bullet {
     width: 8px;
     height: 8px;
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.4);
     opacity: 1;
     transition: all 0.3s ease;
 }
 
 .swiper-pagination-bullet-active {
-    width: 24px;
+    width: 28px;
     border-radius: 4px;
     background: var(--color-accent, #667eea);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
 }
 
 /* Dynamic Bullets Animation */
@@ -805,7 +820,7 @@ footer:hover {
 /* Responsive Adjustments */
 @media (max-width: 640px) {
     .swiper-slider-group .swiper-slide {
-        height: 240px;
+        height: 280px;
     }
     
     .slider-nav-btn {
@@ -831,6 +846,25 @@ footer:hover {
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Enhanced group headers */
+.group-header {
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+/* Grid items enhancement */
+.group-content .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.group-content .glass-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
 }
 
 /* Category-specific styling for admin panels */

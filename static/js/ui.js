@@ -53,11 +53,47 @@ const ItemRenderers = {
         div.innerHTML = `<p class="item-title font-semibold p-4 pb-3">${escapeHTML(item.title)}</p>${iframeHTML}`; return div;
     },
     grid: (item) => {
-        const cols = item.grid_columns || 2; const wrapper = document.createElement('div'); wrapper.className = 'group-container glass-card mb-4 overflow-hidden rounded-2xl';
-        let headerHTML = item.title ? `<div class="group-header flex justify-between items-center p-4 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors"><h3 class="text-lg font-bold text-white">${escapeHTML(item.title)}</h3><i data-lucide="chevron-down" class="chevron-icon w-5 h-5 text-white transition-transform"></i></div>` : '';
-        let contentHTML = `<div class="group-content p-4 grid gap-4" style="grid-template-columns: repeat(${cols}, 1fr);">`;
-        if (item.children) { item.children.forEach(child => { contentHTML += `<a href="${escapeHTML(child.url)}" target="_blank" rel="noopener noreferrer" class="glass-card track-click relative overflow-hidden block aspect-square group hover:scale-[1.02] transition-transform rounded-xl" data-item-id="${child.id}">${child.image_url ? `<img src="${escapeHTML(child.image_url)}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.style.display='none'">` : '<div class="absolute inset-0 bg-gray-700 flex items-center justify-center"><i data-lucide="link" class="w-8 h-8 text-white opacity-50"></i></div>'}<div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none"></div><div class="absolute bottom-0 left-0 right-0 p-3 text-center z-10"><span class="text-white text-sm font-bold leading-tight block drop-shadow-md whitespace-normal break-words">${escapeHTML(child.title)}</span></div></a>`; }); }
-        contentHTML += `</div>`; wrapper.innerHTML = headerHTML + contentHTML; return wrapper;
+        const cols = item.grid_columns || 2; 
+        const wrapper = document.createElement('div'); 
+        wrapper.className = 'group-container glass-card mb-4 overflow-hidden rounded-2xl';
+        
+        let headerHTML = item.title ? 
+            `<div class="group-header flex justify-between items-center p-5 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors border-b border-white/10">
+                <h3 class="text-xl font-bold text-white">${escapeHTML(item.title)}</h3>
+                <i data-lucide="chevron-down" class="chevron-icon w-5 h-5 text-white transition-transform"></i>
+            </div>` : '';
+        
+        let contentHTML = `<div class="group-content p-5 grid gap-4" style="grid-template-columns: repeat(${cols}, 1fr);">`;
+        
+        if (item.children) { 
+            item.children.forEach(child => { 
+                contentHTML += `
+                    <a href="${escapeHTML(child.url)}" 
+                       target="_blank" 
+                       rel="noopener noreferrer" 
+                       class="glass-card track-click relative overflow-hidden block aspect-square group hover:scale-[1.03] transition-all duration-300 rounded-xl shadow-lg hover:shadow-2xl border border-white/10 hover:border-white/30" 
+                       data-item-id="${child.id}">
+                        ${child.image_url ? 
+                            `<img src="${escapeHTML(child.image_url)}" 
+                                  class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                                  onerror="this.style.display='none'">` : 
+                            `<div class="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                                <i data-lucide="link" class="w-10 h-10 text-white opacity-50"></i>
+                            </div>`
+                        }
+                        <div class="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/95 via-black/60 to-transparent pointer-events-none"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-4 text-center z-10">
+                            <span class="text-white text-base font-bold leading-tight block drop-shadow-lg whitespace-normal break-words">
+                                ${escapeHTML(child.title)}
+                            </span>
+                        </div>
+                    </a>`; 
+            }); 
+        }
+        
+        contentHTML += `</div>`; 
+        wrapper.innerHTML = headerHTML + contentHTML; 
+        return wrapper;
     },
     slider_group: (item) => {
         const wrapper = document.createElement('div'); 
@@ -86,7 +122,7 @@ const ItemRenderers = {
                            class="slide-card block relative overflow-hidden rounded-xl h-full track-click group" 
                            data-item-id="${child.id}">
                             ${imgHTML}
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+                            <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
                             <div class="absolute inset-x-0 bottom-0 p-4 z-10">
                                 <p class="text-white text-sm font-bold drop-shadow-lg leading-tight line-clamp-2">
                                     ${escapeHTML(child.title)}
@@ -229,7 +265,7 @@ export function renderProfileHeader(settings) {
 
     header.style.position = 'relative'; 
     // Render header with left-aligned profile image (no automatic centering)
-    header.innerHTML = `<div class="absolute top-0 right-0 mt-0 mr-0"><button id="share-profile-btn" class="p-2 rounded-full glass-card hover:bg-white hover:bg-opacity-20 transition-colors" style="color: var(--color-text);" title="Profil teilen"><i data-lucide="share-2" class="w-5 h-5"></i></button></div><div class="animate-entry text-left" style="animation-delay: 0ms;"><img id="profile-image" src="${escapeHTML(settings.image_url || 'https://placehold.co/100x100/374151/FFFFFF?text=Bild')}" alt="Profilbild" class="w-24 h-24 rounded-full mb-4 object-cover border-4 shadow-lg" style="border-color: var(--color-border);" onerror="this.src='https://placehold.co/100x100/374151/FFFFFF?text=Bild'; this.onerror=null;"><h1 id="profile-title" class="profile-title text-2xl text-shadow-md">${escapeHTML(settings.title || 'Titel')}</h1><p id="profile-bio" class="profile-bio text-sm mt-2 opacity-90">${escapeHTML(settings.bio || 'Bio')}</p></div><div id="social-links" class="flex justify-start space-x-3 mt-5 animate-entry" style="animation-delay: 100ms;">${socialLinksHTML}</div><div class="mt-6 animate-entry" style="animation-delay: 150ms;"><a href="/api/contact.vcf" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-full transition-colors glass-card hover:bg-white hover:bg-opacity-10" style="color: var(--color-text);"><i data-lucide="user-plus" class="w-4 h-4 mr-2"></i>Kontakt speichern</a></div>`;
+    header.innerHTML = `<div class="absolute top-0 right-0 mt-0 mr-0"><button id="share-profile-btn" class="p-2 rounded-full glass-card hover:bg-white hover:bg-opacity-20 transition-colors" style="color: var(--color-text);" title="Profil teilen"><i data-lucide="share-2" class="w-5 h-5"></i></button></div><div class="animate-entry text-left" style="animation-delay: 0ms;"><img id="profile-image" src="${escapeHTML(settings.image_url || 'https://placehold.co/100x100/374151/FFFFFF?text=Bild')}" alt="Profilbild" class="w-24 h-24 rounded-full mb-4 object-cover border-4 shadow-lg" style="border-color: var(--color-border);" onerror="this.src='https://placehold.co/100x100/374151/FFFFFF?text=Bild'; this.onerror=null;"><h1 id="profile-title" class="profile-title text-2xl text-shadow-md">${escapeHTML(settings.title || 'Titel')}</h1><p id="profile-bio" class="profile-bio text-sm mt-2 opacity-90">${escapeHTML(settings.bio || 'Bio')}</p></div><div id="social-links" class="flex justify-start space-x-3 mt-5 animate-entry" style="animation-delay: 100ms;">${socialLinksHTML}</div>`;
     header.classList.remove('opacity-0');
     
     const shareBtn = header.querySelector('#share-profile-btn');

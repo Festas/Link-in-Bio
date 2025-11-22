@@ -1,0 +1,299 @@
+/* static/css/style.css */
+
+:root {
+    /* Standard (Theme: Dark) */
+    --color-bg: #111827;
+    --color-text: #F9FAFB;
+    --color-text-muted: #9CA3AF;
+    --color-item-bg: rgba(31, 41, 55, 0.7);
+    --color-item-bg-hover: rgba(55, 65, 81, 0.9);
+    --color-item-text: #FFFFFF;
+    --color-item-shadow: rgba(0, 0, 0, 0.2);
+    --color-border: rgba(255, 255, 255, 0.08);
+}
+
+/* --- THEMES --- */
+
+/* Hell */
+body.theme-light {
+    --color-bg: #F3F4F6;
+    --color-text: #111827;
+    --color-text-muted: #4B5563;
+    --color-item-bg: #FFFFFF;
+    --color-item-bg-hover: #F9FAFB;
+    --color-item-text: #111827;
+    --color-item-shadow: rgba(0, 0, 0, 0.05);
+    --color-border: #E5E7EB;
+}
+
+/* Wald (Forest) */
+body.theme-forest {
+    --color-bg: #064E3B; /* Dunkles Grün */
+    --color-text: #ECFDF5;
+    --color-text-muted: #A7F3D0;
+    --color-item-bg: rgba(6, 95, 70, 0.6);
+    --color-item-bg-hover: rgba(6, 95, 70, 0.8);
+    --color-item-text: #FFFFFF;
+    --color-item-shadow: rgba(0, 0, 0, 0.2);
+    --color-border: rgba(167, 243, 208, 0.2);
+}
+
+/* Sonnenuntergang (Sunset) */
+body.theme-sunset {
+    --color-bg: #7C2D12; /* Warmes Braun/Rot */
+    /* Wir nutzen hier einen Gradient im Body, siehe unten */
+    --color-text: #FEF3C7;
+    --color-text-muted: #FDE68A;
+    --color-item-bg: rgba(124, 45, 18, 0.6);
+    --color-item-bg-hover: rgba(124, 45, 18, 0.8);
+    --color-item-text: #FFFFFF;
+    --color-item-shadow: rgba(0, 0, 0, 0.25);
+    --color-border: rgba(253, 230, 138, 0.2);
+}
+
+/* Animation Keyframes */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes pulse-border {
+    0% { border-color: var(--color-border); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+    50% { border-color: #ffffff; box-shadow: 0 0 20px 0 rgba(255, 255, 255, 0.2); }
+    100% { border-color: var(--color-border); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+
+body {
+    background-color: var(--color-bg);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    color: var(--color-text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Spezial-Hintergrund für Sunset */
+body.theme-sunset {
+    background: linear-gradient(to bottom right, #be123c, #c2410c, #b45309);
+}
+
+/* Picasso theme for admin preview */
+body.theme-picasso {
+    --color-bg: #F6F0E8;
+    --color-text: #2B2B2B;
+    --color-text-muted: #6B6B6B;
+    --color-item-bg: rgba(255,255,255,0.85);
+    --color-item-bg-hover: rgba(255,255,255,0.95);
+    --color-item-text: #111827;
+    --color-item-shadow: rgba(0,0,0,0.05);
+    --color-border: rgba(43,43,43,0.06);
+}
+
+/* Admin preview: Picasso decorative header removed from main styles; keep admin canvas subtle */
+body.theme-picasso .glass-card { box-shadow: 0 6px 24px rgba(0,0,0,0.06); border-radius: 12px; }
+
+.animate-entry {
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+}
+
+/* Glassmorphism Basis-Klasse */
+.glass-card {
+    background-color: var(--color-item-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 4px 6px var(--color-item-shadow);
+}
+
+.item-link, .item-product {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease-out, box-shadow 0.2s;
+    color: var(--color-item-text);
+}
+
+.item-link:hover, .item-product:hover {
+    transform: scale(1.02);
+    background-color: var(--color-item-bg-hover);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+}
+
+.item-link:active, .item-product:active {
+    transform: scale(0.98);
+}
+
+/* --- BUTTON STYLES --- */
+/* Wir nutzen !important bei border-radius um Tailwind-Konflikte zu vermeiden */
+
+/* 1. Abgerundet (Rounded) */
+body.style-rounded .item-link, 
+body.style-rounded .item-product, 
+body.style-rounded .group-container,
+body.style-rounded .item-video-wrapper, 
+body.style-rounded .item-countdown-wrapper, 
+body.style-rounded .item-email-form, 
+body.style-rounded .item-contact-form, 
+body.style-rounded .glass-card,
+body.style-rounded .swiper-slide {
+    border-radius: 1rem !important; 
+}
+
+/* 2. Eckig (Square) */
+body.style-square .item-link, 
+body.style-square .item-product, 
+body.style-square .group-container,
+body.style-square .item-video-wrapper, 
+body.style-square .item-countdown-wrapper, 
+body.style-square .item-email-form, 
+body.style-square .item-contact-form, 
+body.style-square .glass-card,
+body.style-square .swiper-slide {
+    border-radius: 0px !important;
+}
+
+/* 3. Pillenform (Pill) */
+/* Container bekommen starke Rundung */
+body.style-pill .group-container,
+body.style-pill .item-video-wrapper, 
+body.style-pill .item-countdown-wrapper, 
+body.style-pill .item-email-form, 
+body.style-pill .item-contact-form, 
+body.style-pill .glass-card,
+body.style-pill .swiper-slide {
+    border-radius: 1.5rem !important;
+}
+/* Klickbare Links werden zu Pillen */
+body.style-pill .item-link, 
+body.style-pill .item-product {
+    border-radius: 9999px !important;
+}
+
+/* Typografie */
+.item-title { color: var(--color-item-text); text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+.item-subtitle, .item-header, .social-icon, .countdown-label { color: var(--color-text-muted); }
+.profile-title { font-weight: 800; letter-spacing: -0.025em; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.item-header { font-weight: 600; }
+
+/* Spotlight Animation */
+.spotlight-item {
+    animation: pulse-border 2s infinite;
+    border-width: 2px;
+    border-color: rgba(255,255,255,0.5);
+}
+
+/* Slider / Swiper */
+.swiper-pagination-bullet { background-color: var(--color-text-muted) !important; opacity: 0.5 !important; }
+.swiper-pagination-bullet-active { background-color: var(--color-text) !important; opacity: 1 !important; }
+.swiper-slide {
+    background-color: var(--color-item-bg);
+    transition: background-color 0.2s ease-out;
+}
+
+/* Admin: make slider images visually smaller but square in the preview */
+.swiper .swiper-slide > a { display: flex; align-items: center; justify-content: center; }
+
+/* Allow Swiper to set slide widths so admin preview can show 2 slides per view; keep square */
+.swiper .swiper-wrapper { align-items: center; }
+.swiper .swiper-slide {
+     width: auto !important;
+     flex: 0 0 auto !important;
+     display: flex; align-items: center; justify-content: center;
+     aspect-ratio: 1 / 1;
+     max-width: none !important;
+}
+.swiper .swiper-slide > a { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.swiper .swiper-slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; }
+.swiper .swiper-slide .bg-gradient-to-t { height: 40% !important; }
+
+/* Admin preview: same nav and stacking polish as site styles */
+.swiper { position: relative; }
+.swiper-nav { pointer-events: none; z-index: 10; }
+.swiper-nav .swiper-nav-button { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.45); color: var(--color-text); border: 1px solid var(--color-border); }
+.swiper-nav .swiper-nav-button:hover { background: rgba(0,0,0,0.6); }
+.swiper-nav .swiper-nav-button:focus { outline: 3px solid rgba(0,0,0,0.12); box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
+.slide-link { position: relative; display: block; width: 100%; height: 100%; pointer-events: auto; z-index: 2; }
+.slide-image { z-index: 0; }
+.slide-title { pointer-events: none; }
+
+/* Countdown Grid */
+.countdown-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    text-align: center;
+}
+.countdown-box {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid var(--color-border);
+}
+.countdown-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 2rem;
+    color: var(--color-text);
+    font-feature-settings: "tnum";
+}
+.countdown-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+}
+
+/* Formulare */
+.email-input {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    transition: all 0.2s;
+}
+/* Im Light Mode muss der Input dunkler sein, damit man ihn sieht */
+body.theme-light .email-input {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-color: #D1D5DB;
+    color: #000;
+}
+
+.email-input:focus {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-color: var(--color-text-muted);
+    outline: none;
+}
+.email-input::placeholder { color: var(--color-text-muted); opacity: 0.7; }
+
+.email-submit-button {
+    background-color: var(--color-text);
+    color: var(--color-bg); /* Invertierte Farben für Kontrast */
+    font-weight: bold;
+    transition: opacity 0.2s, transform 0.1s;
+}
+.email-submit-button:hover { opacity: 0.9; transform: translateY(-1px); }
+.email-submit-button:active { transform: translateY(0); }
+
+/* FAQ Akkordeon */
+.faq-header svg { transition: transform 0.3s ease; }
+
+/* Grid Layout */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+@media (max-width: 350px) { .grid { grid-template-columns: 1fr; } }
+
+/* Admin Drop Zones */
+.child-container {
+    min-height: 60px;
+    transition: background-color 0.2s;
+}
+.child-container:empty {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 2px dashed #4B5563;
+    border-radius: 0.5rem;
+}

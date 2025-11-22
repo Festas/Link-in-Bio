@@ -1,0 +1,313 @@
+/* Admin Panel - Modern Beacons.ai Inspired Design */
+
+:root {
+    --admin-bg: #0f1419;
+    --admin-bg-secondary: #1a1f2e;
+    --admin-surface: #252d3d;
+    --admin-surface-hover: #2d3548;
+    --admin-border: rgba(255, 255, 255, 0.08);
+    --admin-text: #ffffff;
+    --admin-text-muted: #94a3b8;
+    --admin-accent: #667eea;
+    --admin-accent-hover: #764ba2;
+    --admin-accent-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --admin-success: #10b981;
+    --admin-warning: #f59e0b;
+    --admin-danger: #ef4444;
+    --admin-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    --admin-shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+/* Base Styles */
+body {
+    background: linear-gradient(135deg, var(--admin-bg) 0%, var(--admin-bg-secondary) 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--admin-text);
+    line-height: 1.6;
+}
+
+/* Header Enhancement */
+header {
+    background: rgba(37, 45, 61, 0.6);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--admin-border);
+    padding: 1.5rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+header h1 {
+    background: var(--admin-accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+/* Button Enhancements */
+button, .btn {
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+button:not(:disabled):hover, .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+button:not(:disabled):active, .btn:active {
+    transform: translateY(0);
+}
+
+/* Primary Button */
+.bg-blue-600, button[type="submit"] {
+    background: var(--admin-accent-gradient) !important;
+    border: none;
+    box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+}
+
+.bg-blue-600:hover, button[type="submit"]:hover {
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+/* Input Fields Enhancement */
+input[type="text"],
+input[type="email"],
+input[type="url"],
+input[type="password"],
+input[type="datetime-local"],
+textarea,
+select {
+    background: var(--admin-surface) !important;
+    border: 2px solid var(--admin-border) !important;
+    color: var(--admin-text) !important;
+    padding: 0.75rem 1rem !important;
+    border-radius: 10px !important;
+    transition: all 0.3s ease !important;
+    font-size: 0.95rem !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--admin-accent) !important;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15) !important;
+    outline: none !important;
+    background: var(--admin-surface-hover) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--admin-text-muted) !important;
+}
+
+/* Card/Section Enhancement */
+.bg-gray-800, section {
+    background: rgba(37, 45, 61, 0.5) !important;
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 16px !important;
+    box-shadow: var(--admin-shadow) !important;
+    transition: all 0.3s ease;
+}
+
+.bg-gray-800:hover, section:hover {
+    border-color: rgba(102, 126, 234, 0.3) !important;
+    box-shadow: var(--admin-shadow-lg) !important;
+}
+
+/* Tab System Enhancement */
+.tab-button {
+    position: relative;
+    padding: 1rem 1.5rem;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+.tab-button.border-blue-400 {
+    color: var(--admin-accent) !important;
+}
+
+.tab-button.border-blue-400::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--admin-accent-gradient);
+    border-radius: 3px 3px 0 0;
+}
+
+.tab-button:not(.border-blue-400):hover {
+    color: rgba(255, 255, 255, 0.9) !important;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Form Grid Enhancement */
+.grid {
+    gap: 1.5rem;
+}
+
+.grid > * {
+    animation: fadeInUp 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+.grid > *:nth-child(1) { animation-delay: 0.05s; }
+.grid > *:nth-child(2) { animation-delay: 0.1s; }
+.grid > *:nth-child(3) { animation-delay: 0.15s; }
+.grid > *:nth-child(4) { animation-delay: 0.2s; }
+.grid > *:nth-child(5) { animation-delay: 0.25s; }
+.grid > *:nth-child(6) { animation-delay: 0.3s; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Page Selector Enhancement */
+#page-selector {
+    background: var(--admin-surface) !important;
+    border: 2px solid var(--admin-border) !important;
+    padding: 0.75rem 1rem !important;
+    border-radius: 10px !important;
+    font-weight: 600;
+}
+
+/* Item List Enhancement */
+.manage-item-card {
+    background: var(--admin-surface);
+    border: 2px solid var(--admin-border);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+    cursor: move;
+}
+
+.manage-item-card:hover {
+    border-color: var(--admin-accent);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+    transform: translateX(4px);
+}
+
+/* Loading States */
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Modal Enhancement */
+.modal {
+    backdrop-filter: blur(10px);
+    background-color: rgba(0, 0, 0, 0.85) !important;
+}
+
+.modal .bg-gray-800, .modal .bg-white {
+    border-radius: 20px !important;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid var(--admin-border);
+    animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Status Messages */
+#form-status {
+    padding: 1rem;
+    border-radius: 10px;
+    font-weight: 600;
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Preview Button Enhancement */
+#preview-button {
+    background: var(--admin-accent-gradient);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+}
+
+#preview-button:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5);
+}
+
+/* Responsive Enhancements */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .tab-button {
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* Accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+
+/* Smooth Scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--admin-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--admin-surface);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--admin-surface-hover);
+}

@@ -7,26 +7,78 @@
     
     <script src="{{ vendor.tailwindcss }}?v={{ version }}"></script>
     <link rel="stylesheet" href="/static/css/admin.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/admin-modern.css?v={{ version }}">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.15) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .login-container {
+            position: relative;
+            z-index: 1;
+            animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-card {
+            background: rgba(37, 45, 61, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+        
+        h1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
 
-    <div class="w-full max-w-sm mx-auto p-8 rounded-lg shadow-lg bg-gray-800">
-        <h1 class="text-2xl font-bold text-center mb-6 text-white">Admin Login</h1>
+    <div class="login-container w-full max-w-sm mx-auto p-8 rounded-lg shadow-lg login-card">
+        <h1 class="text-3xl font-bold text-center mb-8 text-white">Admin Login</h1>
         
-        <form id="login-form" class="space-y-4">
+        <form id="login-form" class="space-y-5">
             <div>
-                <label for="username" class="block text-sm font-medium text-gray-300">Benutzername</label>
+                <label for="username" class="block text-sm font-medium text-gray-300 mb-2">Benutzername</label>
                 <input type="text" id="username" name="username" required 
                        class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             </div>
             <div>
-                <label for="password" class="block text-sm font-medium text-gray-300">Passwort</label>
+                <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Passwort</label>
                 <input type="password" id="password" name="password" required
                        class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             </div>
             
             <button type="submit" 
-                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
                 Anmelden
             </button>
             

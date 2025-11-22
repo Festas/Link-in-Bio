@@ -501,7 +501,6 @@ class AliExpressHandler(SpecialDomainHandler):
         data = {}
         
         # Try to extract from URL parameters (AliExpress often uses query params)
-        from urllib.parse import parse_qs
         query = parse_qs(parsed_url.query)
         
         # Look for title in SearchText or keywords parameter

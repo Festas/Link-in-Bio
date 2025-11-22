@@ -17,7 +17,7 @@ CDN_URLS = {
     "sortable": "https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js",
     "chartjs": "https://cdn.jsdelivr.net/npm/chart.js",
     "swiper_css": "https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css",
-    "swiper_js": "https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"
+    "swiper_js": "https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js",
 }
 
 LOCAL_URLS = {
@@ -26,15 +26,16 @@ LOCAL_URLS = {
     "sortable": "/static/vendor/sortable.min.js",
     "chartjs": "/static/vendor/chart.js",
     "swiper_css": "/static/vendor/swiper-bundle.min.css",
-    "swiper_js": "/static/vendor/swiper-bundle.min.js"
+    "swiper_js": "/static/vendor/swiper-bundle.min.js",
 }
 
 VENDOR_DIR = BASE_DIR / "static" / "vendor"
 
+
 def configure_template_globals():
     use_local = True
     check_files = ["tailwindcss.js", "lucide.js", "sortable.min.js"]
-    
+
     if not VENDOR_DIR.exists():
         use_local = False
     else:
@@ -43,13 +44,13 @@ def configure_template_globals():
             if not f_path.exists():
                 use_local = False
                 break
-            
+
     if use_local:
         print("✅ Lokale Vendor-Dateien gefunden.")
         templates.env.globals["vendor"] = LOCAL_URLS
     else:
         print("🌐 Nutze CDNs (Online-Modus).")
         templates.env.globals["vendor"] = CDN_URLS
-    
+
     # Version global
     templates.env.globals["version"] = "1.1"

@@ -150,7 +150,7 @@ files_map = {
     "Caddyfile": caddyfile_content,
     "docker-compose.yml": docker_compose_content,
     ".github/workflows/deploy.yml": github_action_content,
-    "DEPLOY_CHECKLIST.md": guide_content
+    "DEPLOY_CHECKLIST.md": guide_content,
 }
 
 for path, content in files_map.items():

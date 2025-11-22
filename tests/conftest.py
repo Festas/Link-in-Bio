@@ -57,14 +57,6 @@ def clean_db():
         cursor.execute("DELETE FROM messages")
         conn.commit()
     yield
-    # Cleanup after test
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM items")
-        cursor.execute("DELETE FROM clicks")
-        cursor.execute("DELETE FROM subscribers")
-        cursor.execute("DELETE FROM messages")
-        conn.commit()
 
 
 @pytest.fixture

@@ -381,7 +381,7 @@ class TestSpecialDomainRouter:
         """Test routing GitHub URLs to GitHubHandler."""
         router = SpecialDomainRouter()
         result = router.handle("https://github.com/user/repo")
-        assert "repo by user" == result['title']
+        assert result['title'] == "repo by user"
     
     def test_routing_to_youtube(self):
         """Test routing YouTube URLs to YouTubeHandler."""

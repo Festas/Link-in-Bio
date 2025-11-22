@@ -169,6 +169,12 @@ html {
     max-width: 100vw;
 }
 
+/* Ensure images never overflow */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
 /* Engineering-inspired grid pattern overlay */
 body::after {
     content: '';
@@ -404,6 +410,8 @@ body > * {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .glass-card::before {
@@ -495,6 +503,9 @@ body > * {
         0 4px 12px rgba(0, 0, 0, 0.3),
         0 0 0 1px rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.05);
+    max-width: 56px;
+    max-height: 56px;
+    flex-shrink: 0;
 }
 
 /* Style Varianten (Rundungen) */
@@ -1039,6 +1050,36 @@ footer p {
     }
     
     .profile-bio {
+        font-size: 0.875rem;
+    }
+    
+    /* Make buttons more touch-friendly on small screens */
+    button, .button, a[class*="px-"] {
+        min-height: 44px; /* iOS recommended touch target size */
+    }
+}
+
+/* Ensure all touch targets are accessible on mobile */
+@media (max-width: 640px) {
+    /* Touch-friendly button sizes */
+    button, .button {
+        min-height: 44px;
+        padding: 0.75rem 1rem;
+    }
+    
+    /* Ensure form inputs are properly sized */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    textarea,
+    select {
+        font-size: 16px; /* Prevents zoom on iOS */
+        min-height: 44px;
+    }
+    
+    /* Tab buttons for contact forms */
+    .contact-tab {
+        padding: 0.625rem 0.75rem;
         font-size: 0.875rem;
     }
 }

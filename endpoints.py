@@ -4,6 +4,7 @@ import sqlite3
 import csv
 import io
 import logging
+import re
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
@@ -66,6 +67,9 @@ from config import BASE_DIR, UPLOAD_DIR
 
 router = APIRouter()
 
+# Slug validation pattern
+SLUG_PATTERN = re.compile(r'^[a-z0-9-]+$')
+
 # --- Background Task for Scraping ---
 
 
@@ -113,6 +117,10 @@ async def get_page(page_id: int, user=Depends(require_auth)):
 @router.post("/pages", response_model=Page)
 async def create_new_page(page_data: PageCreate, user=Depends(require_auth)):
     """Create a new page."""
+    # Validate slug format
+    if not SLUG_PATTERN.match(page_data.slug):
+        raise HTTPException(400, "Slug darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten")
+    
     # Check if slug already exists
     existing = get_page_by_slug(page_data.slug)
     if existing:
@@ -131,8 +139,10 @@ async def create_new_page(page_data: PageCreate, user=Depends(require_auth)):
 @router.put("/pages/{page_id}", response_model=Page)
 async def update_existing_page(page_id: int, page_data: PageUpdate, user=Depends(require_auth)):
     """Update a page."""
-    # If slug is being updated, check it doesn't conflict
+    # If slug is being updated, validate and check it doesn't conflict
     if page_data.slug:
+        if not SLUG_PATTERN.match(page_data.slug):
+            raise HTTPException(400, "Slug darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten")
         existing = get_page_by_slug(page_data.slug)
         if existing and existing["id"] != page_id:
             raise HTTPException(400, "Eine Seite mit diesem Slug existiert bereits")

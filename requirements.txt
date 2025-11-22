@@ -13,3 +13,8 @@ pydantic[email]
 email-validator
 playwright
 openpyxl
+# Enhanced security and performance
+passlib[bcrypt]
+pyotp
+redis
+alembic

@@ -247,8 +247,8 @@ async def get_mediakit_page(request: Request):
     settings = get_settings_from_db()
     page_url = f"https://{APP_DOMAIN}/mediakit" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/mediakit"
     context = {
-        "page_title": "Media Kit - Eric | Tech & Gaming",
-        "page_description": "Zahlen, Fakten und Kooperationsmöglichkeiten - Mein Media Kit für Brands und Partner",
+        "page_title": "Media Kit - Eric (@festas_builds) | 189.5K Followers",
+        "page_description": "Tech & Gaming content creator with 189.5K total followers across Instagram (104.7K), TikTok (65.8K), and more. View stats, demographics, brand partnerships, and collaboration rates.",
         "page_image": "",
         "page_url": page_url,
         "custom_html_head": settings.get("custom_html_head", ""),

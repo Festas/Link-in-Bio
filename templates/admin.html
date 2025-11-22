@@ -296,27 +296,25 @@
                                 <div><label for="profile-theme" class="block text-sm font-medium text-gray-300">Farbschema</label><select id="profile-theme" name="theme"><option value="theme-dark">Dunkel</option><option value="theme-light">Hell</option><option value="theme-forest">Wald</option><option value="theme-sunset">Sonnenuntergang</option><option value="theme-picasso">Picasso</option><option value="theme-custom">Benutzerdefiniert</option></select></div>
                             <div><label for="profile-button-style" class="block text-sm font-medium text-gray-300">Button-Stil</label><select id="profile-button-style" name="button_style"><option value="style-rounded">Abgerundet</option><option value="style-square">Eckig</option><option value="style-pill">Pillenform</option></select></div>
                         </div>
-                            <div class="pt-3">
-                                <label class="flex items-center space-x-2"><input type="checkbox" id="picasso-avatar-effect" name="picasso_avatar_effect"><span class="text-sm text-gray-300">Picasso Avatar Effekt aktivieren</span></label>
-                                <p class="text-xs text-gray-500 mt-1">Leichter geometrischer Masken- & Farb-Filter für das Profilbild (nur bei Theme: Picasso sichtbar).</p>
-                            </div>
-                            <div class="pt-3">
-                                <label class="flex items-center space-x-2"><input type="checkbox" id="picasso-avatar-autocenter" name="picasso_avatar_autocenter"><span class="text-sm text-gray-300">Avatar automatisch zentrieren</span></label>
-                                <p class="text-xs text-yellow-300 mt-1">Hinweis: Maskierung kann Bildteile abschneiden. Nutze die Vorschau unten, um die Position anzupassen.</p>
-                            </div>
-                            <div class="pt-3">
-                                <label for="picasso-art-variant" class="block text-sm font-medium text-gray-300">Picasso Artwork Variante</label>
-                                <select id="picasso-art-variant" class="mt-1 block w-48 bg-gray-700 border border-gray-600 rounded-md text-white text-sm">
-                                    <option value="a">Variante A (warm)</option>
-                                    <option value="b">Variante B (pastell)</option>
-                                    <option value="c">Variante C (kontrast)</option>
-                                </select>
-                                <p class="text-xs text-gray-500 mt-1">Wähle eine Hintergrund-Komposition für das Picasso-Theme.</p>
-                            </div>
-                            <div class="pt-3">
-                                <label class="block text-sm font-medium text-gray-300">Avatar Vorschau</label>
-                                <div id="profile-image-preview" class="mt-2 w-24 h-24 rounded-full overflow-hidden border border-gray-600"><img id="profile-image-preview-img" src="" alt="Vorschau" class="w-full h-full object-cover"></div>
-                                <div class="flex space-x-2 mt-2"><button type="button" id="profile-image-reset" class="px-2 py-1 text-xs bg-gray-600 rounded">Zurücksetzen</button><span class="text-xs text-gray-400 self-center">Ziehe das Bild, um Ausschnitt zu verschieben.</span></div>
+                            <div class="pt-3 space-y-4">
+                                <h4 class="text-md font-medium text-gray-200">SEO & Social Media</h4>
+                                <div>
+                                    <label for="meta-description" class="block text-sm font-medium text-gray-300">Meta-Beschreibung</label>
+                                    <textarea id="meta-description" name="meta_description" rows="2" maxlength="160" placeholder="Kurze Beschreibung für Suchmaschinen (max. 160 Zeichen)" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md text-white text-sm px-3 py-2"></textarea>
+                                    <p class="text-xs text-gray-500 mt-1">Diese Beschreibung wird in Google-Suchergebnissen angezeigt.</p>
+                                </div>
+                                <div>
+                                    <label for="meta-keywords" class="block text-sm font-medium text-gray-300">Keywords (optional)</label>
+                                    <input type="text" id="meta-keywords" name="meta_keywords" placeholder="Keyword1, Keyword2, Keyword3" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md text-white text-sm px-3 py-2">
+                                    <p class="text-xs text-gray-500 mt-1">Komma-getrennte Keywords für bessere Auffindbarkeit.</p>
+                                </div>
+                                <div>
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="checkbox" id="show-powered-by" name="show_powered_by" class="form-checkbox h-4 w-4 text-blue-600">
+                                        <span class="text-sm text-gray-300">"Powered by Link-in-Bio" Footer anzeigen</span>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">Zeige einen kleinen Footer-Link an (unterstützt das Projekt).</p>
+                                </div>
                             </div>
                         <div id="custom-theme-settings" class="space-y-4 pt-4 border-t border-gray-700" style="display: none;">
                             <h4 class="text-md font-medium text-gray-200">Benutzerdefinierte Farben</h4>

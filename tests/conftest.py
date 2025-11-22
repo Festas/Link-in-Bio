@@ -13,8 +13,8 @@ os.environ['ADMIN_USERNAME'] = 'testadmin'
 os.environ['ADMIN_PASSWORD'] = 'test_password_12345'
 
 from main import app
-from database import init_db, get_db_connection
-from config import configure_template_globals
+from app.database import init_db, get_db_connection
+from app.config import configure_template_globals
 
 
 @pytest.fixture(scope="session")

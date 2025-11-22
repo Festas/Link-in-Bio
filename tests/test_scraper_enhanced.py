@@ -3,7 +3,7 @@ import os
 import time
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
-from scraper import SmartScraper
+from app.scraper.scraper import SmartScraper
 
 
 @pytest.fixture

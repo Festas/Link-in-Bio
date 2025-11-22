@@ -18,11 +18,10 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "."
-          # KORREKTUR: Hier muss der Pfad stehen, den wir auf dem Server genutzt haben
           target: "/var/www/app"
-          # WICHTIG: Datenbank und Uploads ausschließen!
+          # Ausschließen: DB, Uploads, Git, Tests, Dev-Dateien, Archiv-Docs
           rm: false 
-          exclude: "linktree.db,static/uploads,venv,.git,.github"
+          exclude: "linktree.db,static/uploads,venv,.git,.github,tests,docs/archive,.pytest_cache,.mypy_cache,htmlcov,*.pyc,__pycache__,.env.example,Makefile,.flake8,pyproject.toml"
 
       # 2. .env Datei aus Secrets erstellen
       - name: Create .env file
@@ -32,7 +31,6 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # KORREKTUR: Pfad angepasst
             cd /var/www/app
             echo "${{ secrets.ENV_FILE }}" > .env
 
@@ -44,7 +42,6 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # KORREKTUR: Pfad angepasst
             cd /var/www/app
             docker compose up -d --build --remove-orphans
             docker image prune -f

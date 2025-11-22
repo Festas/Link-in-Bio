@@ -121,42 +121,63 @@ Der Web Scraper wurde mit **Playwright-basierter Browser-Automatisierung** erwei
 2. Bei Fehler/Bot-Block: Browser-Scraping (langsamer, 2-5s, aber zuverlässig)
 3. Bei allem Fehlschlag: Intelligente Fallbacks
 
-Siehe [SCRAPER_DOCUMENTATION.md](SCRAPER_DOCUMENTATION.md) und [BROWSER_SCRAPING_DE.md](BROWSER_SCRAPING_DE.md) für Details.
+Siehe [docs/SCRAPER_DOCUMENTATION.md](docs/SCRAPER_DOCUMENTATION.md) und [docs/BROWSER_SCRAPING_DE.md](docs/BROWSER_SCRAPING_DE.md) für Details.
 
 ## 📁 Projekt-Struktur
 
 ```
 Link-in-Bio/
-├── main.py                 # FastAPI Application Entry Point
-├── config.py               # Konfiguration und Template-Setup
-├── database.py             # Datenbank-Layer (SQLite)
-├── models.py               # Pydantic Models
-├── endpoints.py            # API Endpoints
-├── auth.py                 # Authentifizierung
-├── services.py             # Business Logic
-├── scraper.py              # Web Scraping für Link-Vorschau (Orchestrator)
-├── scraper_browser.py      # Browser-basiertes Scraping (Playwright) 🆕
-├── scraper_extractors.py   # Metadaten-Extractoren
-├── scraper_utils.py        # Scraper Utilities
-├── scraper_domains.py      # Spezial-Domain-Handler
-├── middleware.py           # Security Middleware
-├── exceptions.py           # Exception Handlers
-├── rate_limit.py           # Rate Limiting
-├── cache.py                # In-Memory Cache
-├── templates/              # Jinja2 Templates
+├── main.py                   # FastAPI Application Entry Point
+├── download_vendor.py        # Script zum Download von Vendor-Dateien
+├── app/                      # Hauptanwendung
+│   ├── __init__.py
+│   ├── config.py             # Konfiguration und Template-Setup
+│   ├── database.py           # Datenbank-Layer (SQLite)
+│   ├── models.py             # Pydantic Models
+│   ├── endpoints.py          # API Endpoints
+│   ├── auth.py               # Authentifizierung
+│   ├── services.py           # Business Logic
+│   ├── middleware.py         # Security Middleware
+│   ├── exceptions.py         # Exception Handlers
+│   ├── rate_limit.py         # Rate Limiting
+│   ├── cache.py              # In-Memory Cache
+│   ├── logging_config.py     # Logging Konfiguration
+│   └── scraper/              # Web Scraping Module
+│       ├── __init__.py
+│       ├── scraper.py        # Haupt-Scraper (Orchestrator)
+│       ├── scraper_browser.py      # Browser-basiertes Scraping (Playwright) 🆕
+│       ├── scraper_extractors.py   # Metadaten-Extractoren
+│       ├── scraper_utils.py        # Scraper Utilities
+│       └── scraper_domains.py      # Spezial-Domain-Handler
+├── templates/                # Jinja2 Templates
 │   ├── layout.html
 │   ├── index.html
 │   ├── admin.html
 │   └── ...
-├── static/                 # Statische Assets
+├── static/                   # Statische Assets
 │   ├── css/
 │   ├── js/
-│   ├── uploads/           # User Uploads
-│   └── vendor/            # Frontend Libraries
-├── tests/                  # Test Suite
-├── docker-compose.yml      # Docker Compose Config
-├── dockerfile              # Docker Image
-└── requirements.txt        # Python Dependencies
+│   ├── uploads/             # User Uploads
+│   └── vendor/              # Frontend Libraries
+├── tests/                    # Test Suite
+├── docs/                     # Dokumentation
+│   ├── guides/              # Anleitungen
+│   ├── archive/             # Archiv-Dokumentation
+│   ├── SCRAPER_ARCHITECTURE.md
+│   ├── SCRAPER_DOCUMENTATION.md
+│   ├── SCRAPER_QUICK_REFERENCE.md
+│   └── BROWSER_SCRAPING_DE.md
+├── .github/
+│   └── workflows/
+│       ├── ci.yml           # CI Workflow
+│       └── deploy.yml       # Deployment Workflow
+├── docker-compose.yml        # Docker Compose Config
+├── dockerfile                # Docker Image
+├── requirements.txt          # Python Dependencies
+├── README.md
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+└── LICENSE
 ```
 
 ## 🧪 Tests

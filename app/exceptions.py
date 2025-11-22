@@ -2,7 +2,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from config import templates
+from .config import templates
 
 
 async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):

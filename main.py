@@ -22,7 +22,7 @@ if sys.platform == "win32":
 # ---------------------------------
 
 # Setup logging early
-from logging_config import setup_logging, get_logger
+from app.logging_config import setup_logging, get_logger
 
 # Configure logging based on environment
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
@@ -31,18 +31,18 @@ setup_logging(log_level=LOG_LEVEL, json_logs=JSON_LOGS)
 
 logger = get_logger(__name__)
 
-from database import init_db, get_settings_from_db, get_page_by_slug
-from endpoints import router as api_router
-from services import APP_DOMAIN
-from rate_limit import limiter_standard
-from config import BASE_DIR, UPLOAD_DIR, templates, configure_template_globals
-from middleware import add_security_headers, add_request_id
-from exceptions import custom_http_exception_handler, general_exception_handler
+from app.database import init_db, get_settings_from_db, get_page_by_slug
+from app.endpoints import router as api_router
+from app.services import APP_DOMAIN
+from app.rate_limit import limiter_standard
+from app.config import BASE_DIR, UPLOAD_DIR, templates, configure_template_globals
+from app.middleware import add_security_headers, add_request_id
+from app.exceptions import custom_http_exception_handler, general_exception_handler
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from auth import validate_admin_password
+    from app.auth import validate_admin_password
 
     logger.info("Starting Link-in-Bio application...")
     init_db()

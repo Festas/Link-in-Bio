@@ -5,6 +5,7 @@ Each handler provides optimized extraction for specific domains.
 
 import re
 import logging
+import urllib.parse
 from typing import Dict, Optional
 from urllib.parse import urlparse, parse_qs
 
@@ -202,13 +203,20 @@ class AmazonHandler(SpecialDomainHandler):
         return data
     
     def _extract_asin(self, url: str) -> Optional[str]:
-        """Extract Amazon ASIN from URL."""
+        """Extract Amazon ASIN from URL.
+        
+        Amazon Standard Identification Numbers (ASINs) are 10-character alphanumeric IDs.
+        Product ASINs typically start with 'B' followed by 9 alphanumeric characters.
+        Examples: B08N5WRWNW, B0CL61F39G
+        """
         # Pattern: /dp/ASIN or /gp/product/ASIN or /d/ASIN
+        # Matches common Amazon URL formats with ASIN after path segment
         match = re.search(r"/(dp|gp/product|d)/(B[A-Z0-9]{9})", url)
         if match:
             return match.group(2)
         
-        # Pattern: /ASIN in path
+        # Pattern: /ASIN in path (for shorter URLs)
+        # Verifies it starts with 'B' and is exactly 10 characters
         match = re.search(r"/([A-Z0-9]{10})(?:[/?]|$)", url)
         if match and match.group(1).startswith("B"):
             return match.group(1)
@@ -267,10 +275,10 @@ class AmazonHandler(SpecialDomainHandler):
         title = title.replace('+', ' ')
         
         # Decode common URL encodings
-        import urllib.parse
         try:
             title = urllib.parse.unquote(title)
-        except Exception:
+        except (UnicodeDecodeError, ValueError, AttributeError):
+            # If URL decoding fails, use the title as-is
             pass
         
         # Remove multiple spaces
@@ -405,8 +413,6 @@ class EbayHandler(SpecialDomainHandler):
     
     def _clean_slug(self, slug: str) -> str:
         """Clean eBay product slug."""
-        import urllib.parse
-        
         # Remove item ID if present (usually numeric)
         slug = re.sub(r'/?\d{10,}.*$', '', slug)
         
@@ -417,7 +423,8 @@ class EbayHandler(SpecialDomainHandler):
         # Decode URL encoding
         try:
             title = urllib.parse.unquote(title)
-        except Exception:
+        except (UnicodeDecodeError, ValueError, AttributeError):
+            # If URL decoding fails, use the title as-is
             pass
         
         # Remove multiple spaces
@@ -460,15 +467,14 @@ class EtsyHandler(SpecialDomainHandler):
     
     def _clean_slug(self, slug: str) -> str:
         """Clean Etsy product slug."""
-        import urllib.parse
-        
         # Replace hyphens with spaces
         title = slug.replace('-', ' ').replace('_', ' ')
         
         # Decode URL encoding
         try:
             title = urllib.parse.unquote(title)
-        except Exception:
+        except (UnicodeDecodeError, ValueError, AttributeError):
+            # If URL decoding fails, use the title as-is
             pass
         
         # Remove multiple spaces

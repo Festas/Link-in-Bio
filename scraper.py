@@ -464,7 +464,6 @@ class SmartScraper:
                     dynamic_img = img_elem.get("data-a-dynamic-image")
                     if dynamic_img:
                         try:
-                            import json
                             img_data = json.loads(dynamic_img)
                             # Get the largest image (last in the dict usually)
                             if img_data:
@@ -473,8 +472,9 @@ class SmartScraper:
                                     data["image_url"] = largest_url
                                     logger.info(f"Extracted Amazon image from data-a-dynamic-image")
                                     break
-                        except (json.JSONDecodeError, IndexError, KeyError):
-                            pass
+                        except (json.JSONDecodeError, IndexError, KeyError) as e:
+                            # Log parsing errors for debugging
+                            logger.debug(f"Failed to parse Amazon dynamic image data: {e}")
                     
                     # Fallback to src attribute
                     img_src = img_elem.get("src")

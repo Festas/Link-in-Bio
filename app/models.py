@@ -135,6 +135,7 @@ class Message(BaseModel):
 class SubscribeRequest(BaseModel):
     email: EmailStr
     privacy_agreed: bool
+    redirect_page_id: Optional[int] = None
 
 
 class Subscriber(BaseModel):

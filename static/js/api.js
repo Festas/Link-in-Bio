@@ -35,12 +35,13 @@ export async function trackClick(itemId) {
     }
 }
 
-export async function subscribeEmail(email, privacyAgreed) {
+export async function subscribeEmail(email, privacyAgreed, redirectPageId = null) {
     const response = await apiFetch('/api/subscribe', {
         method: 'POST',
         body: JSON.stringify({
             email: email,
-            privacy_agreed: privacyAgreed
+            privacy_agreed: privacyAgreed,
+            redirect_page_id: redirectPageId
         })
     });
     

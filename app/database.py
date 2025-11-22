@@ -68,7 +68,7 @@ def init_db():
         )
         cursor.execute("""CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)""")
         cursor.execute(
-            """CREATE TABLE IF NOT EXISTS subscribers (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE, subscribed_at DATETIME DEFAULT (datetime('now', 'localtime')))"""
+            """CREATE TABLE IF NOT EXISTS subscribers (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE, subscribed_at DATETIME DEFAULT (datetime('now', 'localtime')), redirect_page_id INTEGER, FOREIGN KEY (redirect_page_id) REFERENCES pages(id) ON DELETE SET NULL)"""
         )
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, message TEXT NOT NULL, sent_at DATETIME DEFAULT (datetime('now', 'localtime')))"""
@@ -106,6 +106,12 @@ def init_db():
         click_cols = [c[1] for c in cursor.fetchall()]
         if "country_code" not in click_cols:
             cursor.execute("ALTER TABLE clicks ADD COLUMN country_code TEXT DEFAULT NULL")
+
+        # Subscribers Migration
+        cursor.execute("PRAGMA table_info(subscribers)")
+        subscriber_cols = [c[1] for c in cursor.fetchall()]
+        if "redirect_page_id" not in subscriber_cols:
+            cursor.execute("ALTER TABLE subscribers ADD COLUMN redirect_page_id INTEGER DEFAULT NULL REFERENCES pages(id) ON DELETE SET NULL")
 
         # Create default page if none exists (for backward compatibility)
         cursor.execute("SELECT COUNT(*) FROM pages")

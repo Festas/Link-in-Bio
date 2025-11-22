@@ -8,6 +8,8 @@ import re
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
 from fastapi import (
     APIRouter,
     HTTPException,
@@ -462,6 +464,130 @@ async def get_analytics(user=Depends(require_auth)):
         )
 
 
+@router.get("/analytics/advanced")
+async def get_advanced_analytics(
+    user=Depends(require_auth),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    item_id: Optional[int] = None,
+    country: Optional[str] = None,
+    referer: Optional[str] = None,
+):
+    """
+    Advanced analytics endpoint with filtering capabilities.
+    Supports filtering by date range, item, country, and referrer.
+    """
+    with get_db_connection() as conn:
+        cur = conn.cursor()
+        
+        # Build WHERE clauses for filters
+        where_clauses = []
+        params = []
+        
+        if start_date:
+            where_clauses.append("date(timestamp) >= ?")
+            params.append(start_date)
+        
+        if end_date:
+            where_clauses.append("date(timestamp) <= ?")
+            params.append(end_date)
+        
+        if item_id:
+            where_clauses.append("item_id = ?")
+            params.append(item_id)
+        
+        if country and country != "all":
+            if country == "unknown":
+                where_clauses.append("(country_code IS NULL OR country_code = '')")
+            else:
+                where_clauses.append("country_code = ?")
+                params.append(country)
+        
+        if referer and referer != "all":
+            if referer == "direct":
+                where_clauses.append("(referer IS NULL OR referer = '')")
+            else:
+                where_clauses.append("referer = ?")
+                params.append(referer)
+        
+        where_clause = " AND ".join(where_clauses) if where_clauses else "1=1"
+        
+        # Total clicks with filters
+        cur.execute(f"SELECT COUNT(id) FROM clicks WHERE {where_clause}", params)
+        total_clicks = cur.fetchone()[0] or 0
+        
+        # Clicks per day (last 30 days by default, or filtered range)
+        date_range_days = 30
+        if start_date and end_date:
+            # Calculate days between dates
+            from datetime import datetime as dt
+            try:
+                d1 = dt.strptime(start_date, "%Y-%m-%d")
+                d2 = dt.strptime(end_date, "%Y-%m-%d")
+                date_range_days = max((d2 - d1).days, 1)
+            except (ValueError, TypeError):
+                date_range_days = 30
+        
+        cur.execute(
+            f"SELECT date(timestamp) as day, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY day ORDER BY day DESC LIMIT ?",
+            params + [min(date_range_days, 365)]
+        )
+        clicks_per_day = [dict(r) for r in cur.fetchall()]
+        clicks_per_day.reverse()  # Show chronologically
+        
+        # Top links with filters
+        cur.execute(
+            f"SELECT i.id, i.title, COUNT(c.id) as clicks FROM clicks c JOIN items i ON c.item_id = i.id WHERE {where_clause} GROUP BY i.id, i.title ORDER BY clicks DESC LIMIT 20",
+            params
+        )
+        top_links = [dict(r) for r in cur.fetchall()]
+        
+        # Top referrers with filters
+        cur.execute(
+            f"SELECT CASE WHEN referer IS NULL OR referer = '' THEN '(Direkt)' ELSE referer END as referer_domain, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY referer_domain ORDER BY clicks DESC LIMIT 20",
+            params
+        )
+        top_referers = [dict(r) for r in cur.fetchall()]
+        
+        # Top countries with filters
+        cur.execute(
+            f"SELECT CASE WHEN country_code IS NULL THEN 'Unbekannt' ELSE country_code END as country, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY country ORDER BY clicks DESC LIMIT 20",
+            params
+        )
+        top_countries = [dict(r) for r in cur.fetchall()]
+        
+        # Hourly distribution
+        cur.execute(
+            f"SELECT CAST(strftime('%H', timestamp) AS INTEGER) as hour, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY hour ORDER BY hour ASC",
+            params
+        )
+        clicks_per_hour = [dict(r) for r in cur.fetchall()]
+        
+        # Clicks by day of week
+        cur.execute(
+            f"SELECT CAST(strftime('%w', timestamp) AS INTEGER) as day_of_week, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY day_of_week ORDER BY day_of_week ASC",
+            params
+        )
+        clicks_per_weekday = [dict(r) for r in cur.fetchall()]
+        
+        return {
+            "total_clicks": total_clicks,
+            "clicks_per_day": clicks_per_day,
+            "top_links": top_links,
+            "top_referers": top_referers,
+            "top_countries": top_countries,
+            "clicks_per_hour": clicks_per_hour,
+            "clicks_per_weekday": clicks_per_weekday,
+            "filters": {
+                "start_date": start_date,
+                "end_date": end_date,
+                "item_id": item_id,
+                "country": country,
+                "referer": referer,
+            }
+        }
+
+
 @router.get("/subscribers", response_model=List[Subscriber])
 async def get_subscribers(user=Depends(require_auth)):
     with get_db_connection() as conn:
@@ -495,6 +621,48 @@ async def export_subscribers(user=Depends(require_auth)):
     return response
 
 
+@router.get("/subscribers/export/excel")
+async def export_subscribers_excel(user=Depends(require_auth)):
+    with get_db_connection() as conn:
+        subs = conn.execute("SELECT email, subscribed_at FROM subscribers ORDER BY subscribed_at DESC").fetchall()
+
+    # Create workbook and worksheet
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Subscribers"
+
+    # Add headers with styling
+    headers = ["Email", "Subscribed At"]
+    ws.append(headers)
+    
+    # Style the header row
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+
+    # Add data rows
+    for sub in subs:
+        ws.append([sub[0], sub[1]])
+
+    # Auto-adjust column widths
+    ws.column_dimensions['A'].width = 40
+    ws.column_dimensions['B'].width = 25
+
+    # Save to BytesIO
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    response = StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response.headers["Content-Disposition"] = (
+        f"attachment; filename=subscribers_{datetime.now().strftime('%Y%m%d')}.xlsx"
+    )
+    return response
+
+
 @router.get("/messages", response_model=List[Message])
 async def get_messages(user=Depends(require_auth)):
     with get_db_connection() as conn:
@@ -511,6 +679,16 @@ async def delete_message(id: int, user=Depends(require_auth)):
 
 
 # --- Public Endpoints ---
+
+
+@router.get("/pages/public", dependencies=[Depends(limiter_standard)])
+async def get_public_pages():
+    """Get list of active pages for public use (e.g., newsletter redirect dropdown)."""
+    with get_db_connection() as conn:
+        pages = conn.execute(
+            "SELECT id, slug, title FROM pages WHERE is_active = 1 ORDER BY created_at ASC"
+        ).fetchall()
+        return [{"id": p[0], "slug": p[1], "title": p[2]} for p in pages]
 
 
 @router.get("/items", response_model=List[Item], dependencies=[Depends(limiter_standard)])
@@ -584,12 +762,24 @@ async def subscribe(req: SubscribeRequest):
     if not req.privacy_agreed:
         raise HTTPException(400, "Datenschutz nicht akzeptiert")
     try:
+        redirect_url = None
         with get_db_connection() as conn:
-            conn.execute("INSERT INTO subscribers (email) VALUES (?)", (req.email,))
+            # Validate redirect_page_id if provided
+            if req.redirect_page_id:
+                page = conn.execute("SELECT slug FROM pages WHERE id = ? AND is_active = 1", (req.redirect_page_id,)).fetchone()
+                if not page:
+                    # Invalid or inactive page, ignore redirect
+                    req.redirect_page_id = None
+                else:
+                    slug = page[0]
+                    redirect_url = f"/{slug}" if slug else "/"
+            
+            conn.execute("INSERT INTO subscribers (email, redirect_page_id) VALUES (?, ?)", (req.email, req.redirect_page_id))
             conn.commit()
-        return {"message": "Abonniert!"}
+            
+        return {"message": "Abonniert!", "redirect_url": redirect_url}
     except sqlite3.IntegrityError:
-        return {"message": "Bereits registriert."}
+        return {"message": "Bereits registriert.", "redirect_url": None}
 
 
 @router.post("/contact", dependencies=[Depends(limiter_strict)])

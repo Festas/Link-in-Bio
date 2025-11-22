@@ -525,7 +525,7 @@ async def get_advanced_analytics(
                 d1 = dt.strptime(start_date, "%Y-%m-%d")
                 d2 = dt.strptime(end_date, "%Y-%m-%d")
                 date_range_days = max((d2 - d1).days, 1)
-            except:
+            except (ValueError, TypeError):
                 date_range_days = 30
         
         cur.execute(
@@ -764,15 +764,18 @@ async def subscribe(req: SubscribeRequest):
     try:
         redirect_url = None
         with get_db_connection() as conn:
-            conn.execute("INSERT INTO subscribers (email, redirect_page_id) VALUES (?, ?)", (req.email, req.redirect_page_id))
-            conn.commit()
-            
-            # Get redirect URL if page_id is provided
+            # Validate redirect_page_id if provided
             if req.redirect_page_id:
                 page = conn.execute("SELECT slug FROM pages WHERE id = ? AND is_active = 1", (req.redirect_page_id,)).fetchone()
-                if page:
+                if not page:
+                    # Invalid or inactive page, ignore redirect
+                    req.redirect_page_id = None
+                else:
                     slug = page[0]
                     redirect_url = f"/{slug}" if slug else "/"
+            
+            conn.execute("INSERT INTO subscribers (email, redirect_page_id) VALUES (?, ?)", (req.email, req.redirect_page_id))
+            conn.commit()
             
         return {"message": "Abonniert!", "redirect_url": redirect_url}
     except sqlite3.IntegrityError:

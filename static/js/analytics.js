@@ -195,8 +195,13 @@ function renderDayChart(clicksDataArray) {
     }
 
     const labels = clicksDataArray.map(d => {
-        const date = new Date(d.day);
-        return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+        try {
+            const date = new Date(d.day);
+            if (isNaN(date.getTime())) return d.day; // Return raw value if invalid
+            return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+        } catch (e) {
+            return d.day; // Fallback to raw value on error
+        }
     });
     
     const dataPoints = clicksDataArray.map(d => d.clicks);
@@ -241,7 +246,10 @@ function renderHourChart(clicksDataArray) {
     // Create array for all 24 hours
     const hourData = Array(24).fill(0);
     clicksDataArray.forEach(d => {
-        hourData[d.hour] = d.clicks;
+        const hour = parseInt(d.hour);
+        if (!isNaN(hour) && hour >= 0 && hour < 24) {
+            hourData[hour] = d.clicks;
+        }
     });
     
     const labels = Array.from({length: 24}, (_, i) => `${i}:00`);

@@ -156,6 +156,9 @@ const ItemRenderers = {
     email_form: (item) => {
         const div = document.createElement('div'); 
         div.className = 'item-email-form glass-card p-5 text-center';
+        
+        const REDIRECT_DELAY_MS = 1500; // Time to show success message before redirect
+        
         div.innerHTML = `
             <h3 class="email-form-title text-lg font-semibold mb-3">${escapeHTML(item.title)}</h3>
             <form class="subscribe-form space-y-3">
@@ -217,7 +220,7 @@ const ItemRenderers = {
                 if (result.redirect_url) {
                     setTimeout(() => {
                         window.location.href = result.redirect_url;
-                    }, 1500);
+                    }, REDIRECT_DELAY_MS);
                 }
             } catch (error) {
                 statusEl.textContent = error.message;

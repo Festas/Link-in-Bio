@@ -1,6 +1,6 @@
-import { escapeHTML, pSBC } from './utils.js';
+import { escapeHTML, pSBC, apiFetch } from './utils.js';
 import { socialIconSVG } from './icons.js';
-import { trackClick, subscribeEmail, apiFetch } from './api.js';
+import { trackClick, subscribeEmail } from './api.js';
 
 const state = { countdownIntervals: [], delegationInitialized: false, swipers: [] };
 const CountdownManager = {

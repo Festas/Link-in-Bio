@@ -141,6 +141,29 @@ async function initAdmin() {
         }
     });
 
+    // 6.5. Category Toggle Functionality
+    document.querySelectorAll('.category-toggle').forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            const category = this.dataset.category;
+            const content = this.nextElementSibling;
+            const chevron = this.querySelector('.category-chevron');
+            
+            if (content && content.classList.contains('category-content')) {
+                const isHidden = content.classList.contains('hidden');
+                content.classList.toggle('hidden');
+                
+                // Rotate chevron
+                if (chevron) {
+                    if (isHidden) {
+                        chevron.style.transform = 'rotate(180deg)';
+                    } else {
+                        chevron.style.transform = 'rotate(0deg)';
+                    }
+                }
+            }
+        });
+    });
+
     // 7. Items Laden & Rendern
     // Recursively render all children for a group
     function renderChildrenRecursive(parentItem, groupItems, childrenMap, setupItemEventsFn) {

@@ -140,19 +140,107 @@
         <div id="tab-content-items" class="tab-content active">
             <section class="mb-12 bg-gray-800 p-6 rounded-lg shadow-lg">
                 <h2 class="text-xl font-semibold mb-6">Neues Item hinzufügen</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <form id="add-link-form" class="space-y-3"><label for="link-url" class="text-sm font-medium">Neuer Link</label><input type="url" id="link-url" placeholder="https://..." required><button type="submit">Link hinzufügen</button></form>
-                    <form id="add-header-form" class="space-y-3"><label for="header-title" class="text-sm font-medium">Neue Überschrift</label><input type="text" id="header-title" placeholder="Meine Socials" required><button type="submit">Überschrift hinzufügen</button></form>
-                    <form id="add-slider-group-form" class="space-y-3"><label for="slider-group-title" class="text-sm font-medium">Neue Slider-Gruppe</label><input type="text" id="slider-group-title" placeholder="Portfolio" required><button type="submit">Slider-Gruppe hinzufügen</button></form>
-                    <form id="add-grid-form" class="space-y-3"><label for="grid-title" class="text-sm font-medium text-pink-400">Neuer Grid-Container</label><input type="text" id="grid-title" placeholder="Meine Produkte" required><button type="submit">Grid hinzufügen</button></form>
-                    <form id="add-faq-form" class="space-y-3"><label for="faq-title" class="text-sm font-medium text-yellow-400">Neue Frage (FAQ)</label><input type="text" id="faq-title" placeholder="Frage..." required><button type="submit">Frage hinzufügen</button></form>
-                    <form id="add-divider-form" class="space-y-3"><label for="divider-title" class="text-sm font-medium text-gray-400">Neue Trennlinie</label><input type="text" id="divider-title" placeholder="Text (Optional)" ><button type="submit">Trennlinie hinzufügen</button></form>
-                    <form id="add-testimonial-form" class="space-y-3"><label for="testimonial-name" class="text-sm font-medium text-green-400">Neue Rezension</label><input type="text" id="testimonial-name" placeholder="Name des Autors" required><button type="submit">Rezension hinzufügen</button></form>
-                    <form id="add-product-form" class="space-y-3"><label for="product-title" class="text-sm font-medium text-purple-400">Neues Produkt</label><input type="text" id="product-title" placeholder="Produktname" required><input type="text" id="product-price" placeholder="Preis (z.B. 19,99 €)" required><input type="url" id="product-url" placeholder="Shop-URL..." required><button type="submit">Produkt hinzufügen</button></form>
-                    <form id="add-video-form" class="space-y-3"><label for="video-url" class="text-sm font-medium">Neues Video</label><input type="url" id="video-url" placeholder="URL..." required><button type="submit">Video hinzufügen</button></form>
-                    <form id="add-email-form" class="space-y-3"><label for="email-form-title" class="text-sm font-medium">Neues E-Mail-Formular</label><input type="text" id="email-form-title" placeholder="Newsletter" required><button type="submit">Formular hinzufügen</button></form>
-                    <form id="add-countdown-form" class="space-y-3"><label for="countdown-title" class="text-sm font-medium">Neuer Countdown</label><input type="text" id="countdown-title" placeholder="Titel" required><label for="countdown-datetime" class="sr-only">Zieldatum</label><input type="datetime-local" id="countdown-datetime" style="color-scheme: dark;" required><button type="submit">Countdown hinzufügen</button></form>
-                    <form id="add-contact-form" class="space-y-3"><label for="contact-title" class="text-sm font-medium text-blue-400">Neues Kontaktformular</label><input type="text" id="contact-title" placeholder="Kontaktieren Sie mich" required><button type="submit">Kontaktformular hinzufügen</button></form>
+                
+                <!-- Kategorie: Links & Navigation -->
+                <div class="mb-4 border border-gray-700 rounded-lg overflow-hidden">
+                    <button type="button" class="category-toggle w-full flex items-center justify-between p-4 bg-gray-700 hover:bg-gray-600 transition-colors" data-category="links">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="link" class="w-5 h-5 text-blue-400"></i>
+                            <span class="font-medium">Links & Navigation</span>
+                        </div>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform category-chevron"></i>
+                    </button>
+                    <div class="category-content hidden p-4 bg-gray-750">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <form id="add-link-form" class="space-y-3"><label for="link-url" class="text-sm font-medium">Neuer Link</label><input type="url" id="link-url" placeholder="https://..." required><button type="submit">Link hinzufügen</button></form>
+                            <form id="add-header-form" class="space-y-3"><label for="header-title" class="text-sm font-medium">Neue Überschrift</label><input type="text" id="header-title" placeholder="Meine Socials" required><button type="submit">Überschrift hinzufügen</button></form>
+                            <form id="add-divider-form" class="space-y-3"><label for="divider-title" class="text-sm font-medium text-gray-400">Neue Trennlinie</label><input type="text" id="divider-title" placeholder="Text (Optional)" ><button type="submit">Trennlinie hinzufügen</button></form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kategorie: Content-Gruppen -->
+                <div class="mb-4 border border-gray-700 rounded-lg overflow-hidden">
+                    <button type="button" class="category-toggle w-full flex items-center justify-between p-4 bg-gray-700 hover:bg-gray-600 transition-colors" data-category="groups">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="layout-grid" class="w-5 h-5 text-indigo-400"></i>
+                            <span class="font-medium">Content-Gruppen</span>
+                        </div>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform category-chevron"></i>
+                    </button>
+                    <div class="category-content hidden p-4 bg-gray-750">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <form id="add-slider-group-form" class="space-y-3"><label for="slider-group-title" class="text-sm font-medium">Neue Slider-Gruppe</label><input type="text" id="slider-group-title" placeholder="Portfolio" required><button type="submit">Slider-Gruppe hinzufügen</button></form>
+                            <form id="add-grid-form" class="space-y-3"><label for="grid-title" class="text-sm font-medium text-pink-400">Neuer Grid-Container</label><input type="text" id="grid-title" placeholder="Meine Produkte" required><button type="submit">Grid hinzufügen</button></form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kategorie: Media & Embeds -->
+                <div class="mb-4 border border-gray-700 rounded-lg overflow-hidden">
+                    <button type="button" class="category-toggle w-full flex items-center justify-between p-4 bg-gray-700 hover:bg-gray-600 transition-colors" data-category="media">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="image" class="w-5 h-5 text-red-400"></i>
+                            <span class="font-medium">Media & Embeds</span>
+                        </div>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform category-chevron"></i>
+                    </button>
+                    <div class="category-content hidden p-4 bg-gray-750">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <form id="add-video-form" class="space-y-3"><label for="video-url" class="text-sm font-medium">Neues Video</label><input type="url" id="video-url" placeholder="URL..." required><button type="submit">Video hinzufügen</button></form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kategorie: Community & Formulare -->
+                <div class="mb-4 border border-gray-700 rounded-lg overflow-hidden">
+                    <button type="button" class="category-toggle w-full flex items-center justify-between p-4 bg-gray-700 hover:bg-gray-600 transition-colors" data-category="forms">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="mail" class="w-5 h-5 text-teal-400"></i>
+                            <span class="font-medium">Community & Formulare</span>
+                        </div>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform category-chevron"></i>
+                    </button>
+                    <div class="category-content hidden p-4 bg-gray-750">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <form id="add-email-form" class="space-y-3"><label for="email-form-title" class="text-sm font-medium">Neues E-Mail-Formular</label><input type="text" id="email-form-title" placeholder="Newsletter" required><button type="submit">Formular hinzufügen</button></form>
+                            <form id="add-contact-form" class="space-y-3"><label for="contact-title" class="text-sm font-medium text-blue-400">Neues Kontaktformular</label><input type="text" id="contact-title" placeholder="Kontaktieren Sie mich" required><button type="submit">Kontaktformular hinzufügen</button></form>
+                            <form id="add-faq-form" class="space-y-3"><label for="faq-title" class="text-sm font-medium text-yellow-400">Neue Frage (FAQ)</label><input type="text" id="faq-title" placeholder="Frage..." required><button type="submit">Frage hinzufügen</button></form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kategorie: Commerce & Testimonials -->
+                <div class="mb-4 border border-gray-700 rounded-lg overflow-hidden">
+                    <button type="button" class="category-toggle w-full flex items-center justify-between p-4 bg-gray-700 hover:bg-gray-600 transition-colors" data-category="commerce">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="shopping-bag" class="w-5 h-5 text-purple-400"></i>
+                            <span class="font-medium">Commerce & Testimonials</span>
+                        </div>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform category-chevron"></i>
+                    </button>
+                    <div class="category-content hidden p-4 bg-gray-750">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <form id="add-product-form" class="space-y-3"><label for="product-title" class="text-sm font-medium text-purple-400">Neues Produkt</label><input type="text" id="product-title" placeholder="Produktname" required><input type="text" id="product-price" placeholder="Preis (z.B. 19,99 €)" required><input type="url" id="product-url" placeholder="Shop-URL..." required><button type="submit">Produkt hinzufügen</button></form>
+                            <form id="add-testimonial-form" class="space-y-3"><label for="testimonial-name" class="text-sm font-medium text-green-400">Neue Rezension</label><input type="text" id="testimonial-name" placeholder="Name des Autors" required><button type="submit">Rezension hinzufügen</button></form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kategorie: Zeitgesteuert -->
+                <div class="mb-4 border border-gray-700 rounded-lg overflow-hidden">
+                    <button type="button" class="category-toggle w-full flex items-center justify-between p-4 bg-gray-700 hover:bg-gray-600 transition-colors" data-category="timed">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="clock" class="w-5 h-5 text-orange-400"></i>
+                            <span class="font-medium">Zeitgesteuert</span>
+                        </div>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform category-chevron"></i>
+                    </button>
+                    <div class="category-content hidden p-4 bg-gray-750">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <form id="add-countdown-form" class="space-y-3"><label for="countdown-title" class="text-sm font-medium">Neuer Countdown</label><input type="text" id="countdown-title" placeholder="Titel" required><label for="countdown-datetime" class="sr-only">Zieldatum</label><input type="datetime-local" id="countdown-datetime" style="color-scheme: dark;" required><button type="submit">Countdown hinzufügen</button></form>
+                        </div>
+                    </div>
                 </div>
             </section>
             <section>

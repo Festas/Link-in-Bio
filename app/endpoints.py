@@ -762,12 +762,12 @@ async def subscribe(req: SubscribeRequest):
     if not req.privacy_agreed:
         raise HTTPException(400, "Datenschutz nicht akzeptiert")
     try:
+        redirect_url = None
         with get_db_connection() as conn:
             conn.execute("INSERT INTO subscribers (email, redirect_page_id) VALUES (?, ?)", (req.email, req.redirect_page_id))
             conn.commit()
             
             # Get redirect URL if page_id is provided
-            redirect_url = None
             if req.redirect_page_id:
                 page = conn.execute("SELECT slug FROM pages WHERE id = ? AND is_active = 1", (req.redirect_page_id,)).fetchone()
                 if page:

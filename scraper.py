@@ -179,6 +179,23 @@ class SmartScraper:
         """Check if image URL is valid and accessible."""
         if not url:
             return False
+        
+        # Skip validation for known-good image services
+        trusted_domains = [
+            'opengraph.githubassets.com',
+            'images-na.ssl-images-amazon.com',
+            'og.image',
+            'graph.facebook.com',
+            'pbs.twimg.com',
+            'i.ytimg.com',
+            'www.google.com/s2/favicons',
+        ]
+        
+        parsed = urlparse(url)
+        if any(domain in parsed.netloc for domain in trusted_domains):
+            logger.debug(f"Skipping validation for trusted domain: {parsed.netloc}")
+            return True
+        
         try:
             # Quick HEAD request to check if image exists
             async with httpx.AsyncClient(timeout=5.0, follow_redirects=True, verify=self.verify_tls) as client:

@@ -513,7 +513,9 @@ class SmartScraper:
         - No image URL was found
         """
         title = data.get("title", "")
-        has_image = bool(data.get("image_url")) and "favicon" not in data.get("image_url", "").lower()
+        image_url = data.get("image_url") or ""
+        image_url_lower = image_url.lower()
+        has_image = bool(image_url) and "favicon" not in image_url_lower
         
         # Check if title is just the domain or looks like an error
         title_is_poor = (

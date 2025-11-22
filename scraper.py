@@ -72,7 +72,8 @@ class SmartScraper:
     def clean_url(self, url: str) -> str:
         try:
             return url.strip()
-        except:
+        except (AttributeError, TypeError):
+            # url is not a string or doesn't have strip method
             return url
 
     def _get_cache_key(self, url: str) -> str:
@@ -155,7 +156,7 @@ class SmartScraper:
                         # Prioritize Product type
                         if item_type == "Product" and data.get("title"):
                             return data
-            except Exception as e:
+            except (json.JSONDecodeError, KeyError, TypeError, AttributeError) as e:
                 logger.debug(f"Error parsing JSON-LD: {e}")
                 continue
         return data
@@ -167,7 +168,9 @@ class SmartScraper:
                 if results:
                     title = results[0].get("title", "")
                     return re.split(r" [:|] ", title)[0]
-        except:
+        except Exception as e:
+            # DuckDuckGo search can fail for many reasons, just log and return None
+            logger.debug(f"DuckDuckGo search failed: {e}")
             pass
         return None
 
@@ -263,7 +266,8 @@ class SmartScraper:
                             try:
                                 if int(width) < 200 or int(height) < 200:
                                     continue
-                            except:
+                            except (ValueError, TypeError):
+                                # Width/height not valid integers, skip size check
                                 pass
                         # Skip common icon/logo/tracking patterns
                         if any(x in src.lower() for x in ["icon", "logo", "pixel", "tracking", "1x1"]):

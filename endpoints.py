@@ -18,7 +18,7 @@ from fastapi import (
     BackgroundTasks,
 )
 from fastapi.responses import StreamingResponse
-from typing import List
+from typing import List, Optional
 import qrcode
 
 from models import (

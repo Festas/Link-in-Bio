@@ -445,7 +445,8 @@ class EtsyHandler(SpecialDomainHandler):
     
     def can_handle(self, url: str, parsed_url) -> bool:
         netloc = parsed_url.netloc.lower()
-        return "etsy.com" in netloc
+        # Exact match to prevent URL substring sanitization vulnerabilities
+        return netloc == "etsy.com" or netloc == "www.etsy.com"
     
     def handle(self, url: str, parsed_url) -> Dict[str, Optional[str]]:
         data = {}
@@ -495,7 +496,14 @@ class AliExpressHandler(SpecialDomainHandler):
     
     def can_handle(self, url: str, parsed_url) -> bool:
         netloc = parsed_url.netloc.lower()
-        return "aliexpress" in netloc or "1688.com" in netloc
+        # Exact match to prevent URL substring sanitization vulnerabilities
+        # Support multiple AliExpress domains
+        return netloc in [
+            "aliexpress.com", "www.aliexpress.com",
+            "aliexpress.us", "www.aliexpress.us",
+            "aliexpress.ru", "www.aliexpress.ru",
+            "1688.com", "www.1688.com"
+        ]
     
     def handle(self, url: str, parsed_url) -> Dict[str, Optional[str]]:
         data = {}

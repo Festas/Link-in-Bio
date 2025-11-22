@@ -27,7 +27,8 @@ class GitHubHandler(SpecialDomainHandler):
     """Handler for GitHub URLs."""
     
     def can_handle(self, url: str, parsed_url) -> bool:
-        return "github.com" in parsed_url.netloc.lower()
+        netloc = parsed_url.netloc.lower()
+        return netloc == "github.com" or netloc == "www.github.com"
     
     def handle(self, url: str, parsed_url) -> Dict[str, Optional[str]]:
         data = {}
@@ -53,7 +54,8 @@ class LinkedInHandler(SpecialDomainHandler):
     """Handler for LinkedIn URLs."""
     
     def can_handle(self, url: str, parsed_url) -> bool:
-        return "linkedin.com" in parsed_url.netloc.lower()
+        netloc = parsed_url.netloc.lower()
+        return netloc == "linkedin.com" or netloc == "www.linkedin.com"
     
     def handle(self, url: str, parsed_url) -> Dict[str, Optional[str]]:
         data = {}
@@ -109,7 +111,8 @@ class InstagramHandler(SpecialDomainHandler):
     """Handler for Instagram URLs."""
     
     def can_handle(self, url: str, parsed_url) -> bool:
-        return "instagram.com" in parsed_url.netloc.lower()
+        netloc = parsed_url.netloc.lower()
+        return netloc == "instagram.com" or netloc == "www.instagram.com"
     
     def handle(self, url: str, parsed_url) -> Dict[str, Optional[str]]:
         data = {}
@@ -132,19 +135,20 @@ class YouTubeHandler(SpecialDomainHandler):
     
     def can_handle(self, url: str, parsed_url) -> bool:
         netloc = parsed_url.netloc.lower()
-        return "youtube.com" in netloc or "youtu.be" in netloc
+        return netloc in ["youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com"]
     
     def handle(self, url: str, parsed_url) -> Dict[str, Optional[str]]:
         data = {}
         
         video_id = None
+        netloc = parsed_url.netloc.lower()
         
         # youtu.be/VIDEO_ID
-        if "youtu.be" in parsed_url.netloc:
+        if netloc in ["youtu.be", "www.youtu.be"]:
             video_id = parsed_url.path.strip("/").split("/")[0]
         
         # youtube.com/watch?v=VIDEO_ID
-        elif "youtube.com" in parsed_url.netloc:
+        elif netloc in ["youtube.com", "www.youtube.com", "m.youtube.com"]:
             if "/watch" in parsed_url.path:
                 query = parse_qs(parsed_url.query)
                 if "v" in query:
@@ -203,7 +207,7 @@ class RedditHandler(SpecialDomainHandler):
     
     def can_handle(self, url: str, parsed_url) -> bool:
         netloc = parsed_url.netloc.lower()
-        return "reddit.com" in netloc or "redd.it" in netloc
+        return netloc in ["reddit.com", "www.reddit.com", "redd.it", "old.reddit.com"]
     
     def handle(self, url: str, parsed_url) -> Dict[str, Optional[str]]:
         data = {}
@@ -228,7 +232,8 @@ class SpotifyHandler(SpecialDomainHandler):
     """Handler for Spotify URLs."""
     
     def can_handle(self, url: str, parsed_url) -> bool:
-        return "spotify.com" in parsed_url.netloc.lower()
+        netloc = parsed_url.netloc.lower()
+        return netloc == "open.spotify.com"
     
     def handle(self, url: str, parsed_url) -> Dict[str, Optional[str]]:
         data = {}
@@ -256,7 +261,10 @@ class StackOverflowHandler(SpecialDomainHandler):
     
     def can_handle(self, url: str, parsed_url) -> bool:
         netloc = parsed_url.netloc.lower()
-        return "stackoverflow.com" in netloc or "stackexchange.com" in netloc
+        # Exact match for stackoverflow.com and any *.stackexchange.com subdomain
+        return (netloc == "stackoverflow.com" or 
+                netloc == "www.stackoverflow.com" or 
+                netloc.endswith(".stackexchange.com"))
     
     def handle(self, url: str, parsed_url) -> Dict[str, Optional[str]]:
         data = {}

@@ -1,5 +1,6 @@
 """Tests for the new modular scraper components."""
 import pytest
+from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from scraper_extractors import (
     JSONLDExtractor, OpenGraphExtractor, TwitterCardExtractor,
@@ -248,7 +249,8 @@ class TestURLNormalizer:
         """Test domain is lowercased."""
         normalizer = URLNormalizer()
         result = normalizer.normalize("https://EXAMPLE.COM/Path")
-        assert "example.com" in result
+        # Check that domain was lowercased by verifying the full URL structure
+        assert result.startswith("https://example.com/")
     
     def test_is_valid(self):
         """Test URL validation."""
@@ -331,7 +333,6 @@ class TestSpecialDomainHandlers:
     def test_github_handler(self):
         """Test GitHub repository handler."""
         handler = GitHubHandler()
-        from urllib.parse import urlparse
         url = "https://github.com/user/repo"
         parsed = urlparse(url)
         result = handler.handle(url, parsed)
@@ -341,7 +342,6 @@ class TestSpecialDomainHandlers:
     def test_youtube_handler(self):
         """Test YouTube video handler."""
         handler = YouTubeHandler()
-        from urllib.parse import urlparse
         url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
         parsed = urlparse(url)
         result = handler.handle(url, parsed)
@@ -351,7 +351,6 @@ class TestSpecialDomainHandlers:
     def test_amazon_handler(self):
         """Test Amazon product handler."""
         handler = AmazonHandler()
-        from urllib.parse import urlparse
         url = "https://www.amazon.com/dp/B08N5WRWNW"
         parsed = urlparse(url)
         result = handler.handle(url, parsed)
@@ -361,7 +360,6 @@ class TestSpecialDomainHandlers:
     def test_twitter_handler(self):
         """Test Twitter profile handler."""
         handler = TwitterHandler()
-        from urllib.parse import urlparse
         url = "https://twitter.com/username"
         parsed = urlparse(url)
         result = handler.handle(url, parsed)
@@ -370,7 +368,6 @@ class TestSpecialDomainHandlers:
     def test_linkedin_handler(self):
         """Test LinkedIn profile handler."""
         handler = LinkedInHandler()
-        from urllib.parse import urlparse
         url = "https://www.linkedin.com/in/username"
         parsed = urlparse(url)
         result = handler.handle(url, parsed)

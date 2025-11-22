@@ -37,16 +37,10 @@ class URLNormalizer:
             if netloc.endswith(':80') or netloc.endswith(':443'):
                 netloc = netloc.rsplit(':', 1)[0]
             
-            # Remove www. prefix for consistency (optional - comment out if not desired)
-            # netloc = netloc.replace('www.', '')
-            
             # Remove trailing slash from path if it's just "/"
             path = parsed.path
             if path == '/':
                 path = ''
-            
-            # Remove fragment for caching purposes (but keep it for actual requests)
-            # fragment = ''
             
             # Rebuild URL
             normalized = urlunparse((
@@ -55,7 +49,7 @@ class URLNormalizer:
                 path,
                 parsed.params,
                 parsed.query,
-                parsed.fragment  # Keep fragment
+                parsed.fragment
             ))
             
             return normalized

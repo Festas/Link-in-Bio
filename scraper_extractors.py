@@ -401,7 +401,7 @@ class ExtractorChain:
                     break
                     
             except Exception as e:
-                logger.warning(f"Extractor {extractor.__class__.__name__} failed: {e}")
+                logger.warning(f"Extractor {extractor.__class__.__name__} failed for {base_url}: {e}")
                 continue
         
         return result

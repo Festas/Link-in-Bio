@@ -101,13 +101,29 @@ async def get_manifest():
         icon_src = "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/layout-grid.svg"
     theme_color = "#111827"
     return {
-        "name": f"{title} - Admin",
-        "short_name": "Admin Panel",
+        "name": f"{title} - Admin Panel",
+        "short_name": "Admin",
+        "description": "Admin Panel für Link-in-Bio Verwaltung",
         "start_url": "/admin",
+        "scope": "/",
         "display": "standalone",
+        "orientation": "portrait-primary",
         "background_color": theme_color,
         "theme_color": theme_color,
-        "icons": [{"src": icon_src, "sizes": "192x192", "type": "image/png"}],
+        "icons": [
+            {
+                "src": icon_src,
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any maskable"
+            },
+            {
+                "src": icon_src,
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable"
+            }
+        ],
     }
 
 

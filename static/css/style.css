@@ -708,3 +708,152 @@ footer:hover {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ========================================
+   SLIDER GROUP STYLES - Beacons.ai Inspired
+   ======================================== */
+
+/* Slider Container */
+.swiper-slider-group {
+    position: relative;
+    padding-bottom: 3rem; /* Space for pagination */
+}
+
+/* Slider Cards */
+.swiper-slider-group .swiper-slide {
+    height: 280px;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.slide-card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+.slide-card:active {
+    transform: translateY(-2px);
+}
+
+/* Navigation Buttons */
+.slider-nav-btn {
+    width: 44px !important;
+    height: 44px !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.slider-nav-btn:hover {
+    background: rgba(255, 255, 255, 1) !important;
+    transform: scale(1.1);
+}
+
+.slider-nav-btn:after {
+    font-size: 18px !important;
+    font-weight: bold;
+    color: #334155;
+}
+
+.slider-nav-btn.swiper-button-disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Pagination Dots */
+.swiper-pagination {
+    bottom: 0 !important;
+    padding: 0.5rem 0;
+}
+
+.swiper-pagination-bullet {
+    width: 8px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 1;
+    transition: all 0.3s ease;
+}
+
+.swiper-pagination-bullet-active {
+    width: 24px;
+    border-radius: 4px;
+    background: var(--color-accent, #667eea);
+}
+
+/* Dynamic Bullets Animation */
+.swiper-pagination-bullet-active-main {
+    background: var(--color-accent, #667eea);
+}
+
+.swiper-pagination-bullet-active-prev,
+.swiper-pagination-bullet-active-next {
+    transform: scale(0.8);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 640px) {
+    .swiper-slider-group .swiper-slide {
+        height: 240px;
+    }
+    
+    .slider-nav-btn {
+        width: 36px !important;
+        height: 36px !important;
+    }
+    
+    .slider-nav-btn:after {
+        font-size: 14px !important;
+    }
+}
+
+/* Line Clamp Utility */
+.line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+/* Glass Card Enhancement for Slider Groups */
+.group-container.glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Category-specific styling for admin panels */
+.bg-gray-750 {
+    background-color: rgba(31, 41, 55, 0.5);
+}
+
+.category-toggle {
+    cursor: pointer;
+    user-select: none;
+}
+
+.category-chevron {
+    transition: transform 0.3s ease;
+}
+
+.category-content {
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+.category-content.hidden {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+

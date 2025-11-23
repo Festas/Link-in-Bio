@@ -1227,6 +1227,87 @@ async def refresh_instagram_api_stats():
         raise HTTPException(500, f"Fehler beim Abrufen der Instagram Daten: {str(e)}")
 
 
+@router.post("/mediakit/refresh-tiktok-api", dependencies=[Depends(require_auth)])
+async def refresh_tiktok_api_stats():
+    """
+    Fetch fresh TikTok statistics using TikTok Official API (not scraping).
+    Requires .env.social file with TikTok API credentials.
+    """
+    from dotenv import load_dotenv
+    from .tiktok_fetcher import get_tiktok_fetcher_from_env
+    
+    # Constants
+    TOKEN_PREVIEW_LENGTH = 20  # Number of chars to show from token for security
+    
+    # Load .env.social if it exists
+    social_env_path = Path(__file__).parent.parent / '.env.social'
+    if social_env_path.exists():
+        load_dotenv(social_env_path)
+    else:
+        raise HTTPException(
+            400, 
+            "Keine .env.social Datei gefunden. Bitte TikTok API Credentials konfigurieren."
+        )
+    
+    # Get TikTok fetcher
+    fetcher = get_tiktok_fetcher_from_env()
+    if not fetcher:
+        raise HTTPException(
+            400,
+            "TikTok API nicht konfiguriert. Prüfe TIKTOK_ACCESS_TOKEN und TIKTOK_REFRESH_TOKEN in .env.social"
+        )
+    
+    try:
+        # Fetch stats and refresh token
+        stats, new_tokens = await fetcher.fetch_and_refresh_token()
+        
+        if not stats:
+            raise HTTPException(500, "Konnte TikTok Daten nicht abrufen")
+        
+        # Save to cache
+        save_social_stats_cache(
+            platform='tiktok',
+            username=stats['profile']['username'],
+            stats_data=json.dumps(stats)
+        )
+        
+        # Update mediakit_data for backward compatibility
+        stats_service = get_stats_service()
+        followers = stats_service.format_number(stats['stats']['followers'])
+        update_mediakit_data('platforms', 'tiktok_followers', followers, 2)
+        update_mediakit_data('platforms', 'tiktok_handle', f"@{stats['profile']['username']}", 2)
+        
+        # Update analytics
+        update_mediakit_data('analytics', 'last_updated', datetime.now().strftime('%d.%m.%Y'), 99)
+        
+        response_data = {
+            "message": "TikTok Statistiken erfolgreich über API aktualisiert",
+            "data": {
+                "username": stats['profile']['username'],
+                "followers": stats['stats']['followers'],
+                "followers_formatted": followers,
+                "likes": stats['stats']['likes'],
+                "videos": stats['stats']['videos'],
+            },
+            "source": "TikTok Official API",
+            "updated_at": stats['meta']['updated_at']
+        }
+        
+        # Include token refresh info if tokens were refreshed
+        if new_tokens:
+            new_access_token, new_refresh_token = new_tokens
+            response_data["token_refreshed"] = True
+            response_data["warning"] = "Access Token wurde erneuert. Bitte GitHub Secret 'TIKTOK_SECRET' aktualisieren!"
+            response_data["new_access_token"] = new_access_token[:TOKEN_PREVIEW_LENGTH] + "..."  # Show only first chars for security
+            response_data["new_refresh_token"] = new_refresh_token[:TOKEN_PREVIEW_LENGTH] + "..."  # Show only first chars for security
+        
+        return response_data
+        
+    except Exception as e:
+        logging.error(f"Error fetching TikTok API stats: {e}")
+        raise HTTPException(500, f"Fehler beim Abrufen der TikTok Daten: {str(e)}")
+
+
 # Media Kit Settings Endpoints
 @router.get("/mediakit/settings", dependencies=[Depends(require_auth)])
 async def get_mediakit_settings_endpoint():

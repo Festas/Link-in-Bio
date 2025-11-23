@@ -1099,7 +1099,12 @@ async def get_platform_analytics(platform: str):
     """Get detailed analytics for a specific platform (public endpoint)."""
     cache = get_social_stats_cache(platform)
     
-    if not cache or platform not in cache:
+    # Check if we got any data back for this platform
+    if not cache:
+        raise HTTPException(404, f"Keine Daten für Plattform '{platform}' gefunden")
+    
+    # The filtered cache should have the platform as a key
+    if platform not in cache:
         raise HTTPException(404, f"Keine Daten für Plattform '{platform}' gefunden")
     
     data = cache[platform]

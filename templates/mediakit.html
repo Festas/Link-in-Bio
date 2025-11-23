@@ -1681,14 +1681,18 @@
                 const selectorEl = document.getElementById('platform-selector');
                 if (!selectorEl) return;
                 
-                selectorEl.innerHTML = platforms.map(platform => `
-                    <button 
-                        onclick="selectPlatform('${platform}')" 
-                        data-platform="${platform}"
-                        class="px-4 py-2 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 transition-colors capitalize platform-btn">
-                        ${platform}
-                    </button>
-                `).join('');
+                // Clear existing buttons
+                selectorEl.innerHTML = '';
+                
+                // Create buttons safely using DOM methods to prevent XSS
+                platforms.forEach(platform => {
+                    const button = document.createElement('button');
+                    button.setAttribute('data-platform', platform);
+                    button.className = 'px-4 py-2 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 transition-colors capitalize platform-btn';
+                    button.textContent = platform; // Safe text content (no HTML parsing)
+                    button.onclick = () => selectPlatform(platform);
+                    selectorEl.appendChild(button);
+                });
                 
                 // Auto-select first platform
                 if (platforms.length > 0) {
@@ -1701,14 +1705,18 @@
         
         // NEW: Select platform and load its analytics
         function selectPlatform(platform) {
+            // CSS class constants for cleaner code
+            const ACTIVE_CLASSES = ['bg-purple-500/30', 'border-purple-400'];
+            const INACTIVE_CLASSES = ['bg-purple-500/10', 'border-purple-500/30'];
+            
             // Update button states
             document.querySelectorAll('.platform-btn').forEach(btn => {
                 if (btn.dataset.platform === platform) {
-                    btn.classList.add('bg-purple-500/30', 'border-purple-400');
-                    btn.classList.remove('bg-purple-500/10', 'border-purple-500/30');
+                    btn.classList.add(...ACTIVE_CLASSES);
+                    btn.classList.remove(...INACTIVE_CLASSES);
                 } else {
-                    btn.classList.remove('bg-purple-500/30', 'border-purple-400');
-                    btn.classList.add('bg-purple-500/10', 'border-purple-500/30');
+                    btn.classList.remove(...ACTIVE_CLASSES);
+                    btn.classList.add(...INACTIVE_CLASSES);
                 }
             });
             

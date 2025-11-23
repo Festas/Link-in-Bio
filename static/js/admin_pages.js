@@ -1,4 +1,5 @@
 import * as API from './admin_api.js';
+import * as UI from './admin_ui.js';
 
 let currentPageId = null;
 let currentSpecialPage = null; // Track if a special page is selected
@@ -425,7 +426,10 @@ async function loadSpecialPageContent(pageKey) {
         document.getElementById('sp-content-legacy').value = data.content || '';
     } catch (error) {
         console.error('Error loading special page:', error);
-        showStatus('special-page-status', 'Fehler beim Laden der Seite', 'error');
+        const statusEl = document.getElementById('special-page-status');
+        if (statusEl) {
+            UI.setFormStatus(statusEl, 'Fehler beim Laden der Seite', 'text-red-400', 3000);
+        }
     }
 }
 
@@ -448,21 +452,15 @@ async function saveSpecialPageContent() {
         
         if (!response.ok) throw new Error('Fehler beim Speichern');
         
-        showStatus('special-page-status', 'Erfolgreich gespeichert! ✓', 'success');
+        const statusEl = document.getElementById('special-page-status');
+        if (statusEl) {
+            UI.setFormStatus(statusEl, 'Erfolgreich gespeichert! ✓', 'text-green-400', 3000);
+        }
     } catch (error) {
         console.error('Error saving special page:', error);
-        showStatus('special-page-status', 'Fehler beim Speichern', 'error');
+        const statusEl = document.getElementById('special-page-status');
+        if (statusEl) {
+            UI.setFormStatus(statusEl, 'Fehler beim Speichern', 'text-red-400', 3000);
+        }
     }
-}
-
-function showStatus(elementId, message, type) {
-    const statusEl = document.getElementById(elementId);
-    if (!statusEl) return;
-    
-    statusEl.textContent = message;
-    statusEl.className = `mt-4 text-center ${type === 'success' ? 'text-green-400' : 'text-red-400'}`;
-    
-    setTimeout(() => {
-        statusEl.textContent = '';
-    }, 3000);
 }

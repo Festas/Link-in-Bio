@@ -76,6 +76,73 @@
             </div>
         </div>
 
+        <!-- Special Page Content Editor Panel (shown when special page is selected) -->
+        <div id="special-page-editor-panel" class="mb-6 bg-gray-800 p-6 rounded-lg shadow-lg" style="display: none;">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 class="text-xl font-semibold">Inhalte bearbeiten</h2>
+                    <p class="text-sm text-gray-400 mt-1">Bearbeite den Inhalt dieser Seite mit Text- und Bildblöcken</p>
+                </div>
+                <button id="close-special-editor" class="text-gray-400 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <!-- Content Blocks Container -->
+            <div id="content-blocks-container" class="space-y-4 mb-6">
+                <!-- Dynamic content blocks will be added here -->
+            </div>
+            
+            <!-- Add Block Buttons -->
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button id="add-text-block" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center space-x-2">
+                    <i data-lucide="type" class="w-4 h-4"></i>
+                    <span>Textblock hinzufügen</span>
+                </button>
+                <button id="add-image-block" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded flex items-center space-x-2">
+                    <i data-lucide="image" class="w-4 h-4"></i>
+                    <span>Bildblock hinzufügen</span>
+                </button>
+                <button id="add-section-block" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center space-x-2">
+                    <i data-lucide="layout" class="w-4 h-4"></i>
+                    <span>Bereich hinzufügen</span>
+                </button>
+            </div>
+
+            <!-- Legacy HTML Editor (fallback) -->
+            <details class="bg-gray-700 rounded p-4 mb-4">
+                <summary class="cursor-pointer font-medium mb-2">Erweitert: HTML-Editor</summary>
+                <form id="special-page-form-legacy" class="space-y-4 mt-4">
+                    <div>
+                        <label for="sp-title-legacy" class="block text-sm font-medium text-gray-300">Titel</label>
+                        <input type="text" id="sp-title-legacy" class="w-full bg-gray-600 text-white rounded px-3 py-2" required>
+                    </div>
+                    <div>
+                        <label for="sp-subtitle-legacy" class="block text-sm font-medium text-gray-300">Untertitel</label>
+                        <input type="text" id="sp-subtitle-legacy" class="w-full bg-gray-600 text-white rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label for="sp-content-legacy" class="block text-sm font-medium text-gray-300">Inhalt (HTML)</label>
+                        <textarea id="sp-content-legacy" rows="10" class="w-full bg-gray-600 text-white rounded px-3 py-2 font-mono text-sm" required></textarea>
+                        <p class="text-xs text-gray-500 mt-1">HTML-Tags wie &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt; etc. sind erlaubt.</p>
+                    </div>
+                </form>
+            </details>
+            
+            <!-- Save Buttons -->
+            <div class="flex space-x-4">
+                <button id="save-special-page-content" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded flex items-center space-x-2">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    <span>Speichern</span>
+                </button>
+                <a id="sp-preview-link" href="#" target="_blank" class="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded inline-flex items-center space-x-2">
+                    <i data-lucide="external-link" class="w-4 h-4"></i>
+                    <span>Vorschau</span>
+                </a>
+            </div>
+            <div id="special-page-status" class="mt-4 text-center"></div>
+        </div>
+
         <!-- Page Management Modal -->
         <div id="page-management-modal" class="modal" style="display: none; position: fixed; z-index: 60; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); overflow-y: auto;">
             <div class="bg-gray-800 p-6 rounded-lg max-w-3xl mx-auto mt-10 mb-10">
@@ -128,7 +195,6 @@
                 <button data-tab="profile" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Profil & Design</button>
                 <button data-tab="media" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Medien</button>
                 <button data-tab="community" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Community</button>
-                <button data-tab="special-pages" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Spezialseiten</button>
                 <button data-tab="mediakit" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Media Kit</button>
                 <button onclick="window.location.href='/analytics'" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Analytics</button>
             </nav>
@@ -353,54 +419,6 @@
                     <div id="backup-status" class="text-sm text-center"></div>
                 </section>
             </div>
-        </div>
-        
-        <!-- TAB: SPECIAL PAGES -->
-        <div id="tab-content-special-pages" class="tab-content">
-            <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-semibold">Spezialseiten bearbeiten</h2>
-                </div>
-                <p class="text-sm text-gray-400 mb-4">Bearbeite den Inhalt deiner Spezialseiten wie "Über mich", "Impressum" und "Datenschutz".</p>
-                
-                <!-- Page Selector for Special Pages -->
-                <div class="mb-6">
-                    <label for="special-page-select" class="block text-sm font-medium text-gray-300 mb-2">Seite auswählen:</label>
-                    <select id="special-page-select" class="bg-gray-700 text-white rounded px-3 py-2 w-full md:w-1/2">
-                        <option value="ueber-mich">Über mich</option>
-                        <option value="impressum">Impressum</option>
-                        <option value="datenschutz">Datenschutz</option>
-                    </select>
-                </div>
-                
-                <!-- Edit Form -->
-                <form id="special-page-form" class="space-y-4">
-                    <div>
-                        <label for="sp-title" class="block text-sm font-medium text-gray-300">Titel</label>
-                        <input type="text" id="sp-title" class="w-full bg-gray-700 text-white rounded px-3 py-2" required>
-                    </div>
-                    <div>
-                        <label for="sp-subtitle" class="block text-sm font-medium text-gray-300">Untertitel</label>
-                        <input type="text" id="sp-subtitle" class="w-full bg-gray-700 text-white rounded px-3 py-2">
-                    </div>
-                    <div>
-                        <label for="sp-content" class="block text-sm font-medium text-gray-300">Inhalt (HTML erlaubt)</label>
-                        <textarea id="sp-content" rows="15" class="w-full bg-gray-700 text-white rounded px-3 py-2 font-mono text-sm" required></textarea>
-                        <p class="text-xs text-gray-500 mt-1">Tipp: Du kannst HTML-Tags wie &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt; etc. verwenden.</p>
-                    </div>
-                    <div class="flex space-x-4">
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
-                            <i data-lucide="save" class="w-4 h-4 inline-block mr-2"></i>
-                            Speichern
-                        </button>
-                        <a id="sp-preview-link" href="/ueber-mich" target="_blank" class="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded inline-flex items-center">
-                            <i data-lucide="external-link" class="w-4 h-4 mr-2"></i>
-                            Vorschau
-                        </a>
-                    </div>
-                </form>
-                <div id="special-page-status" class="mt-4 text-center"></div>
-            </section>
         </div>
         
         <!-- TAB: MEDIA KIT -->

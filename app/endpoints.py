@@ -1155,6 +1155,9 @@ async def refresh_instagram_api_stats():
     from dotenv import load_dotenv
     from .instagram_fetcher import get_instagram_fetcher_from_env
     
+    # Constants
+    TOKEN_PREVIEW_LENGTH = 20  # Number of chars to show from token for security
+    
     # Load .env.social if it exists
     social_env_path = Path(__file__).parent.parent / '.env.social'
     if social_env_path.exists():
@@ -1215,7 +1218,7 @@ async def refresh_instagram_api_stats():
         if new_token:
             response_data["token_refreshed"] = True
             response_data["warning"] = "Access Token wurde erneuert. Bitte GitHub Secret 'INSTAGRAM_SECRET' aktualisieren!"
-            response_data["new_token"] = new_token[:20] + "..." # Show only first 20 chars for security
+            response_data["new_token"] = new_token[:TOKEN_PREVIEW_LENGTH] + "..."  # Show only first chars for security
         
         return response_data
         

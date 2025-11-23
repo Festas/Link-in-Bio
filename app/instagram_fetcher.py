@@ -7,7 +7,7 @@ import os
 import json
 import logging
 import httpx
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 from datetime import datetime, timezone, timedelta
 
 logger = logging.getLogger(__name__)
@@ -251,7 +251,7 @@ class InstagramFetcher:
             logger.error(f"Failed to fetch Instagram stats: {e}")
             return None
     
-    async def fetch_and_refresh_token(self) -> tuple[Optional[Dict[str, Any]], Optional[str]]:
+    async def fetch_and_refresh_token(self) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         """
         Fetch stats and optionally refresh token if needed.
         

@@ -1,4 +1,9 @@
 // Media Kit Management
+
+// Constants
+const STATUS_MESSAGE_TIMEOUT_SUCCESS = 5000; // ms
+const STATUS_MESSAGE_TIMEOUT_WARNING = 8000; // ms
+
 export function initMediaKit() {
     const saveBtn = document.getElementById('save-mediakit-btn');
     const refreshBtn = document.getElementById('refresh-social-stats-btn');
@@ -494,7 +499,7 @@ function showStatus(elementId, message, type) {
     if (type !== 'info') {
         setTimeout(() => {
             statusEl.textContent = '';
-        }, 8000); // Longer timeout for warning messages
+        }, type === 'warning' ? STATUS_MESSAGE_TIMEOUT_WARNING : STATUS_MESSAGE_TIMEOUT_SUCCESS);
     }
 }
 

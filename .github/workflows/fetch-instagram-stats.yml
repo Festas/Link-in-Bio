@@ -12,6 +12,10 @@ jobs:
   fetch-instagram-stats:
     runs-on: ubuntu-latest
     
+    permissions:
+      contents: read
+      actions: read
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -19,7 +23,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.11.x'
       
       - name: Install dependencies
         run: |

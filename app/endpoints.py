@@ -1146,6 +1146,87 @@ async def get_platform_analytics(platform: str):
     return analytics
 
 
+@router.post("/mediakit/refresh-instagram-api", dependencies=[Depends(require_auth)])
+async def refresh_instagram_api_stats():
+    """
+    Fetch fresh Instagram statistics using Meta Graph API (not scraping).
+    Requires .env.social file with Instagram API credentials.
+    """
+    from dotenv import load_dotenv
+    from .instagram_fetcher import get_instagram_fetcher_from_env
+    
+    # Constants
+    TOKEN_PREVIEW_LENGTH = 20  # Number of chars to show from token for security
+    
+    # Load .env.social if it exists
+    social_env_path = Path(__file__).parent.parent / '.env.social'
+    if social_env_path.exists():
+        load_dotenv(social_env_path)
+    else:
+        raise HTTPException(
+            400, 
+            "Keine .env.social Datei gefunden. Bitte Instagram API Credentials konfigurieren."
+        )
+    
+    # Get Instagram fetcher
+    fetcher = get_instagram_fetcher_from_env()
+    if not fetcher:
+        raise HTTPException(
+            400,
+            "Instagram API nicht konfiguriert. Prüfe INSTAGRAM_ACCESS_TOKEN und INSTAGRAM_USERNAME in .env.social"
+        )
+    
+    try:
+        # Fetch stats and refresh token
+        stats, new_token = await fetcher.fetch_and_refresh_token()
+        
+        if not stats:
+            raise HTTPException(500, "Konnte Instagram Daten nicht abrufen")
+        
+        # Save to cache
+        save_social_stats_cache(
+            platform='instagram',
+            username=stats['profile']['username'],
+            stats_data=json.dumps(stats)
+        )
+        
+        # Update mediakit_data for backward compatibility
+        stats_service = get_stats_service()
+        followers = stats_service.format_number(stats['stats']['followers'])
+        update_mediakit_data('platforms', 'instagram_followers', followers, 1)
+        update_mediakit_data('platforms', 'instagram_handle', f"@{stats['profile']['username']}", 1)
+        
+        # Update analytics
+        update_mediakit_data('analytics', 'last_updated', datetime.now().strftime('%d.%m.%Y'), 99)
+        
+        response_data = {
+            "message": "Instagram Statistiken erfolgreich über API aktualisiert",
+            "data": {
+                "username": stats['profile']['username'],
+                "followers": stats['stats']['followers'],
+                "followers_formatted": followers,
+                "posts": stats['stats']['posts'],
+                "reach_daily": stats['stats']['reach_daily'],
+                "impressions_daily": stats['stats']['impressions_daily'],
+                "profile_views": stats['stats']['profile_views'],
+            },
+            "source": "Meta Graph API",
+            "updated_at": stats['meta']['updated_at']
+        }
+        
+        # Include token refresh info if token was refreshed
+        if new_token:
+            response_data["token_refreshed"] = True
+            response_data["warning"] = "Access Token wurde erneuert. Bitte GitHub Secret 'INSTAGRAM_SECRET' aktualisieren!"
+            response_data["new_token"] = new_token[:TOKEN_PREVIEW_LENGTH] + "..."  # Show only first chars for security
+        
+        return response_data
+        
+    except Exception as e:
+        logging.error(f"Error fetching Instagram API stats: {e}")
+        raise HTTPException(500, f"Fehler beim Abrufen der Instagram Daten: {str(e)}")
+
+
 # Media Kit Settings Endpoints
 @router.get("/mediakit/settings", dependencies=[Depends(require_auth)])
 async def get_mediakit_settings_endpoint():

@@ -1,4 +1,9 @@
 // Media Kit Management
+
+// Constants
+const STATUS_MESSAGE_TIMEOUT_SUCCESS = 5000; // ms
+const STATUS_MESSAGE_TIMEOUT_WARNING = 8000; // ms
+
 export function initMediaKit() {
     const saveBtn = document.getElementById('save-mediakit-btn');
     const refreshBtn = document.getElementById('refresh-social-stats-btn');
@@ -99,6 +104,69 @@ async function refreshSocialStats() {
         if (refreshBtn) {
             refreshBtn.disabled = false;
             refreshBtn.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4 inline-block mr-2"></i>Social Stats aktualisieren';
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+        }
+    }
+}
+
+async function refreshInstagramAPI() {
+    const statusEl = document.getElementById('mediakit-status');
+    const refreshBtn = document.getElementById('refresh-instagram-api-btn');
+    
+    try {
+        // Disable button and show loading
+        if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 inline-block mr-2 animate-spin"></i>Aktualisiere...';
+        }
+        
+        showStatus('mediakit-status', 'Hole Instagram Daten über Meta Graph API...', 'info');
+        
+        const response = await fetch('/api/mediakit/refresh-instagram-api', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+            }
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Fehler beim Aktualisieren');
+        }
+        
+        const result = await response.json();
+        
+        // Check if token was refreshed
+        if (result.token_refreshed) {
+            showStatus('mediakit-status', 
+                `✓ Erfolg! ${result.data.followers_formatted} Follower. ⚠️ TOKEN ERNEUERT - Bitte GitHub Secret aktualisieren!`, 
+                'warning'
+            );
+        } else {
+            showStatus('mediakit-status', 
+                `✓ Erfolgreich! ${result.data.followers_formatted} Follower via Meta API`, 
+                'success'
+            );
+        }
+        
+        // Reload data to show updated values
+        await loadMediaKitData();
+        
+        // Re-initialize lucide icons for the refresh button
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+        
+    } catch (error) {
+        console.error('Error refreshing Instagram API stats:', error);
+        showStatus('mediakit-status', `✗ ${error.message}`, 'error');
+    } finally {
+        // Re-enable button
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '<i data-lucide="instagram" class="w-4 h-4 inline-block mr-2"></i>Instagram API aktualisieren';
             if (window.lucide) {
                 window.lucide.createIcons();
             }
@@ -424,12 +492,17 @@ function showStatus(elementId, message, type) {
     if (type === 'success') colorClass = 'text-green-400';
     else if (type === 'error') colorClass = 'text-red-400';
     else if (type === 'info') colorClass = 'text-blue-400';
+    else if (type === 'warning') colorClass = 'text-yellow-400';
     
     statusEl.className = `mt-4 text-center ${colorClass}`;
     
     if (type !== 'info') {
         setTimeout(() => {
             statusEl.textContent = '';
-        }, 5000);
+        }, type === 'warning' ? STATUS_MESSAGE_TIMEOUT_WARNING : STATUS_MESSAGE_TIMEOUT_SUCCESS);
     }
 }
+
+// Export for global access
+window.refreshInstagramAPI = refreshInstagramAPI;
+

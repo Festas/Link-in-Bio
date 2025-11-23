@@ -525,260 +525,51 @@
         <div id="tab-content-mediakit" class="tab-content">
             <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-semibold">Media Kit verwalten</h2>
-                </div>
-                
-                <!-- CRITICAL NOTICE ABOUT DATA TRUTHFULNESS -->
-                <div class="bg-yellow-900/30 border-2 border-yellow-500/50 rounded-lg p-4 mb-6">
-                    <div class="flex items-start">
-                        <i data-lucide="alert-triangle" class="w-6 h-6 text-yellow-400 mr-3 mt-0.5 flex-shrink-0"></i>
-                        <div class="text-sm">
-                            <p class="font-semibold text-yellow-300 mb-2">✨ Wichtig: Nur echte Daten verwenden!</p>
-                            <p class="text-yellow-200/90 mb-2">
-                                Das Media Kit zeigt <strong>NUR</strong> Daten an, die du hier einträgst oder die automatisch von deinen echten Social Media Profilen geladen werden.
-                            </p>
-                            <p class="text-yellow-200/90">
-                                <strong>Keine Hardcoded-Defaults mehr!</strong> Wenn ein Feld leer ist, wird es im Media Kit nicht angezeigt. 
-                                Das garantiert, dass dein Media Kit immer die Wahrheit zeigt. 🎯
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                
-                <p class="text-sm text-gray-400 mb-6">Verwalte deine Media Kit Daten: Accounts, Analytics, Brand Partners und mehr.</p>
-                
-                <!-- About Section -->
-                <div class="mb-6 p-4 bg-gray-700 rounded">
-                    <h3 class="text-lg font-semibold mb-4">About Me</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <label for="mk-name" class="block text-sm font-medium text-gray-300">Name</label>
-                            <input type="text" id="mk-name" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="Dein Name">
-                        </div>
-                        <div>
-                            <label for="mk-location" class="block text-sm font-medium text-gray-300">Standort</label>
-                            <input type="text" id="mk-location" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="Deine Stadt, Land">
-                        </div>
-                        <div>
-                            <label for="mk-about" class="block text-sm font-medium text-gray-300">Beschreibung</label>
-                            <textarea id="mk-about" rows="3" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="Beschreibe dich und deine Content-Nische..."></textarea>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Platforms Section -->
-                <div class="mb-6 p-4 bg-gray-700 rounded">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold">Social Media Accounts</h3>
-                        <button id="refresh-social-stats-btn" class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded text-sm inline-flex items-center">
-                            <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
-                            Social Stats aktualisieren
-                        </button>
-                    </div>
-                    
-                    <!-- Important Notice -->
-                    <div class="bg-blue-900/30 border border-blue-500/30 rounded-lg p-4 mb-4">
-                        <div class="flex items-start">
-                            <i data-lucide="info" class="w-5 h-5 text-blue-400 mr-3 mt-0.5"></i>
-                            <div class="text-sm">
-                                <p class="font-semibold text-blue-300 mb-1">Wichtig: Daten werden aus deinem Profil-Tab geladen</p>
-                                <p class="text-blue-200/80">
-                                    Die Social Media Handles werden automatisch aus dem <strong>Profil-Tab</strong> geladen. 
-                                    Stelle dort sicher, dass deine Social Media Handles korrekt eingetragen sind. 
-                                    Klicke dann auf "Social Stats aktualisieren", um echte Follower-Zahlen und Analytics von deinen Profilen zu holen.
-                                </p>
-                                <p class="text-blue-200/80 mt-2">
-                                    ✓ Nur Plattformen mit 1000+ Followern werden im Follower Summary angezeigt<br>
-                                    ✓ Analytics werden automatisch für alle konfigurierten Plattformen geladen
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <p class="text-xs text-gray-400 mb-4">Die unten angezeigten Follower-Zahlen werden automatisch aktualisiert. Du kannst sie auch manuell bearbeiten.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="mk-instagram-followers" class="block text-sm font-medium text-gray-300">Instagram Follower</label>
-                            <input type="text" id="mk-instagram-followers" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="z.B. 50k">
-                        </div>
-                        <div>
-                            <label for="mk-instagram-handle" class="block text-sm font-medium text-gray-300">Instagram Handle</label>
-                            <input type="text" id="mk-instagram-handle" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="@dein_handle">
-                        </div>
-                        <div>
-                            <label for="mk-tiktok-followers" class="block text-sm font-medium text-gray-300">TikTok Follower</label>
-                            <input type="text" id="mk-tiktok-followers" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="z.B. 30k">
-                        </div>
-                        <div>
-                            <label for="mk-tiktok-handle" class="block text-sm font-medium text-gray-300">TikTok Handle</label>
-                            <input type="text" id="mk-tiktok-handle" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="@dein_handle">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Analytics Section -->
-                <div class="mb-6 p-4 bg-gray-700 rounded">
-                    <h3 class="text-lg font-semibold mb-4">Analytics</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label for="mk-total-followers" class="block text-sm font-medium text-gray-300">Gesamte Follower</label>
-                            <input type="text" id="mk-total-followers" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="z.B. 100k">
-                        </div>
-                        <div>
-                            <label for="mk-engagement-rate" class="block text-sm font-medium text-gray-300">Engagement Rate</label>
-                            <input type="text" id="mk-engagement-rate" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="z.B. 5.2%">
-                        </div>
-                        <div>
-                            <label for="mk-avg-views" class="block text-sm font-medium text-gray-300">Durchschn. Views</label>
-                            <input type="text" id="mk-avg-views" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="z.B. 10K">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Brand Partners Section -->
-                <div class="mb-6 p-4 bg-gray-700 rounded">
-                    <h3 class="text-lg font-semibold mb-4">Brand Partners</h3>
-                    <div>
-                        <label for="mk-brand-partners" class="block text-sm font-medium text-gray-300">Partner (komma-getrennt)</label>
-                        <textarea id="mk-brand-partners" rows="3" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="Nike, Adidas, Samsung..."></textarea>
-                        <p class="text-xs text-gray-500 mt-1">Gib die Namen deiner Brand Partners komma-getrennt ein.</p>
-                    </div>
-                </div>
-                
-                <!-- Rates Section -->
-                <div class="mb-6 p-4 bg-gray-700 rounded">
-                    <h3 class="text-lg font-semibold mb-4">Collaboration Rates</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="mk-rate-post" class="block text-sm font-medium text-gray-300">Post Rate</label>
-                            <input type="text" id="mk-rate-post" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="$500">
-                        </div>
-                        <div>
-                            <label for="mk-rate-story" class="block text-sm font-medium text-gray-300">Story Rate</label>
-                            <input type="text" id="mk-rate-story" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="$250">
-                        </div>
-                        <div>
-                            <label for="mk-rate-video" class="block text-sm font-medium text-gray-300">Video Rate</label>
-                            <input type="text" id="mk-rate-video" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="$2,500">
-                        </div>
-                        <div>
-                            <label for="mk-rate-package" class="block text-sm font-medium text-gray-300">Package Rate</label>
-                            <input type="text" id="mk-rate-package" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="$4,000">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Video Pitch Section -->
-                <div class="mb-6 p-4 bg-gray-700 rounded border-2 border-cyan-500/30">
-                    <div class="flex items-center mb-4">
-                        <h3 class="text-lg font-semibold flex items-center">
-                            <i data-lucide="video" class="w-5 h-5 mr-2 text-cyan-400"></i>
-                            Video Pitch
-                        </h3>
-                        <span class="ml-3 text-xs px-2 py-1 bg-cyan-500/20 border border-cyan-500/30 rounded-full text-cyan-400">NEU</span>
-                    </div>
-                    <p class="text-xs text-gray-400 mb-3">Füge ein Video hinzu, um dich persönlich vorzustellen. Erhöht die Conversion Rate bei Brand-Anfragen!</p>
-                    <div>
-                        <label for="mk-video-pitch-url" class="block text-sm font-medium text-gray-300">Video URL (YouTube, Vimeo, etc.)</label>
-                        <input type="text" id="mk-video-pitch-url" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="https://www.youtube.com/embed/...">
-                        <p class="text-xs text-gray-500 mt-1">Verwende die Embed-URL des Videos (z.B. youtube.com/embed/VIDEO_ID)</p>
-                    </div>
-                </div>
-                
-                <!-- Access Control Section -->
-                <div class="mb-6 p-4 bg-gray-700 rounded border-2 border-purple-500/30">
-                    <div class="flex items-center mb-4">
-                        <h3 class="text-lg font-semibold flex items-center">
-                            <i data-lucide="lock" class="w-5 h-5 mr-2 text-purple-400"></i>
-                            Zugriffssteuerung
-                        </h3>
-                        <span class="ml-3 text-xs px-2 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-purple-400">PRO</span>
-                    </div>
-                    <p class="text-xs text-gray-400 mb-4">Steuere, wer dein Media Kit sehen kann. Perfekt für exklusive Brand-Pitches!</p>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="flex items-center space-x-3">
-                                <input type="radio" name="mk-access-mode" value="public" id="mk-access-public" class="text-purple-500" checked>
-                                <span class="text-sm">
-                                    <strong>Öffentlich</strong> - Jeder kann das Media Kit sehen
-                                </span>
-                            </label>
-                        </div>
-                        <div>
-                            <label class="flex items-center space-x-3">
-                                <input type="radio" name="mk-access-mode" value="password" id="mk-access-password" class="text-purple-500">
-                                <span class="text-sm">
-                                    <strong>Passwortgeschützt</strong> - Nur mit Passwort zugänglich
-                                </span>
-                            </label>
-                        </div>
-                        <div>
-                            <label class="flex items-center space-x-3">
-                                <input type="radio" name="mk-access-mode" value="email" id="mk-access-email" class="text-purple-500">
-                                <span class="text-sm">
-                                    <strong>E-Mail-Gating</strong> - Besucher müssen E-Mail angeben
-                                </span>
-                            </label>
-                        </div>
-                        <div>
-                            <label class="flex items-center space-x-3">
-                                <input type="radio" name="mk-access-mode" value="request" id="mk-access-request" class="text-purple-500">
-                                <span class="text-sm">
-                                    <strong>Anfrage erforderlich</strong> - Du musst jeden Zugriff manuell genehmigen
-                                </span>
-                            </label>
-                        </div>
-                        <div id="mk-password-field" class="mt-3" style="display: none;">
-                            <label for="mk-access-password-value" class="block text-sm font-medium text-gray-300">Passwort</label>
-                            <input type="text" id="mk-access-password-value" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="Geheimes Passwort">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- View Statistics Section -->
-                <div class="mb-6 p-4 bg-gray-700 rounded border-2 border-green-500/30">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold flex items-center">
-                            <i data-lucide="bar-chart" class="w-5 h-5 mr-2 text-green-400"></i>
-                            View Statistiken
-                        </h3>
-                        <button id="reload-stats-btn" class="text-xs px-3 py-1 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 rounded text-green-400">
-                            <i data-lucide="refresh-cw" class="w-3 h-3 inline-block mr-1"></i>
-                            Aktualisieren
-                        </button>
-                    </div>
-                    <div id="mediakit-view-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="text-center p-3 bg-gray-600 rounded">
-                            <div class="text-2xl font-bold text-green-400" id="stat-total-views">-</div>
-                            <div class="text-xs opacity-70">Gesamt Aufrufe</div>
-                        </div>
-                        <div class="text-center p-3 bg-gray-600 rounded">
-                            <div class="text-2xl font-bold text-cyan-400" id="stat-month-views">-</div>
-                            <div class="text-xs opacity-70">Diesen Monat</div>
-                        </div>
-                        <div class="text-center p-3 bg-gray-600 rounded">
-                            <div class="text-2xl font-bold text-purple-400" id="stat-unique-viewers">-</div>
-                            <div class="text-xs opacity-70">Unique Viewer</div>
-                        </div>
-                        <div class="text-center p-3 bg-gray-600 rounded">
-                            <div class="text-2xl font-bold text-blue-400" id="stat-pending-requests">-</div>
-                            <div class="text-xs opacity-70">Anfragen</div>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <button id="view-access-requests-btn" class="text-sm px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded">
-                            <i data-lucide="users" class="w-4 h-4 inline-block mr-2"></i>
-                            Zugriffsanfragen verwalten
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="flex space-x-4">
-                    <button id="save-mediakit-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
-                        <i data-lucide="save" class="w-4 h-4 inline-block mr-2"></i>
-                        Alle Änderungen speichern
+                    <h2 class="text-xl font-semibold">Media Kit - Neue Block-basierte Verwaltung</h2>
+                    <button id="add-mediakit-block-btn" class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded inline-flex items-center">
+                        <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                        Block hinzufügen
                     </button>
-                    <a href="/mediakit" target="_blank" class="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded inline-flex items-center">
+                </div>
+                
+                <!-- Info Box -->
+                <div class="bg-cyan-900/30 border-2 border-cyan-500/50 rounded-lg p-4 mb-6">
+                    <div class="flex items-start">
+                        <i data-lucide="info" class="w-6 h-6 text-cyan-400 mr-3 mt-0.5 flex-shrink-0"></i>
+                        <div class="text-sm">
+                            <p class="font-semibold text-cyan-300 mb-2">✨ Komplett neu: Volle Kontrolle!</p>
+                            <p class="text-cyan-200/90 mb-2">
+                                Dein Media Kit besteht jetzt aus <strong>flexiblen Blöcken</strong>, die du beliebig hinzufügen, bearbeiten, sortieren und ein-/ausblenden kannst.
+                            </p>
+                            <p class="text-cyan-200/90">
+                                <strong>Alle Texte sind editierbar!</strong> Keine vorgefertigten Inhalte mehr - du hast die volle Kontrolle über jeden Textbaustein.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="text-sm text-gray-400 mb-6">Erstelle dein professionelles Media Kit mit individuellen Blöcken. ROI-Calculator und Testimonials wurden wie gewünscht entfernt.</p>
+                
+                <!-- Available Block Types -->
+                <div class="mb-6 p-4 bg-gray-700/50 rounded border border-gray-600">
+                    <h3 class="text-sm font-semibold mb-3 text-gray-300">Verfügbare Block-Typen:</h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div class="flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-cyan-400"></i><span>Hero/Profil</span></div>
+                        <div class="flex items-center gap-2"><i data-lucide="type" class="w-4 h-4 text-cyan-400"></i><span>Text</span></div>
+                        <div class="flex items-center gap-2"><i data-lucide="bar-chart" class="w-4 h-4 text-cyan-400"></i><span>Statistiken</span></div>
+                        <div class="flex items-center gap-2"><i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i><span>Plattformen</span></div>
+                        <div class="flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-cyan-400"></i><span>Partner</span></div>
+                        <div class="flex items-center gap-2"><i data-lucide="dollar-sign" class="w-4 h-4 text-cyan-400"></i><span>Preise</span></div>
+                        <div class="flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4 text-cyan-400"></i><span>Call-to-Action</span></div>
+                        <div class="flex items-center gap-2"><i data-lucide="code" class="w-4 h-4 text-cyan-400"></i><span>Custom HTML</span></div>
+                    </div>
+                </div>
+                
+                <!-- Blocks Container -->
+                <div id="mediakit-blocks-container" class="mb-6"></div>
+                
+                <div class="flex space-x-4 mt-6">
+                    <a href="/mediakit" target="_blank" class="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded inline-flex items-center">
                         <i data-lucide="external-link" class="w-4 h-4 mr-2"></i>
                         Media Kit ansehen
                     </a>
@@ -786,7 +577,7 @@
                 <div id="mediakit-status" class="mt-4 text-center"></div>
             </section>
         </div>
-        
+                    
         <div id="form-status" class="mt-6 text-center"></div>
     </div>
     

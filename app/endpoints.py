@@ -76,7 +76,7 @@ from .database import (
     reorder_mediakit_blocks,
     check_access_approved,
 )
-from .auth import require_auth, check_auth
+from .auth_unified import require_auth, check_auth
 from .services import (
     scrape_link_details,
     get_video_embed_url,
@@ -87,7 +87,7 @@ from .services import (
 )
 from .social_stats import get_stats_service
 from .rate_limit import limiter_strict, limiter_standard
-from .cache import cache
+from .cache_unified import cache
 from .config import BASE_DIR, UPLOAD_DIR
 
 router = APIRouter()

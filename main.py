@@ -43,14 +43,12 @@ from app.exceptions import custom_http_exception_handler, general_exception_hand
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from app.auth import validate_admin_password
-    from app.auth_enhanced import validate_admin_password_on_startup
+    from app.auth_unified import validate_admin_password_on_startup
 
     logger.info("Starting Link-in-Bio application...")
     init_db()
     configure_template_globals()
-    validate_admin_password()  # Legacy password validation
-    validate_admin_password_on_startup()  # Enhanced password validation
+    validate_admin_password_on_startup()  # Unified password validation
     logger.info("Application startup complete")
     yield
     logger.info("Application shutdown")

@@ -10,7 +10,7 @@ from pathlib import Path
 # Add the app directory to the path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from app.auth_enhanced import hash_password, validate_password_strength, generate_2fa_secret, get_2fa_qr_code_url
+from app.auth_unified import hash_password, validate_password_strength, generate_2fa_secret, get_2fa_qr_code_url
 import pyotp
 
 

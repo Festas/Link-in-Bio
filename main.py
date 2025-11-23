@@ -31,7 +31,7 @@ setup_logging(log_level=LOG_LEVEL, json_logs=JSON_LOGS)
 
 logger = get_logger(__name__)
 
-from app.database import init_db, get_settings_from_db, get_page_by_slug, get_all_pages
+from app.database import init_db, get_settings_from_db, get_page_by_slug, get_all_pages, get_special_page, get_mediakit_data
 from app.endpoints import router as api_router
 from app.endpoints_enhanced import router as api_router_enhanced
 from app.services import APP_DOMAIN
@@ -185,14 +185,17 @@ async def get_login_page(request: Request):
 @app.get("/privacy", response_class=HTMLResponse)  # Keep old route for backwards compatibility
 async def get_privacy_page(request: Request):
     settings = get_settings_from_db()
+    page_data = get_special_page("datenschutz")
     page_url = f"https://{APP_DOMAIN}/datenschutz" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/datenschutz"
     context = {
-        "page_title": "Datenschutzerklärung",
-        "page_description": "Datenschutzbestimmungen",
+        "page_title": page_data.get("title", "Datenschutzerklärung") if page_data else "Datenschutzerklärung",
+        "page_description": page_data.get("subtitle", "Datenschutzbestimmungen") if page_data else "Datenschutzbestimmungen",
         "page_image": "",
         "page_url": page_url,
         "custom_html_head": settings.get("custom_html_head", ""),
         "custom_html_body": settings.get("custom_html_body", ""),
+        "page_content": page_data.get("content", "") if page_data else "",
+        "page_subtitle": page_data.get("subtitle", "") if page_data else "",
     }
     return templates.TemplateResponse(request=request, name="privacy.html", context=context)
 
@@ -200,14 +203,17 @@ async def get_privacy_page(request: Request):
 @app.get("/impressum", response_class=HTMLResponse)
 async def get_impressum_page(request: Request):
     settings = get_settings_from_db()
+    page_data = get_special_page("impressum")
     page_url = f"https://{APP_DOMAIN}/impressum" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/impressum"
     context = {
-        "page_title": "Impressum",
-        "page_description": "Impressum und rechtliche Angaben",
+        "page_title": page_data.get("title", "Impressum") if page_data else "Impressum",
+        "page_description": page_data.get("subtitle", "Impressum und rechtliche Angaben") if page_data else "Impressum und rechtliche Angaben",
         "page_image": "",
         "page_url": page_url,
         "custom_html_head": settings.get("custom_html_head", ""),
         "custom_html_body": settings.get("custom_html_body", ""),
+        "page_content": page_data.get("content", "") if page_data else "",
+        "page_subtitle": page_data.get("subtitle", "") if page_data else "",
     }
     return templates.TemplateResponse(request=request, name="impressum.html", context=context)
 
@@ -215,14 +221,17 @@ async def get_impressum_page(request: Request):
 @app.get("/ueber-mich", response_class=HTMLResponse)
 async def get_about_page(request: Request):
     settings = get_settings_from_db()
+    page_data = get_special_page("ueber-mich")
     page_url = f"https://{APP_DOMAIN}/ueber-mich" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/ueber-mich"
     context = {
-        "page_title": "Über mich - Eric | Tech & Gaming",
-        "page_description": "Tech & Gaming Enthusiast aus Hamburg - Erfahre mehr über mich und meine Projekte",
+        "page_title": page_data.get("title", "Über mich - Eric | Tech & Gaming") if page_data else "Über mich - Eric | Tech & Gaming",
+        "page_description": page_data.get("subtitle", "Tech & Gaming Enthusiast aus Hamburg - Erfahre mehr über mich und meine Projekte") if page_data else "Tech & Gaming Enthusiast aus Hamburg - Erfahre mehr über mich und meine Projekte",
         "page_image": "",
         "page_url": page_url,
         "custom_html_head": settings.get("custom_html_head", ""),
         "custom_html_body": settings.get("custom_html_body", ""),
+        "page_content": page_data.get("content", "") if page_data else "",
+        "page_subtitle": page_data.get("subtitle", "") if page_data else "",
     }
     return templates.TemplateResponse(request=request, name="ueber-mich.html", context=context)
 
@@ -245,6 +254,7 @@ async def get_contact_page(request: Request):
 @app.get("/mediakit", response_class=HTMLResponse)
 async def get_mediakit_page(request: Request):
     settings = get_settings_from_db()
+    mediakit_data = get_mediakit_data()
     page_url = f"https://{APP_DOMAIN}/mediakit" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/mediakit"
     context = {
         "page_title": "Media Kit - Eric (@festas_builds) | 189.5K Followers",
@@ -253,6 +263,7 @@ async def get_mediakit_page(request: Request):
         "page_url": page_url,
         "custom_html_head": settings.get("custom_html_head", ""),
         "custom_html_body": settings.get("custom_html_body", ""),
+        "mediakit_data": mediakit_data,
     }
     return templates.TemplateResponse(request=request, name="mediakit.html", context=context)
 

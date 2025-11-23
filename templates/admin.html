@@ -128,6 +128,8 @@
                 <button data-tab="profile" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Profil & Design</button>
                 <button data-tab="media" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Medien</button>
                 <button data-tab="community" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Community</button>
+                <button data-tab="special-pages" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Spezialseiten</button>
+                <button data-tab="mediakit" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Media Kit</button>
                 <button onclick="window.location.href='/analytics'" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Analytics</button>
             </nav>
         </div>
@@ -351,6 +353,170 @@
                     <div id="backup-status" class="text-sm text-center"></div>
                 </section>
             </div>
+        </div>
+        
+        <!-- TAB: SPECIAL PAGES -->
+        <div id="tab-content-special-pages" class="tab-content">
+            <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold">Spezialseiten bearbeiten</h2>
+                </div>
+                <p class="text-sm text-gray-400 mb-4">Bearbeite den Inhalt deiner Spezialseiten wie "Über mich", "Impressum" und "Datenschutz".</p>
+                
+                <!-- Page Selector for Special Pages -->
+                <div class="mb-6">
+                    <label for="special-page-select" class="block text-sm font-medium text-gray-300 mb-2">Seite auswählen:</label>
+                    <select id="special-page-select" class="bg-gray-700 text-white rounded px-3 py-2 w-full md:w-1/2">
+                        <option value="ueber-mich">Über mich</option>
+                        <option value="impressum">Impressum</option>
+                        <option value="datenschutz">Datenschutz</option>
+                    </select>
+                </div>
+                
+                <!-- Edit Form -->
+                <form id="special-page-form" class="space-y-4">
+                    <div>
+                        <label for="sp-title" class="block text-sm font-medium text-gray-300">Titel</label>
+                        <input type="text" id="sp-title" class="w-full bg-gray-700 text-white rounded px-3 py-2" required>
+                    </div>
+                    <div>
+                        <label for="sp-subtitle" class="block text-sm font-medium text-gray-300">Untertitel</label>
+                        <input type="text" id="sp-subtitle" class="w-full bg-gray-700 text-white rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label for="sp-content" class="block text-sm font-medium text-gray-300">Inhalt (HTML erlaubt)</label>
+                        <textarea id="sp-content" rows="15" class="w-full bg-gray-700 text-white rounded px-3 py-2 font-mono text-sm" required></textarea>
+                        <p class="text-xs text-gray-500 mt-1">Tipp: Du kannst HTML-Tags wie &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt; etc. verwenden.</p>
+                    </div>
+                    <div class="flex space-x-4">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
+                            <i data-lucide="save" class="w-4 h-4 inline-block mr-2"></i>
+                            Speichern
+                        </button>
+                        <a id="sp-preview-link" href="/ueber-mich" target="_blank" class="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded inline-flex items-center">
+                            <i data-lucide="external-link" class="w-4 h-4 mr-2"></i>
+                            Vorschau
+                        </a>
+                    </div>
+                </form>
+                <div id="special-page-status" class="mt-4 text-center"></div>
+            </section>
+        </div>
+        
+        <!-- TAB: MEDIA KIT -->
+        <div id="tab-content-mediakit" class="tab-content">
+            <section class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold">Media Kit verwalten</h2>
+                </div>
+                <p class="text-sm text-gray-400 mb-6">Verwalte deine Media Kit Daten: Accounts, Analytics, Brand Partners und mehr.</p>
+                
+                <!-- About Section -->
+                <div class="mb-6 p-4 bg-gray-700 rounded">
+                    <h3 class="text-lg font-semibold mb-4">About Me</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label for="mk-name" class="block text-sm font-medium text-gray-300">Name</label>
+                            <input type="text" id="mk-name" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="Eric - festas_builds">
+                        </div>
+                        <div>
+                            <label for="mk-location" class="block text-sm font-medium text-gray-300">Standort</label>
+                            <input type="text" id="mk-location" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="Hamburg, Germany">
+                        </div>
+                        <div>
+                            <label for="mk-about" class="block text-sm font-medium text-gray-300">Beschreibung</label>
+                            <textarea id="mk-about" rows="3" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="Tech & Gaming content creator..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Platforms Section -->
+                <div class="mb-6 p-4 bg-gray-700 rounded">
+                    <h3 class="text-lg font-semibold mb-4">Social Media Accounts</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="mk-instagram-followers" class="block text-sm font-medium text-gray-300">Instagram Follower</label>
+                            <input type="text" id="mk-instagram-followers" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="104.7k">
+                        </div>
+                        <div>
+                            <label for="mk-instagram-handle" class="block text-sm font-medium text-gray-300">Instagram Handle</label>
+                            <input type="text" id="mk-instagram-handle" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="@festas_builds">
+                        </div>
+                        <div>
+                            <label for="mk-tiktok-followers" class="block text-sm font-medium text-gray-300">TikTok Follower</label>
+                            <input type="text" id="mk-tiktok-followers" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="65.8k">
+                        </div>
+                        <div>
+                            <label for="mk-tiktok-handle" class="block text-sm font-medium text-gray-300">TikTok Handle</label>
+                            <input type="text" id="mk-tiktok-handle" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="@festas_builds">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analytics Section -->
+                <div class="mb-6 p-4 bg-gray-700 rounded">
+                    <h3 class="text-lg font-semibold mb-4">Analytics</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="mk-total-followers" class="block text-sm font-medium text-gray-300">Gesamte Follower</label>
+                            <input type="text" id="mk-total-followers" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="189.5k">
+                        </div>
+                        <div>
+                            <label for="mk-engagement-rate" class="block text-sm font-medium text-gray-300">Engagement Rate</label>
+                            <input type="text" id="mk-engagement-rate" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="8.2%">
+                        </div>
+                        <div>
+                            <label for="mk-avg-views" class="block text-sm font-medium text-gray-300">Durchschn. Views</label>
+                            <input type="text" id="mk-avg-views" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="45K">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Brand Partners Section -->
+                <div class="mb-6 p-4 bg-gray-700 rounded">
+                    <h3 class="text-lg font-semibold mb-4">Brand Partners</h3>
+                    <div>
+                        <label for="mk-brand-partners" class="block text-sm font-medium text-gray-300">Partner (komma-getrennt)</label>
+                        <textarea id="mk-brand-partners" rows="3" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="Nike, Adidas, Samsung..."></textarea>
+                        <p class="text-xs text-gray-500 mt-1">Gib die Namen deiner Brand Partners komma-getrennt ein.</p>
+                    </div>
+                </div>
+                
+                <!-- Rates Section -->
+                <div class="mb-6 p-4 bg-gray-700 rounded">
+                    <h3 class="text-lg font-semibold mb-4">Collaboration Rates</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="mk-rate-post" class="block text-sm font-medium text-gray-300">Post Rate</label>
+                            <input type="text" id="mk-rate-post" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="$500">
+                        </div>
+                        <div>
+                            <label for="mk-rate-story" class="block text-sm font-medium text-gray-300">Story Rate</label>
+                            <input type="text" id="mk-rate-story" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="$250">
+                        </div>
+                        <div>
+                            <label for="mk-rate-video" class="block text-sm font-medium text-gray-300">Video Rate</label>
+                            <input type="text" id="mk-rate-video" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="$2,500">
+                        </div>
+                        <div>
+                            <label for="mk-rate-package" class="block text-sm font-medium text-gray-300">Package Rate</label>
+                            <input type="text" id="mk-rate-package" class="w-full bg-gray-600 text-white rounded px-3 py-2" placeholder="$4,000">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button id="save-mediakit-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
+                        <i data-lucide="save" class="w-4 h-4 inline-block mr-2"></i>
+                        Alle Änderungen speichern
+                    </button>
+                    <a href="/mediakit" target="_blank" class="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded inline-flex items-center">
+                        <i data-lucide="external-link" class="w-4 h-4 mr-2"></i>
+                        Media Kit ansehen
+                    </a>
+                </div>
+                <div id="mediakit-status" class="mt-4 text-center"></div>
+            </section>
         </div>
         
         <div id="form-status" class="mt-6 text-center"></div>

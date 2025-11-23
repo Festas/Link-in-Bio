@@ -73,11 +73,38 @@ def init_db():
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, message TEXT NOT NULL, sent_at DATETIME DEFAULT (datetime('now', 'localtime')))"""
         )
+        
+        # Special pages content table
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS special_pages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            page_key TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            subtitle TEXT,
+            content TEXT NOT NULL,
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
+        
+        # Media kit data table
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            section TEXT NOT NULL,
+            key TEXT NOT NULL,
+            value TEXT,
+            display_order INTEGER DEFAULT 0,
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            UNIQUE(section, key)
+        )"""
+        )
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_display_order ON items(display_order)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_item_id ON clicks(item_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_page_id ON items(page_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_pages_slug ON pages(slug)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_special_pages_key ON special_pages(page_key)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_section ON mediakit_data(section)")
 
         # Migrationen (Fix für grid_columns)
         cursor.execute("PRAGMA table_info(items)")
@@ -144,6 +171,24 @@ def init_db():
         }
         for key, value in default_settings.items():
             cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (key, value))
+        
+        # Initialize special pages with default content if not exists
+        cursor.execute("SELECT COUNT(*) FROM special_pages")
+        if cursor.fetchone()[0] == 0:
+            default_special_pages = [
+                ("ueber-mich", "Über mich", "Tech & Gaming Enthusiast aus Hamburg", 
+                 """<section><h2>Hallo! 👋</h2><p>Willkommen auf meiner Seite! Ich bin Eric, Tech- und Gaming-Enthusiast aus der schönen Hansestadt Hamburg. Hier vereinen sich meine Leidenschaften für innovative Technologien, Gaming und ästhetisches Design.</p></section><section><h2>Was ich mache 🎮⚡</h2><p>Als Ingenieur und Content Creator verbinde ich technisches Know-how mit kreativer Leidenschaft. Mein Fokus liegt auf:</p><ul><li><strong>Gaming Content:</strong> Reviews, Streams und Gameplay-Highlights aus der Welt des Gaming</li><li><strong>Tech & Innovation:</strong> Neueste Technologietrends, Hardware-Tests und Software-Entwicklung</li><li><strong>Engineering:</strong> Einblicke in die Welt der Technik und innovative Lösungsansätze</li><li><strong>Design & Ästhetik:</strong> Wo Funktionalität auf visuelles Design trifft</li></ul></section>"""),
+                ("impressum", "Impressum", "Angaben gemäß § 5 TMG",
+                 """<section><h2>Angaben gemäß § 5 TMG</h2><p>Eric [Nachname]<br>[Straße und Hausnummer]<br>[PLZ] Hamburg<br>Deutschland</p></section><section><h2>Kontakt</h2><p><strong>E-Mail:</strong> kontakt@example.com</p></section>"""),
+                ("datenschutz", "Datenschutzerklärung", "Ihre Privatsphäre ist uns wichtig",
+                 """<section><h2>1. Datenschutz auf einen Blick</h2><p>Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen.</p></section>""")
+            ]
+            for page_key, title, subtitle, content in default_special_pages:
+                cursor.execute(
+                    "INSERT INTO special_pages (page_key, title, subtitle, content) VALUES (?, ?, ?, ?)",
+                    (page_key, title, subtitle, content)
+                )
+        
         conn.commit()
 
 
@@ -262,4 +307,74 @@ def delete_page(page_id: int):
     """Delete a page and all its items."""
     with get_db_connection() as conn:
         conn.execute("DELETE FROM pages WHERE id = ?", (page_id,))
+        conn.commit()
+
+
+def get_special_page(page_key: str) -> Optional[Dict[str, Any]]:
+    """Get special page content by key (ueber-mich, impressum, datenschutz)."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM special_pages WHERE page_key = ?", (page_key,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def get_all_special_pages() -> list:
+    """Get all special pages."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM special_pages ORDER BY page_key")
+        return [dict(row) for row in cursor.fetchall()]
+
+
+def update_special_page(page_key: str, title: str, subtitle: str, content: str):
+    """Update special page content."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """UPDATE special_pages 
+               SET title = ?, subtitle = ?, content = ?, updated_at = datetime('now', 'localtime')
+               WHERE page_key = ?""",
+            (title, subtitle, content, page_key)
+        )
+        conn.commit()
+
+
+def get_mediakit_data() -> Dict[str, Dict[str, str]]:
+    """Get all media kit data organized by section."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT section, key, value FROM mediakit_data ORDER BY section, display_order")
+        rows = cursor.fetchall()
+        
+        data = {}
+        for row in rows:
+            section = row[0]
+            key = row[1]
+            value = row[2]
+            if section not in data:
+                data[section] = {}
+            data[section][key] = value
+        return data
+
+
+def update_mediakit_data(section: str, key: str, value: str, display_order: int = 0):
+    """Update or insert media kit data."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO mediakit_data (section, key, value, display_order, updated_at)
+               VALUES (?, ?, ?, ?, datetime('now', 'localtime'))
+               ON CONFLICT(section, key) 
+               DO UPDATE SET value = ?, display_order = ?, updated_at = datetime('now', 'localtime')""",
+            (section, key, value, display_order, value, display_order)
+        )
+        conn.commit()
+
+
+def delete_mediakit_entry(section: str, key: str):
+    """Delete a media kit entry."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM mediakit_data WHERE section = ? AND key = ?", (section, key))
         conn.commit()

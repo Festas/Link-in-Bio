@@ -1,0 +1,50 @@
+name: Update Media Kit Stats
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # Läuft jeden Tag um 06:00 Uhr UTC
+  workflow_dispatch: # Erlaubt dir, es manuell per Button zu starten (zum Testen)
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    
+    # WICHTIG: Erlaubt dem Bot, Dateien (den neuen Token) ins Repo zu schreiben
+    permissions:
+      contents: write
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Node.js installieren
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Abhängigkeiten installieren
+        run: npm install
+
+      - name: .env Datei aus Secrets erstellen
+        # Hier injizieren wir deine Geheimnisse sicher in die Umgebung
+        run: |
+          echo "TIKTOK_CLIENT_KEY=${{ secrets.TIKTOK_CLIENT_KEY }}" >> .env
+          echo "TIKTOK_CLIENT_SECRET=${{ secrets.TIKTOK_CLIENT_SECRET }}" >> .env
+          # Falls du Instagram auch nutzt:
+          # echo "INSTAGRAM_ACCESS_TOKEN=${{ secrets.INSTAGRAM_ACCESS_TOKEN }}" >> .env
+
+      - name: TikTok Stats & Token Refresh ausführen
+        run: node tiktok_stats.js
+
+      - name: Änderungen speichern (Commit & Push)
+        # Wenn sich der Token oder die Stats geändert haben, speichern wir das zurück ins Repo
+        run: |
+          git config --global user.name 'Media Kit Bot'
+          git config --global user.email 'bot@noreply.github.com'
+          
+          # Wir fügen die Token-Datei und die generierten JSONs hinzu
+          git add tiktok_tokens.json public/media_kit_tiktok.json
+          
+          # Checken, ob sich was geändert hat, dann committen
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🤖 Auto-Update: Tokens & Stats" && git push)
+

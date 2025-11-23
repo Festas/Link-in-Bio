@@ -275,6 +275,47 @@ const ItemRenderers = {
         a.className = `item-product glass-card track-click flex p-4 w-full transition-all duration-200 hover:scale-[1.02] ${isFeatured ? 'spotlight-item' : ''}`; a.dataset.itemId = item.id;
         a.innerHTML = `<div class="flex-shrink-0 w-24 h-24 mr-4">${item.image_url ? `<img src="${escapeHTML(item.image_url)}" alt="Produktbild" class="w-full h-full object-cover rounded-lg shadow-sm" onerror="this.style.display='none';">` : `<div class="w-full h-full rounded-lg bg-white bg-opacity-10 flex items-center justify-center"><i data-lucide="shopping-bag" class="w-8 h-8 text-white opacity-50"></i></div>`}</div><div class="flex-grow flex flex-col justify-between text-left"><div><p class="item-title font-bold text-lg leading-tight mb-1">${escapeHTML(item.title)}</p><p class="text-sm text-gray-300 opacity-80">Jetzt ansehen</p></div><div class="flex items-center justify-between mt-2"><span class="bg-white bg-opacity-20 px-2 py-1 rounded text-xs font-bold text-white">${escapeHTML(item.price || 'Angebot')}</span><div class="bg-white text-black rounded-full p-1.5"><i data-lucide="arrow-right" class="w-4 h-4"></i></div></div></div>`;
         return a;
+    },
+    footer: (item) => {
+        const div = document.createElement('div');
+        div.className = 'item-footer glass-card p-5 w-full';
+        
+        // Parse footer links configuration from URL field (stored as JSON)
+        let footerLinks = [];
+        try {
+            if (item.url) {
+                footerLinks = JSON.parse(item.url);
+            }
+        } catch (e) {
+            // Default footer links if parsing fails
+            footerLinks = [
+                { text: 'Über mich', url: '/ueber-mich' },
+                { text: 'Kontakt', url: '/kontakt' },
+                { text: 'Media Kit', url: '/mediakit' },
+                { text: 'Datenschutz', url: '/datenschutz' },
+                { text: 'Impressum', url: '/impressum' }
+            ];
+        }
+        
+        // Build footer links HTML
+        let linksHTML = footerLinks.map((link, index) => {
+            const separator = index < footerLinks.length - 1 ? '<span class="text-gray-600 hidden sm:inline mx-2">•</span>' : '';
+            return `<a href="${escapeHTML(link.url)}" class="footer-link transition-all duration-200 hover:text-cyan-400 text-xs">${escapeHTML(link.text)}</a>${separator}`;
+        }).join('');
+        
+        div.innerHTML = `
+            <div class="text-center">
+                ${item.title ? `<h3 class="text-sm font-semibold mb-3 text-gray-400">${escapeHTML(item.title)}</h3>` : ''}
+                <nav class="footer-links flex justify-center items-center gap-1 flex-wrap mb-3">
+                    ${linksHTML}
+                </nav>
+                <p class="text-xs text-gray-500 opacity-60 hover:opacity-100 transition-opacity">
+                    &copy; 2024 Eric | Tech & Gaming aus Hamburg 🎮⚡ | Made with 💙
+                </p>
+            </div>
+        `;
+        
+        return div;
     }
 };
 

@@ -310,7 +310,7 @@ const ItemRenderers = {
                     ${linksHTML}
                 </nav>
                 <p class="text-xs text-gray-500 opacity-60 hover:opacity-100 transition-opacity">
-                    &copy; 2024 Eric | Tech & Gaming aus Hamburg 🎮⚡ | Made with 💙
+                    &copy; ${new Date().getFullYear()} Eric | Tech & Gaming aus Hamburg 🎮⚡ | Made with 💙
                 </p>
             </div>
         `;

@@ -263,10 +263,6 @@ function renderTypeSpecificFields(item, groups) {
                 </div>
                 <p class="text-xs text-gray-500 mt-2">Wähle die Links aus, die im Footer angezeigt werden sollen.</p>
             </div>
-            <div class="hidden">
-                <label class="block text-xs font-medium text-gray-400">Links (JSON - wird automatisch generiert)</label>
-                <textarea class="edit-url ${STYLES.input}" rows="3">${escapeHTML(footerLinksJson)}</textarea>
-            </div>
         `;
     }
     

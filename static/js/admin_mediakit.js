@@ -2,15 +2,20 @@
 export function initMediaKit() {
     const saveBtn = document.getElementById('save-mediakit-btn');
     const refreshBtn = document.getElementById('refresh-social-stats-btn');
+    const reloadStatsBtn = document.getElementById('reload-stats-btn');
+    const viewRequestsBtn = document.getElementById('view-access-requests-btn');
     
     if (!saveBtn) return;
     
     // Load existing media kit data
     loadMediaKitData();
+    loadMediaKitSettings();
+    loadViewStats();
     
     // Save button
     saveBtn.addEventListener('click', async () => {
         await saveMediaKitData();
+        await saveMediaKitSettings();
     });
     
     // Refresh social stats button
@@ -19,6 +24,33 @@ export function initMediaKit() {
             await refreshSocialStats();
         });
     }
+    
+    // Reload stats button
+    if (reloadStatsBtn) {
+        reloadStatsBtn.addEventListener('click', async () => {
+            await loadViewStats();
+        });
+    }
+    
+    // View access requests button
+    if (viewRequestsBtn) {
+        viewRequestsBtn.addEventListener('click', async () => {
+            await showAccessRequests();
+        });
+    }
+    
+    // Access mode radio buttons
+    const accessRadios = document.querySelectorAll('input[name="mk-access-mode"]');
+    accessRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            const passwordField = document.getElementById('mk-password-field');
+            if (radio.value === 'password' && radio.checked) {
+                passwordField.style.display = 'block';
+            } else {
+                passwordField.style.display = 'none';
+            }
+        });
+    });
 }
 
 async function refreshSocialStats() {
@@ -114,6 +146,10 @@ async function loadMediaKitData() {
             document.getElementById('mk-rate-video').value = data.rates.video || '';
             document.getElementById('mk-rate-package').value = data.rates.package || '';
         }
+        
+        if (data.video) {
+            document.getElementById('mk-video-pitch-url').value = data.video.pitch_url || '';
+        }
     } catch (error) {
         console.error('Error loading media kit data:', error);
     }
@@ -145,6 +181,9 @@ async function saveMediaKitData() {
         { section: 'rates', key: 'story', value: document.getElementById('mk-rate-story').value, display_order: 1 },
         { section: 'rates', key: 'video', value: document.getElementById('mk-rate-video').value, display_order: 2 },
         { section: 'rates', key: 'package', value: document.getElementById('mk-rate-package').value, display_order: 3 },
+        
+        // Video section
+        { section: 'video', key: 'pitch_url', value: document.getElementById('mk-video-pitch-url').value, display_order: 0 },
     ];
     
     try {
@@ -166,6 +205,215 @@ async function saveMediaKitData() {
         showStatus('mediakit-status', 'Fehler beim Speichern', 'error');
     }
 }
+
+// Load media kit settings (video pitch, access control, etc.)
+async function loadMediaKitSettings() {
+    try {
+        const response = await fetch('/api/mediakit/settings', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+        });
+        
+        if (!response.ok) return;
+        
+        const { settings } = await response.json();
+        
+        // Load video pitch URL
+        if (settings.video_pitch_url) {
+            document.getElementById('mk-video-pitch-url').value = settings.video_pitch_url;
+        }
+        
+        // Load access mode
+        const accessMode = settings.access_mode || 'public';
+        const accessRadio = document.getElementById(`mk-access-${accessMode}`);
+        if (accessRadio) {
+            accessRadio.checked = true;
+            if (accessMode === 'password') {
+                document.getElementById('mk-password-field').style.display = 'block';
+            }
+        }
+        
+        // Load password if exists
+        if (settings.access_password) {
+            document.getElementById('mk-access-password-value').value = settings.access_password;
+        }
+    } catch (error) {
+        console.error('Error loading media kit settings:', error);
+    }
+}
+
+// Save media kit settings
+async function saveMediaKitSettings() {
+    try {
+        // Get selected access mode
+        const accessMode = document.querySelector('input[name="mk-access-mode"]:checked')?.value || 'public';
+        
+        const settings = {
+            video_pitch_url: document.getElementById('mk-video-pitch-url').value,
+            access_mode: accessMode,
+            access_password: document.getElementById('mk-access-password-value').value
+        };
+        
+        const response = await fetch('/api/mediakit/settings', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+            },
+            body: JSON.stringify(settings)
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to save settings');
+        }
+        
+        console.log('Media kit settings saved successfully');
+    } catch (error) {
+        console.error('Error saving media kit settings:', error);
+    }
+}
+
+// Load view statistics
+async function loadViewStats() {
+    try {
+        const [statsResponse, requestsResponse] = await Promise.all([
+            fetch('/api/mediakit/views/stats', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+            }),
+            fetch('/api/mediakit/access-requests?status=pending', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+            })
+        ]);
+        
+        if (statsResponse.ok) {
+            const stats = await statsResponse.json();
+            document.getElementById('stat-total-views').textContent = stats.total_views || '0';
+            document.getElementById('stat-month-views').textContent = stats.views_this_month || '0';
+            document.getElementById('stat-unique-viewers').textContent = stats.unique_viewers || '0';
+        }
+        
+        if (requestsResponse.ok) {
+            const { requests } = await requestsResponse.json();
+            document.getElementById('stat-pending-requests').textContent = requests?.length || '0';
+        }
+    } catch (error) {
+        console.error('Error loading view stats:', error);
+    }
+}
+
+// Show access requests modal/page
+async function showAccessRequests() {
+    try {
+        const response = await fetch('/api/mediakit/access-requests', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load access requests');
+        }
+        
+        const { requests } = await response.json();
+        
+        // Helper function to escape HTML
+        const escapeHtml = (text) => {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
+        
+        // Create a simple modal to show requests
+        let html = `
+            <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="access-requests-modal">
+                <div class="bg-gray-800 rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-semibold">Zugriffsanfragen</h3>
+                        <button onclick="document.getElementById('access-requests-modal').remove()" class="text-gray-400 hover:text-white">
+                            <i data-lucide="x" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-3">
+        `;
+        
+        if (requests.length === 0) {
+            html += '<p class="text-gray-400 text-center py-8">Keine Anfragen vorhanden</p>';
+        } else {
+            requests.forEach(req => {
+                // Validate and sanitize status
+                const validStatuses = {
+                    'approved': 'green',
+                    'rejected': 'red',
+                    'pending': 'yellow'
+                };
+                const statusColor = validStatuses[req.status] || 'gray';
+                const statusText = req.status || 'unknown';
+                
+                html += `
+                    <div class="p-4 bg-gray-700 rounded flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="font-semibold">${escapeHtml(req.name || 'Kein Name')}</div>
+                            <div class="text-sm text-gray-400">${escapeHtml(req.email)}</div>
+                            ${req.company ? `<div class="text-sm text-gray-400">${escapeHtml(req.company)}</div>` : ''}
+                            ${req.message ? `<div class="text-sm mt-2">${escapeHtml(req.message)}</div>` : ''}
+                            <div class="text-xs text-gray-500 mt-2">${new Date(req.requested_at).toLocaleString('de-DE')}</div>
+                        </div>
+                        <div class="ml-4 space-x-2">
+                            <span class="px-2 py-1 text-xs rounded bg-${statusColor}-500/20 text-${statusColor}-400">${statusText}</span>
+                            ${req.status === 'pending' ? `
+                                <button onclick="updateRequestStatus(${req.id}, 'approved')" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded">
+                                    Genehmigen
+                                </button>
+                                <button onclick="updateRequestStatus(${req.id}, 'rejected')" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded">
+                                    Ablehnen
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', html);
+        
+        // Re-initialize lucide icons
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+    } catch (error) {
+        console.error('Error showing access requests:', error);
+        alert('Fehler beim Laden der Anfragen');
+    }
+}
+
+// Make updateRequestStatus globally available
+window.updateRequestStatus = async function(requestId, status) {
+    try {
+        const response = await fetch(`/api/mediakit/access-requests/${requestId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+            },
+            body: JSON.stringify({ status })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to update request');
+        }
+        
+        // Close modal and reload stats
+        document.getElementById('access-requests-modal')?.remove();
+        await loadViewStats();
+        alert(`Anfrage wurde ${status === 'approved' ? 'genehmigt' : 'abgelehnt'}`);
+    } catch (error) {
+        console.error('Error updating request:', error);
+        alert('Fehler beim Aktualisieren der Anfrage');
+    }
+};
 
 function showStatus(elementId, message, type) {
     const statusEl = document.getElementById(elementId);

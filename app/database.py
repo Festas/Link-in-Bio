@@ -111,6 +111,43 @@ def init_db():
             UNIQUE(platform, username)
         )"""
         )
+        
+        # Media kit settings table (for access control, video pitch, etc.)
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            setting_key TEXT NOT NULL UNIQUE,
+            setting_value TEXT,
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
+        
+        # Media kit views tracking table
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_views (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            viewer_email TEXT,
+            viewer_ip TEXT,
+            viewer_country TEXT,
+            user_agent TEXT,
+            viewed_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
+        
+        # Media kit access requests table (for gated access)
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_access_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL,
+            name TEXT,
+            company TEXT,
+            message TEXT,
+            status TEXT DEFAULT 'pending',
+            ip_address TEXT,
+            requested_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            approved_at DATETIME
+        )"""
+        )
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_display_order ON items(display_order)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_item_id ON clicks(item_id)")
@@ -436,3 +473,179 @@ def clear_social_stats_cache():
         cursor = conn.cursor()
         cursor.execute("DELETE FROM social_stats_cache")
         conn.commit()
+
+
+# Media Kit Settings Functions
+def get_mediakit_setting(key: str) -> Optional[str]:
+    """Get a media kit setting value."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT setting_value FROM mediakit_settings WHERE setting_key = ?", (key,))
+        row = cursor.fetchone()
+        return row[0] if row else None
+
+
+def update_mediakit_setting(key: str, value: str):
+    """Update or insert a media kit setting."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO mediakit_settings (setting_key, setting_value, updated_at)
+               VALUES (?, ?, datetime('now', 'localtime'))
+               ON CONFLICT(setting_key) DO UPDATE SET 
+               setting_value = excluded.setting_value,
+               updated_at = excluded.updated_at""",
+            (key, value)
+        )
+        conn.commit()
+
+
+def get_all_mediakit_settings() -> Dict[str, str]:
+    """Get all media kit settings."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT setting_key, setting_value FROM mediakit_settings")
+        return {row[0]: row[1] for row in cursor.fetchall()}
+
+
+# Media Kit Views Tracking Functions
+def track_mediakit_view(viewer_email: Optional[str] = None, viewer_ip: Optional[str] = None, 
+                       viewer_country: Optional[str] = None, user_agent: Optional[str] = None):
+    """Track a media kit view."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO mediakit_views (viewer_email, viewer_ip, viewer_country, user_agent, viewed_at)
+               VALUES (?, ?, ?, ?, datetime('now', 'localtime'))""",
+            (viewer_email, viewer_ip, viewer_country, user_agent)
+        )
+        conn.commit()
+
+
+def get_mediakit_views(limit: int = 100) -> list:
+    """Get recent media kit views."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT id, viewer_email, viewer_ip, viewer_country, user_agent, viewed_at 
+               FROM mediakit_views 
+               ORDER BY viewed_at DESC 
+               LIMIT ?""",
+            (limit,)
+        )
+        return [dict(row) for row in cursor.fetchall()]
+
+
+def get_mediakit_views_stats() -> Dict[str, Any]:
+    """Get media kit views statistics."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Total views
+        cursor.execute("SELECT COUNT(*) FROM mediakit_views")
+        total_views = cursor.fetchone()[0]
+        
+        # Views this month
+        cursor.execute(
+            """SELECT COUNT(*) FROM mediakit_views 
+               WHERE viewed_at >= date('now', 'start of month')"""
+        )
+        views_this_month = cursor.fetchone()[0]
+        
+        # Unique viewers (by email)
+        cursor.execute(
+            """SELECT COUNT(DISTINCT viewer_email) FROM mediakit_views 
+               WHERE viewer_email IS NOT NULL"""
+        )
+        unique_viewers = cursor.fetchone()[0]
+        
+        # Top countries
+        cursor.execute(
+            """SELECT viewer_country, COUNT(*) as count 
+               FROM mediakit_views 
+               WHERE viewer_country IS NOT NULL 
+               GROUP BY viewer_country 
+               ORDER BY count DESC 
+               LIMIT 5"""
+        )
+        top_countries = [{"country": row[0], "count": row[1]} for row in cursor.fetchall()]
+        
+        return {
+            "total_views": total_views,
+            "views_this_month": views_this_month,
+            "unique_viewers": unique_viewers,
+            "top_countries": top_countries
+        }
+
+
+# Media Kit Access Requests Functions
+def create_access_request(email: str, name: Optional[str] = None, 
+                         company: Optional[str] = None, message: Optional[str] = None,
+                         ip_address: Optional[str] = None) -> int:
+    """Create a new access request."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO mediakit_access_requests 
+               (email, name, company, message, status, ip_address, requested_at)
+               VALUES (?, ?, ?, ?, 'pending', ?, datetime('now', 'localtime'))""",
+            (email, name, company, message, ip_address)
+        )
+        conn.commit()
+        return cursor.lastrowid
+
+
+def get_access_requests(status: Optional[str] = None) -> list:
+    """Get access requests, optionally filtered by status."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        if status:
+            cursor.execute(
+                """SELECT id, email, name, company, message, status, ip_address, 
+                   requested_at, approved_at 
+                   FROM mediakit_access_requests 
+                   WHERE status = ?
+                   ORDER BY requested_at DESC""",
+                (status,)
+            )
+        else:
+            cursor.execute(
+                """SELECT id, email, name, company, message, status, ip_address, 
+                   requested_at, approved_at 
+                   FROM mediakit_access_requests 
+                   ORDER BY requested_at DESC"""
+            )
+        return [dict(row) for row in cursor.fetchall()]
+
+
+def update_access_request_status(request_id: int, status: str):
+    """Update access request status."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        if status == 'approved':
+            cursor.execute(
+                """UPDATE mediakit_access_requests 
+                   SET status = ?, approved_at = datetime('now', 'localtime')
+                   WHERE id = ?""",
+                (status, request_id)
+            )
+        else:
+            cursor.execute(
+                """UPDATE mediakit_access_requests 
+                   SET status = ?, approved_at = NULL
+                   WHERE id = ?""",
+                (status, request_id)
+            )
+        conn.commit()
+
+
+def check_access_approved(email: str) -> bool:
+    """Check if an email has approved access."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT COUNT(*) FROM mediakit_access_requests 
+               WHERE email = ? AND status = 'approved'""",
+            (email,)
+        )
+        return cursor.fetchone()[0] > 0

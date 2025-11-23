@@ -50,7 +50,6 @@ export function renderAdminItem(item, sliderGroups, indentLevel = 0) {
         case 'testimonial': itemIcon = `<i data-lucide="quote" class="w-5 h-5 text-green-400"></i>`; itemTypeInfo = "Rezension"; break;
         case 'contact_form': itemIcon = `<i data-lucide="message-square" class="w-5 h-5 text-blue-400"></i>`; itemTypeInfo = "Kontakt"; break;
         case 'product': itemIcon = `<i data-lucide="shopping-bag" class="w-5 h-5 text-purple-400"></i>`; itemTypeInfo = `Produkt (${escapeHTML(item.price || '')})`; break;
-        case 'footer': itemIcon = `<i data-lucide="layout" class="w-5 h-5 text-cyan-400"></i>`; itemTypeInfo = "Footer"; break;
     }
 
     const viewContainer = document.createElement('div');
@@ -218,50 +217,6 @@ function renderTypeSpecificFields(item, groups) {
             <div>
                 <label class="block text-xs font-medium text-gray-400">Inhalt</label>
                 <textarea class="edit-url ${STYLES.input}" rows="3">${escapeHTML(item.url || '')}</textarea>
-            </div>
-        `;
-    }
-    
-    if (item.item_type === 'footer') {
-        // Parse footer links from JSON stored in URL field
-        let footerLinksJson = item.url || '[]';
-        let defaultLinks = [
-            { text: 'Über mich', url: '/ueber-mich' },
-            { text: 'Kontakt', url: '/kontakt' },
-            { text: 'Media Kit', url: '/mediakit' },
-            { text: 'Datenschutz', url: '/datenschutz' },
-            { text: 'Impressum', url: '/impressum' }
-        ];
-        
-        // Try to parse existing links or use defaults
-        let links = defaultLinks;
-        try {
-            const parsed = JSON.parse(footerLinksJson);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-                links = parsed;
-            }
-        } catch (e) {
-            // Use defaults if parsing fails
-        }
-        
-        // Create checkboxes for each standard link
-        const linkCheckboxes = defaultLinks.map(defaultLink => {
-            const isChecked = links.some(l => l.url === defaultLink.url);
-            return `
-                <label class="flex items-center space-x-2">
-                    <input type="checkbox" class="footer-link-checkbox" data-link-text="${escapeHTML(defaultLink.text)}" data-link-url="${escapeHTML(defaultLink.url)}" ${isChecked ? 'checked' : ''}>
-                    <span class="text-sm text-gray-300">${escapeHTML(defaultLink.text)}</span>
-                </label>
-            `;
-        }).join('');
-        
-        return `
-            <div>
-                <label class="block text-xs font-medium text-gray-400 mb-2">Footer Links auswählen</label>
-                <div class="space-y-2 p-3 bg-gray-800 rounded">
-                    ${linkCheckboxes}
-                </div>
-                <p class="text-xs text-gray-500 mt-2">Wähle die Links aus, die im Footer angezeigt werden sollen.</p>
             </div>
         `;
     }

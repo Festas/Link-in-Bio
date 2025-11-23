@@ -174,3 +174,43 @@ def update_instagram_secret_from_env(github_token: str, repo_owner: str, repo_na
     except Exception as e:
         logger.error(f"Error updating Instagram secret: {e}")
         return False
+
+
+def update_tiktok_secret_from_env(github_token: str, repo_owner: str, repo_name: str) -> bool:
+    """
+    Update the TIKTOK_SECRET GitHub secret with current .env.social content.
+    
+    Args:
+        github_token: GitHub token with secrets write permission
+        repo_owner: Repository owner
+        repo_name: Repository name
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        # Read current TikTok credentials from environment
+        access_token = os.getenv('TIKTOK_ACCESS_TOKEN')
+        refresh_token = os.getenv('TIKTOK_REFRESH_TOKEN')
+        client_key = os.getenv('TIKTOK_CLIENT_KEY')
+        client_secret = os.getenv('TIKTOK_CLIENT_SECRET')
+        
+        if not all([access_token, refresh_token, client_key, client_secret]):
+            logger.error("Missing TikTok credentials in environment")
+            return False
+        
+        # Construct .env.social content for TikTok
+        secret_content = (
+            f"TIKTOK_ACCESS_TOKEN={access_token}\n"
+            f"TIKTOK_REFRESH_TOKEN={refresh_token}\n"
+            f"TIKTOK_CLIENT_KEY={client_key}\n"
+            f"TIKTOK_CLIENT_SECRET={client_secret}\n"
+        )
+        
+        # Update the secret
+        updater = GitHubSecretUpdater(github_token, repo_owner, repo_name)
+        return updater.update_secret('TIKTOK_SECRET', secret_content)
+        
+    except Exception as e:
+        logger.error(f"Error updating TikTok secret: {e}")
+        return False

@@ -1,0 +1,67 @@
+name: Daily TikTok Stats Update
+
+on:
+  # Run daily at 3 AM UTC
+  schedule:
+    - cron: '0 3 * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  fetch-tiktok-stats:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      actions: read
+      secrets: write  # Required to update repository secrets
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11.x'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Create .env.social from secret
+        run: |
+          echo "${{ secrets.TIKTOK_SECRET }}" > .env.social
+      
+      - name: Fetch TikTok stats
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python fetch_tiktok_stats.py
+      
+      - name: Deploy updated stats to server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/app
+            
+            # Create .env.social on server (append TikTok credentials)
+            echo "${{ secrets.TIKTOK_SECRET }}" >> .env.social
+            
+            # Run the stats fetcher on the server to update the production database
+            docker compose exec -T web python fetch_tiktok_stats.py || echo "Stats fetch completed"
+            
+      - name: Upload stats as artifact (for debugging)
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: tiktok-stats
+          path: |
+            *.log
+          retention-days: 7

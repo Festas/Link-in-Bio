@@ -111,3 +111,7 @@ celerybeat.pid
 .prof
 
 test_mediakit_feature.py
+
+# Keep documentation organized
+!docs/
+!docs/archive/

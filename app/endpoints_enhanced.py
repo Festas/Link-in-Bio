@@ -7,7 +7,7 @@ from typing import Optional, List
 from datetime import datetime, timedelta
 from pydantic import BaseModel, EmailStr
 
-from .auth_enhanced import (
+from .auth_unified import (
     require_auth,
     hash_password,
     validate_password_strength,
@@ -19,7 +19,7 @@ from .auth_enhanced import (
     get_2fa_qr_code_url,
     verify_2fa_code,
 )
-from .cache_enhanced import cache_enhanced
+from .cache_unified import cache as cache_enhanced
 from .analytics_enhanced import (
     EnhancedAnalytics,
     AnalyticsEvent,

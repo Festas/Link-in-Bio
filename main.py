@@ -32,6 +32,7 @@ setup_logging(log_level=LOG_LEVEL, json_logs=JSON_LOGS)
 logger = get_logger(__name__)
 
 from app.database import init_db, get_settings_from_db, get_page_by_slug, get_all_pages, get_special_page, get_mediakit_data, get_special_page_blocks, get_visible_mediakit_blocks
+from app.block_system import render_blocks_to_html as render_blocks_enhanced
 from app.endpoints import router as api_router
 from app.endpoints_enhanced import router as api_router_enhanced
 from app.services import APP_DOMAIN
@@ -43,14 +44,12 @@ from app.exceptions import custom_http_exception_handler, general_exception_hand
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from app.auth import validate_admin_password
-    from app.auth_enhanced import validate_admin_password_on_startup
+    from app.auth_unified import validate_admin_password_on_startup
 
     logger.info("Starting Link-in-Bio application...")
     init_db()
     configure_template_globals()
-    validate_admin_password()  # Legacy password validation
-    validate_admin_password_on_startup()  # Enhanced password validation
+    validate_admin_password_on_startup()  # Unified password validation
     logger.info("Application startup complete")
     yield
     logger.info("Application shutdown")
@@ -166,72 +165,6 @@ async def get_sitemap():
     return Response(content=xml_content, media_type="application/xml")
 
 
-def render_blocks_to_html(blocks):
-    """Convert blocks array to HTML string."""
-    if not blocks:
-        return ""
-    
-    import json
-    html_parts = []
-    
-    for block in blocks:
-        block_type = block.get('block_type', 'text')
-        content = block.get('content', '')
-        settings_str = block.get('settings', '{}')
-        
-        # Parse settings if it's a string
-        if isinstance(settings_str, str):
-            try:
-                settings = json.loads(settings_str) if settings_str else {}
-            except:
-                settings = {}
-        else:
-            settings = settings_str or {}
-        
-        if block_type == 'heading':
-            level = settings.get('level', 'h2')
-            html_parts.append(f'<{level}>{content}</{level}>')
-            
-        elif block_type == 'text':
-            # Replace newlines with <br> tags
-            formatted_content = content.replace('\n', '<br>')
-            html_parts.append(f'<p>{formatted_content}</p>')
-            
-        elif block_type == 'image':
-            if content:
-                width_class = {
-                    'full': 'w-full',
-                    'large': 'max-w-4xl mx-auto',
-                    'medium': 'max-w-2xl mx-auto',
-                    'small': 'max-w-md mx-auto'
-                }.get(settings.get('width', 'full'), 'w-full')
-                html_parts.append(f'<div class="{width_class}"><img src="{content}" alt="Bild" class="rounded-lg w-full"></div>')
-            
-        elif block_type == 'list':
-            list_type = settings.get('type', 'ul')
-            items = content.split('\n') if content else []
-            items = [item.strip() for item in items if item.strip()]
-            if items:
-                list_items = ''.join([f'<li>{item}</li>' for item in items])
-                html_parts.append(f'<{list_type}>{list_items}</{list_type}>')
-            
-        elif block_type == 'section':
-            html_parts.append('<section>')
-            # Sections can contain other content in the future
-            html_parts.append('</section>')
-            
-        elif block_type == 'spacer':
-            size = settings.get('size', 'medium')
-            height_class = {
-                'small': 'h-4',
-                'medium': 'h-8',
-                'large': 'h-16'
-            }.get(size, 'h-8')
-            html_parts.append(f'<div class="{height_class}"></div>')
-    
-    return '\n'.join(html_parts)
-
-
 @app.get("/admin", response_class=HTMLResponse)
 async def get_admin_page(request: Request):
     return templates.TemplateResponse(request=request, name="admin.html")
@@ -256,7 +189,7 @@ async def get_privacy_page(request: Request):
     
     # Render blocks to HTML if they exist, otherwise use legacy content
     if blocks:
-        page_content = render_blocks_to_html(blocks)
+        page_content = render_blocks_enhanced(blocks)
     else:
         page_content = page_data.get("content", "") if page_data else ""
     
@@ -282,7 +215,7 @@ async def get_impressum_page(request: Request):
     
     # Render blocks to HTML if they exist, otherwise use legacy content
     if blocks:
-        page_content = render_blocks_to_html(blocks)
+        page_content = render_blocks_enhanced(blocks)
     else:
         page_content = page_data.get("content", "") if page_data else ""
     
@@ -308,7 +241,7 @@ async def get_about_page(request: Request):
     
     # Render blocks to HTML if they exist, otherwise use legacy content
     if blocks:
-        page_content = render_blocks_to_html(blocks)
+        page_content = render_blocks_enhanced(blocks)
     else:
         page_content = page_data.get("content", "") if page_data else ""
     

@@ -98,6 +98,9 @@ input:focus,
 textarea:focus,
 select:focus {
     border-color: var(--admin-accent) !important;
+    box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.1) !important;
+    outline: none !important;
+}
     box-shadow: 0 0 0 4px rgba(0, 217, 255, 0.15) !important;
     outline: none !important;
     background: var(--admin-surface-hover) !important;
@@ -361,4 +364,265 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--admin-surface-hover);
+}
+
+/* ===== LIVE PREVIEW PANEL ===== */
+body.live-preview-active {
+    display: grid;
+    grid-template-columns: 1fr 600px;
+    gap: 1rem;
+    padding: 1rem;
+    min-height: 100vh;
+}
+
+body.live-preview-active .max-w-4xl {
+    max-width: 100% !important;
+    margin: 0 !important;
+}
+
+#live-preview-panel {
+    position: sticky;
+    top: 1rem;
+    height: calc(100vh - 2rem);
+    background: var(--admin-surface);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: var(--admin-shadow-lg);
+    border: 1px solid var(--admin-border);
+    display: flex;
+    flex-direction: column;
+}
+
+#live-preview-panel .preview-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a1a1a;
+    border-radius: 12px;
+    padding: 2rem;
+    position: relative;
+    overflow: auto;
+}
+
+#live-preview-panel .preview-container.preview-mobile iframe {
+    width: 375px;
+    height: 667px;
+}
+
+#live-preview-panel .preview-container.preview-tablet iframe {
+    width: 768px;
+    height: 1024px;
+}
+
+#live-preview-panel .preview-container.preview-desktop iframe {
+    width: 100%;
+    height: 100%;
+}
+
+#live-preview-iframe {
+    transition: all 0.3s ease;
+}
+
+/* ===== DASHBOARD STATS ===== */
+.stat-card {
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--admin-accent-gradient);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--admin-shadow);
+    border-color: var(--admin-accent);
+}
+
+.stat-card:hover::before {
+    opacity: 1;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #ffffff 0%, var(--admin-accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--admin-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ===== KEYBOARD SHORTCUTS ===== */
+#shortcut-feedback {
+    animation: slideInUp 0.3s ease;
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+kbd {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-family: 'Monaco', 'Courier New', monospace;
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: 4px;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* ===== BULK ACTIONS TOOLBAR ===== */
+#bulk-actions-toolbar {
+    animation: slideInUp 0.3s ease;
+    border: 1px solid var(--admin-border);
+}
+
+/* ===== SELECTION HIGHLIGHT ===== */
+.admin-item-card.selected {
+    border-color: var(--admin-accent) !important;
+    background: rgba(0, 217, 255, 0.05) !important;
+}
+
+/* ===== QUICK SEARCH MODAL ===== */
+#quick-search-modal {
+    animation: fadeIn 0.2s ease;
+}
+
+#quick-search-modal input:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.2);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+@media (max-width: 1400px) {
+    body.live-preview-active {
+        grid-template-columns: 1fr;
+    }
+    
+    #live-preview-panel {
+        position: relative;
+        height: 600px;
+    }
+}
+
+@media (max-width: 768px) {
+    #live-preview-panel .preview-container {
+        padding: 1rem;
+    }
+    
+    #live-preview-panel .preview-container.preview-mobile iframe {
+        width: 100%;
+        height: 100%;
+    }
+    
+    body.live-preview-active {
+        padding: 0.5rem;
+    }
+}
+
+/* ===== ENHANCED TAB NAVIGATION ===== */
+.tab-button {
+    position: relative;
+    overflow: hidden;
+}
+
+.tab-button::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--admin-accent-gradient);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.tab-button.border-blue-400::after {
+    transform: scaleX(1);
+}
+
+/* ===== DASHBOARD CHARTS ===== */
+#clicks-chart {
+    filter: drop-shadow(0 4px 12px rgba(0, 217, 255, 0.2));
+}
+
+/* ===== LOADING STATES ===== */
+.loading-skeleton {
+    background: linear-gradient(90deg, 
+        var(--admin-surface) 0%, 
+        var(--admin-surface-hover) 50%, 
+        var(--admin-surface) 100%);
+    background-size: 200% 100%;
+    animation: loading 1.5s ease-in-out infinite;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ===== PERFORMANCE INDICATORS ===== */
+.performance-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.performance-badge.high {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--admin-success);
+    border: 1px solid var(--admin-success);
+}
+
+.performance-badge.medium {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--admin-warning);
+    border: 1px solid var(--admin-warning);
+}
+
+.performance-badge.low {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--admin-danger);
+    border: 1px solid var(--admin-danger);
 }

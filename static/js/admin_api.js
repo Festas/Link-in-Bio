@@ -163,3 +163,22 @@ export async function deletePage(pageId) {
     }
     return true;
 }
+
+// Analytics functions
+export async function getAnalytics() {
+    const response = await apiFetch('/api/analytics');
+    if (!response.ok) {
+        throw new Error('Analytics konnten nicht geladen werden.');
+    }
+    return await response.json();
+}
+
+// Simplified alias for consistency
+export const getItems = fetchItems;
+
+// Get recent activity (mock implementation - can be enhanced with real endpoint later)
+export async function getRecentActivity() {
+    // For now, return empty array. This can be enhanced with a real API endpoint later
+    // that tracks admin actions, subscriber signups, message receipts, etc.
+    return [];
+}

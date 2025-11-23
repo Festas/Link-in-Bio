@@ -827,3 +827,105 @@ async def get_qr():
         return StreamingResponse(buf, media_type="image/png")
     except ImportError:
         raise HTTPException(501, "QR-Code Modul fehlt. Bitte 'pip install qrcode[pil]' ausführen.")
+
+
+# --- Special Pages Management ---
+
+
+@router.get("/special-pages", dependencies=[Depends(require_auth)])
+async def get_special_pages_list():
+    """Get all special pages for admin panel."""
+    from .database import get_all_special_pages
+    pages = get_all_special_pages()
+    return {"pages": pages}
+
+
+@router.get("/special-pages/{page_key}", dependencies=[Depends(require_auth)])
+async def get_special_page_content(page_key: str):
+    """Get specific special page content."""
+    from .database import get_special_page
+    page = get_special_page(page_key)
+    if not page:
+        raise HTTPException(404, "Seite nicht gefunden")
+    return page
+
+
+@router.put("/special-pages/{page_key}", dependencies=[Depends(require_auth)])
+async def update_special_page_content(page_key: str, request: Request):
+    """Update special page content."""
+    from .database import update_special_page
+    data = await request.json()
+    title = data.get("title", "")
+    subtitle = data.get("subtitle", "")
+    content = data.get("content", "")
+    
+    if not title or not content:
+        raise HTTPException(400, "Titel und Inhalt sind erforderlich")
+    
+    update_special_page(page_key, title, subtitle, content)
+    return {"message": "Seite aktualisiert"}
+
+
+# --- Media Kit Management ---
+
+
+@router.get("/mediakit-data", dependencies=[Depends(require_auth)])
+async def get_mediakit_admin_data():
+    """Get all media kit data for admin panel."""
+    from .database import get_mediakit_data
+    data = get_mediakit_data()
+    return {"data": data}
+
+
+@router.put("/mediakit-data", dependencies=[Depends(require_auth)])
+async def update_mediakit_admin_data(request: Request):
+    """Update media kit data."""
+    from .database import update_mediakit_data
+    data = await request.json()
+    section = data.get("section", "")
+    key = data.get("key", "")
+    value = data.get("value", "")
+    display_order = data.get("display_order", 0)
+    
+    if not section or not key:
+        raise HTTPException(400, "Section und Key sind erforderlich")
+    
+    update_mediakit_data(section, key, value, display_order)
+    return {"message": "Media Kit Daten aktualisiert"}
+
+
+@router.post("/mediakit-data/batch", dependencies=[Depends(require_auth)])
+async def update_mediakit_batch(request: Request):
+    """Batch update media kit data."""
+    from .database import update_mediakit_data
+    data = await request.json()
+    updates = data.get("updates", [])
+    
+    if not updates:
+        raise HTTPException(400, "Keine Updates bereitgestellt")
+    
+    for update in updates:
+        section = update.get("section", "")
+        key = update.get("key", "")
+        value = update.get("value", "")
+        display_order = update.get("display_order", 0)
+        
+        if section and key:
+            update_mediakit_data(section, key, value, display_order)
+    
+    return {"message": "Alle Media Kit Daten aktualisiert"}
+
+
+@router.delete("/mediakit-data", dependencies=[Depends(require_auth)])
+async def delete_mediakit_admin_data(request: Request):
+    """Delete media kit entry."""
+    from .database import delete_mediakit_entry
+    data = await request.json()
+    section = data.get("section", "")
+    key = data.get("key", "")
+    
+    if not section or not key:
+        raise HTTPException(400, "Section und Key sind erforderlich")
+    
+    delete_mediakit_entry(section, key)
+    return {"message": "Eintrag gelöscht"}

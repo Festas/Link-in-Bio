@@ -4,10 +4,12 @@
     <div class="w-full max-w-2xl mx-auto pb-8 sm:pb-12 pt-4 sm:pt-8 px-2 sm:px-0">
         
         <header class="text-center mb-6 sm:mb-8">
-            <h1 class="text-2xl sm:text-3xl font-bold mb-2" style="color: var(--color-text);">Über mich</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold mb-2" style="color: var(--color-text);">{{ page_title }}</h1>
+            {% if page_subtitle %}
             <p class="text-sm opacity-70" style="color: var(--color-text-muted);">
-                Tech & Gaming Enthusiast aus Hamburg
+                {{ page_subtitle }}
             </p>
+            {% endif %}
             <div class="mt-4 sm:mt-6">
                 <a href="/" class="inline-flex items-center px-3 sm:px-4 py-2 text-sm font-medium rounded-full transition-colors glass-card hover:bg-white hover:bg-opacity-10" style="color: var(--color-text);">
                     <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
@@ -17,94 +19,95 @@
         </header>
 
         <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-6 sm:mb-8 text-left">
-            
             <div class="space-y-6 text-sm leading-relaxed" style="color: var(--color-text);">
-                
-                <section>
-                    <h2 class="text-xl font-semibold mb-3 border-b border-gray-600 pb-2">Hallo! 👋</h2>
-                    <p class="opacity-90 leading-7">
-                        Willkommen auf meiner Seite! Ich bin Eric, Tech- und Gaming-Enthusiast aus der schönen Hansestadt Hamburg. 
-                        Hier vereinen sich meine Leidenschaften für innovative Technologien, Gaming und ästhetisches Design.
-                    </p>
-                </section>
-
-                <section>
-                    <h2 class="text-xl font-semibold mb-3 border-b border-gray-600 pb-2">Was ich mache 🎮⚡</h2>
-                    <div class="opacity-90 space-y-3 leading-7">
-                        <p>
-                            Als Ingenieur und Content Creator verbinde ich technisches Know-how mit kreativer Leidenschaft. 
-                            Mein Fokus liegt auf:
+                {% if page_content %}
+                    {{ page_content | safe }}
+                {% else %}
+                    <section>
+                        <h2 class="text-xl font-semibold mb-3 border-b border-gray-600 pb-2">Hallo! 👋</h2>
+                        <p class="opacity-90 leading-7">
+                            Willkommen auf meiner Seite! Ich bin Eric, Tech- und Gaming-Enthusiast aus der schönen Hansestadt Hamburg. 
+                            Hier vereinen sich meine Leidenschaften für innovative Technologien, Gaming und ästhetisches Design.
                         </p>
-                        <ul class="list-disc pl-5 space-y-2">
-                            <li><strong>Gaming Content:</strong> Reviews, Streams und Gameplay-Highlights aus der Welt des Gaming</li>
-                            <li><strong>Tech & Innovation:</strong> Neueste Technologietrends, Hardware-Tests und Software-Entwicklung</li>
-                            <li><strong>Engineering:</strong> Einblicke in die Welt der Technik und innovative Lösungsansätze</li>
-                            <li><strong>Design & Ästhetik:</strong> Wo Funktionalität auf visuelles Design trifft</li>
-                        </ul>
-                    </div>
-                </section>
+                    </section>
 
-                <section>
-                    <h2 class="text-xl font-semibold mb-3 border-b border-gray-600 pb-2">Meine Philosophie 💡</h2>
-                    <p class="opacity-90 leading-7">
-                        Ich glaube an die Kraft der Innovation und daran, dass Technologie nicht nur funktional, sondern auch 
-                        ästhetisch ansprechend sein sollte. Gaming und Tech sind für mich mehr als nur Hobbys – sie sind 
-                        Ausdrucksformen von Kreativität und technischer Präzision.
-                    </p>
-                    <p class="opacity-90 leading-7 mt-3">
-                        Hamburg, meine Heimatstadt, inspiriert mich täglich mit ihrer Mischung aus maritimem Flair und 
-                        moderner Urbanität. Diese Energie fließt in alles ein, was ich kreiere.
-                    </p>
-                </section>
-
-                <section>
-                    <h2 class="text-xl font-semibold mb-3 border-b border-gray-600 pb-2">Warum diese Seite? 🚀</h2>
-                    <p class="opacity-90 leading-7">
-                        Diese Link-in-Bio Plattform ist mein zentraler Hub – ein Ort, an dem du alle meine Projekte, 
-                        Social-Media-Kanäle und neuesten Inhalte an einem Platz findest. Vom neuesten Gaming-Stream 
-                        bis zum Tech-Review, hier ist alles gebündelt.
-                    </p>
-                    <p class="opacity-90 leading-7 mt-3">
-                        Die Seite selbst ist ein Showcase meiner Design-Philosophie: modern, clean, mit Gaming-Ästhetik 
-                        und technischer Raffinesse. Cyan-blaue Akzente treffen auf glassmorphe Elemente – 
-                        genau wie ich es mag.
-                    </p>
-                </section>
-
-                <section>
-                    <h2 class="text-xl font-semibold mb-3 border-b border-gray-600 pb-2">Let's Connect! 🤝</h2>
-                    <p class="opacity-90 leading-7">
-                        Du findest mich auf verschiedenen Plattformen. Ob YouTube, Twitch, Instagram oder Discord – 
-                        ich freue mich immer über Austausch mit Gleichgesinnten aus der Tech- und Gaming-Community.
-                    </p>
-                    <p class="opacity-90 leading-7 mt-3">
-                        Schau dich auf meiner Hauptseite um und folge mir auf deinen bevorzugten Kanälen. 
-                        Für geschäftliche Anfragen oder Kooperationen kannst du mich über das 
-                        <a href="/kontakt" class="text-cyan-400 hover:text-cyan-300 underline">Kontaktformular</a> erreichen.
-                        Du willst mit mir zusammenarbeiten? Schau dir auch mein 
-                        <a href="/mediakit" class="text-cyan-400 hover:text-cyan-300 underline">Media Kit</a> an!
-                    </p>
-                </section>
-
-                <section class="bg-gradient-to-br from-cyan-900/20 to-pink-900/20 p-4 rounded-lg border border-cyan-500/30">
-                    <div class="flex items-start">
-                        <i data-lucide="heart" class="w-5 h-5 text-cyan-400 mr-3 mt-0.5 flex-shrink-0"></i>
-                        <div>
-                            <p class="text-sm opacity-90 leading-6">
-                                <strong>Made with 💙 in Hamburg</strong><br>
-                                Diese Seite wurde mit Leidenschaft entwickelt und designed. Sie nutzt moderne Web-Technologien 
-                                und ist selbst gehostet – weil mir Kontrolle und Privatsphäre wichtig sind.
+                    <section>
+                        <h2 class="text-xl font-semibold mb-3 border-b border-gray-600 pb-2">Was ich mache 🎮⚡</h2>
+                        <div class="opacity-90 space-y-3 leading-7">
+                            <p>
+                                Als Ingenieur und Content Creator verbinde ich technisches Know-how mit kreativer Leidenschaft. 
+                                Mein Fokus liegt auf:
                             </p>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong>Gaming Content:</strong> Reviews, Streams und Gameplay-Highlights aus der Welt des Gaming</li>
+                                <li><strong>Tech & Innovation:</strong> Neueste Technologietrends, Hardware-Tests und Software-Entwicklung</li>
+                                <li><strong>Engineering:</strong> Einblicke in die Welt der Technik und innovative Lösungsansätze</li>
+                                <li><strong>Design & Ästhetik:</strong> Wo Funktionalität auf visuelles Design trifft</li>
+                            </ul>
                         </div>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-semibold mb-3 border-b border-gray-600 pb-2">Meine Philosophie 💡</h2>
+                        <p class="opacity-90 leading-7">
+                            Ich glaube an die Kraft der Innovation und daran, dass Technologie nicht nur funktional, sondern auch 
+                            ästhetisch ansprechend sein sollte. Gaming und Tech sind für mich mehr als nur Hobbys – sie sind 
+                            Ausdrucksformen von Kreativität und technischer Präzision.
+                        </p>
+                        <p class="opacity-90 leading-7 mt-3">
+                            Hamburg, meine Heimatstadt, inspiriert mich täglich mit ihrer Mischung aus maritimem Flair und 
+                            moderner Urbanität. Diese Energie fließt in alles ein, was ich kreiere.
+                        </p>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-semibold mb-3 border-b border-gray-600 pb-2">Warum diese Seite? 🚀</h2>
+                        <p class="opacity-90 leading-7">
+                            Diese Link-in-Bio Plattform ist mein zentraler Hub – ein Ort, an dem du alle meine Projekte, 
+                            Social-Media-Kanäle und neuesten Inhalte an einem Platz findest. Vom neuesten Gaming-Stream 
+                            bis zum Tech-Review, hier ist alles gebündelt.
+                        </p>
+                        <p class="opacity-90 leading-7 mt-3">
+                            Die Seite selbst ist ein Showcase meiner Design-Philosophie: modern, clean, mit Gaming-Ästhetik 
+                            und technischer Raffinesse. Cyan-blaue Akzente treffen auf glassmorphe Elemente – 
+                            genau wie ich es mag.
+                        </p>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-semibold mb-3 border-b border-gray-600 pb-2">Let's Connect! 🤝</h2>
+                        <p class="opacity-90 leading-7">
+                            Du findest mich auf verschiedenen Plattformen. Ob YouTube, Twitch, Instagram oder Discord – 
+                            ich freue mich immer über Austausch mit Gleichgesinnten aus der Tech- und Gaming-Community.
+                        </p>
+                        <p class="opacity-90 leading-7 mt-3">
+                            Schau dich auf meiner Hauptseite um und folge mir auf deinen bevorzugten Kanälen. 
+                            Für geschäftliche Anfragen oder Kooperationen kannst du mich über das 
+                            <a href="/kontakt" class="text-cyan-400 hover:text-cyan-300 underline">Kontaktformular</a> erreichen.
+                            Du willst mit mir zusammenarbeiten? Schau dir auch mein 
+                            <a href="/mediakit" class="text-cyan-400 hover:text-cyan-300 underline">Media Kit</a> an!
+                        </p>
+                    </section>
+
+                    <section class="bg-gradient-to-br from-cyan-900/20 to-pink-900/20 p-4 rounded-lg border border-cyan-500/30">
+                        <div class="flex items-start">
+                            <i data-lucide="heart" class="w-5 h-5 text-cyan-400 mr-3 mt-0.5 flex-shrink-0"></i>
+                            <div>
+                                <p class="text-sm opacity-90 leading-6">
+                                    <strong>Made with 💙 in Hamburg</strong><br>
+                                    Diese Seite wurde mit Leidenschaft entwickelt und designed. Sie nutzt moderne Web-Technologien 
+                                    und ist selbst gehostet – weil mir Kontrolle und Privatsphäre wichtig sind.
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="text-center mt-8 pt-6 border-t border-gray-700">
+                        <p class="text-xs opacity-70">
+                            🎮⚡ Tech & Gaming aus Hamburg | Engineering meets Creativity
+                        </p>
                     </div>
-                </section>
-
-                <div class="text-center mt-8 pt-6 border-t border-gray-700">
-                    <p class="text-xs opacity-70">
-                        🎮⚡ Tech & Gaming aus Hamburg | Engineering meets Creativity
-                    </p>
-                </div>
-
+                {% endif %}
             </div>
         </div>
     </div>

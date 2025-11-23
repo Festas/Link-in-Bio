@@ -1,5 +1,6 @@
 import * as API from './admin_api.js';
 import * as UI from './admin_ui.js';
+import * as SpecialBlocks from './admin_special_blocks.js';
 
 let currentPageId = null;
 let currentSpecialPage = null; // Track if a special page is selected
@@ -383,40 +384,13 @@ function showAllTabs() {
 }
 
 function initSpecialPageEditor() {
+    // Initialize block editor
+    SpecialBlocks.initSpecialBlockEditor();
+    
     // Save button
     const saveBtn = document.getElementById('save-special-page-content');
     if (saveBtn) {
         saveBtn.addEventListener('click', saveSpecialPageContent);
-    }
-    
-    // Add block buttons (placeholder - will be implemented later)
-    const statusEl = document.getElementById('special-page-status');
-    
-    const addTextBlockBtn = document.getElementById('add-text-block');
-    if (addTextBlockBtn) {
-        addTextBlockBtn.addEventListener('click', () => {
-            if (statusEl) {
-                UI.setFormStatus(statusEl, 'ℹ️ Textblock-Editor kommt bald! Verwende vorerst den HTML-Editor unten.', 'text-blue-400', 4000);
-            }
-        });
-    }
-    
-    const addImageBlockBtn = document.getElementById('add-image-block');
-    if (addImageBlockBtn) {
-        addImageBlockBtn.addEventListener('click', () => {
-            if (statusEl) {
-                UI.setFormStatus(statusEl, 'ℹ️ Bildblock-Editor kommt bald! Verwende vorerst den HTML-Editor unten.', 'text-purple-400', 4000);
-            }
-        });
-    }
-    
-    const addSectionBlockBtn = document.getElementById('add-section-block');
-    if (addSectionBlockBtn) {
-        addSectionBlockBtn.addEventListener('click', () => {
-            if (statusEl) {
-                UI.setFormStatus(statusEl, 'ℹ️ Bereichs-Editor kommt bald! Verwende vorerst den HTML-Editor unten.', 'text-green-400', 4000);
-            }
-        });
     }
 }
 
@@ -432,6 +406,9 @@ async function loadSpecialPageContent(pageKey) {
         document.getElementById('sp-title-legacy').value = data.title || '';
         document.getElementById('sp-subtitle-legacy').value = data.subtitle || '';
         document.getElementById('sp-content-legacy').value = data.content || '';
+        
+        // Load blocks
+        await SpecialBlocks.loadSpecialPageBlocks(pageKey);
     } catch (error) {
         console.error('Error loading special page:', error);
         const statusEl = document.getElementById('special-page-status');
@@ -444,11 +421,17 @@ async function loadSpecialPageContent(pageKey) {
 async function saveSpecialPageContent() {
     if (!currentSpecialPage) return;
     
-    const title = document.getElementById('sp-title-legacy').value;
-    const subtitle = document.getElementById('sp-subtitle-legacy').value;
-    const content = document.getElementById('sp-content-legacy').value;
+    const statusEl = document.getElementById('special-page-status');
     
     try {
+        // Save blocks first
+        await SpecialBlocks.saveSpecialPageBlocks();
+        
+        // Then save legacy HTML content
+        const title = document.getElementById('sp-title-legacy').value;
+        const subtitle = document.getElementById('sp-subtitle-legacy').value;
+        const content = document.getElementById('sp-content-legacy').value;
+        
         const response = await fetch(`/api/special-pages/${currentSpecialPage}`, {
             method: 'PUT',
             headers: {
@@ -460,13 +443,11 @@ async function saveSpecialPageContent() {
         
         if (!response.ok) throw new Error('Fehler beim Speichern');
         
-        const statusEl = document.getElementById('special-page-status');
         if (statusEl) {
             UI.setFormStatus(statusEl, 'Erfolgreich gespeichert! ✓', 'text-green-400', 3000);
         }
     } catch (error) {
         console.error('Error saving special page:', error);
-        const statusEl = document.getElementById('special-page-status');
         if (statusEl) {
             UI.setFormStatus(statusEl, 'Fehler beim Speichern', 'text-red-400', 3000);
         }

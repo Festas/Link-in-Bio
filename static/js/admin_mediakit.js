@@ -313,6 +313,13 @@ async function showAccessRequests() {
         
         const { requests } = await response.json();
         
+        // Helper function to escape HTML
+        const escapeHtml = (text) => {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
+        
         // Create a simple modal to show requests
         let html = `
             <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="access-requests-modal">
@@ -330,18 +337,26 @@ async function showAccessRequests() {
             html += '<p class="text-gray-400 text-center py-8">Keine Anfragen vorhanden</p>';
         } else {
             requests.forEach(req => {
-                const statusColor = req.status === 'approved' ? 'green' : req.status === 'rejected' ? 'red' : 'yellow';
+                // Validate and sanitize status
+                const validStatuses = {
+                    'approved': 'green',
+                    'rejected': 'red',
+                    'pending': 'yellow'
+                };
+                const statusColor = validStatuses[req.status] || 'gray';
+                const statusText = req.status || 'unknown';
+                
                 html += `
                     <div class="p-4 bg-gray-700 rounded flex justify-between items-start">
                         <div class="flex-1">
-                            <div class="font-semibold">${req.name || 'Kein Name'}</div>
-                            <div class="text-sm text-gray-400">${req.email}</div>
-                            ${req.company ? `<div class="text-sm text-gray-400">${req.company}</div>` : ''}
-                            ${req.message ? `<div class="text-sm mt-2">${req.message}</div>` : ''}
+                            <div class="font-semibold">${escapeHtml(req.name || 'Kein Name')}</div>
+                            <div class="text-sm text-gray-400">${escapeHtml(req.email)}</div>
+                            ${req.company ? `<div class="text-sm text-gray-400">${escapeHtml(req.company)}</div>` : ''}
+                            ${req.message ? `<div class="text-sm mt-2">${escapeHtml(req.message)}</div>` : ''}
                             <div class="text-xs text-gray-500 mt-2">${new Date(req.requested_at).toLocaleString('de-DE')}</div>
                         </div>
                         <div class="ml-4 space-x-2">
-                            <span class="px-2 py-1 text-xs rounded bg-${statusColor}-500/20 text-${statusColor}-400">${req.status}</span>
+                            <span class="px-2 py-1 text-xs rounded bg-${statusColor}-500/20 text-${statusColor}-400">${statusText}</span>
                             ${req.status === 'pending' ? `
                                 <button onclick="updateRequestStatus(${req.id}, 'approved')" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded">
                                     Genehmigen

@@ -1042,10 +1042,10 @@ async def track_mediakit_view_endpoint(request: Request):
     viewer_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
     
-    # Get country from IP
+    # Get country from IP (async)
     viewer_country = None
     if viewer_ip:
-        viewer_country = get_country_from_ip(viewer_ip)
+        viewer_country = await get_country_from_ip(viewer_ip)
     
     # Track the view
     track_mediakit_view(
@@ -1087,7 +1087,6 @@ async def request_mediakit_access(request: Request):
         raise HTTPException(400, "Email ist erforderlich")
     
     # Validate email format
-    import re
     email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     if not re.match(email_pattern, email):
         raise HTTPException(400, "Ungültige E-Mail-Adresse")

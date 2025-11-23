@@ -622,13 +622,20 @@ def update_access_request_status(request_id: int, status: str):
     """Update access request status."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        approved_at = "datetime('now', 'localtime')" if status == 'approved' else "NULL"
-        cursor.execute(
-            f"""UPDATE mediakit_access_requests 
-                SET status = ?, approved_at = {approved_at}
-                WHERE id = ?""",
-            (status, request_id)
-        )
+        if status == 'approved':
+            cursor.execute(
+                """UPDATE mediakit_access_requests 
+                   SET status = ?, approved_at = datetime('now', 'localtime')
+                   WHERE id = ?""",
+                (status, request_id)
+            )
+        else:
+            cursor.execute(
+                """UPDATE mediakit_access_requests 
+                   SET status = ?, approved_at = NULL
+                   WHERE id = ?""",
+                (status, request_id)
+            )
         conn.commit()
 
 

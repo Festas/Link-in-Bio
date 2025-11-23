@@ -4,32 +4,57 @@ const fs = require('fs');
 const path = require('path');
 const qs = require('querystring');
 
-// Pfade
+// --- KONFIGURATION ---
 const TOKEN_FILE = path.join(__dirname, 'tiktok_tokens.json');
-const OUTPUT_FILE = path.join(__dirname, 'public', 'media_kit_tiktok.json');
+// Pfad wo das Ergebnis für die Webseite landet
+const OUTPUT_FILE = path.join(__dirname, 'public', 'media_kit_tiktok.json'); 
 
-// Hilfsfunktion: Tokens lesen/schreiben
+// 1. HELFER: DATEIEN LESEN/SCHREIBEN
 function getTokens() {
-    if (!fs.existsSync(TOKEN_FILE)) return null;
+    if (!fs.existsSync(TOKEN_FILE)) {
+        console.error("❌ CRITICAL: tiktok_tokens.json fehlt!");
+        return null;
+    }
     return JSON.parse(fs.readFileSync(TOKEN_FILE, 'utf8'));
 }
 
 function saveTokens(tokenData) {
-    // Wir behalten alte Daten bei und überschreiben nur was neu ist
     const current = getTokens() || {};
-    const newData = { ...current, ...tokenData, last_updated: Date.now() };
+    // Wir speichern den aktuellen Zeitstempel, um später zu rechnen
+    const newData = { 
+        ...current, 
+        ...tokenData, 
+        last_updated: Date.now() 
+    };
     fs.writeFileSync(TOKEN_FILE, JSON.stringify(newData, null, 2));
+    console.log("💾 Tokens aktualisiert und gespeichert.");
 }
 
-// 1. TOKEN REFRESH (Das Herzstück)
-async function refreshAccessToken() {
+// 2. LOGIK: TOKEN PRÜFEN & ERNEUERN
+async function getValidAccessToken() {
     const tokens = getTokens();
     if (!tokens || !tokens.refresh_token) {
-        throw new Error("❌ Keine Tokens gefunden! Bitte tiktok_tokens.json prüfen.");
+        throw new Error("Keine Tokens vorhanden. Bitte Initial-Setup wiederholen.");
     }
 
-    console.log("🔄 Erneuere TikTok Token...");
+    // Wann läuft der Token ab? (expires_in ist in Sekunden, wir rechnen in ms)
+    const now = Date.now();
+    const tokenAge = now - (tokens.last_updated || 0);
+    const lifeTime = (tokens.expires_in * 1000); 
+    
+    // Puffer: Wir erneuern, wenn er noch weniger als 60 Minuten gültig ist
+    const buffer = 60 * 60 * 1000; 
 
+    const isValid = tokenAge < (lifeTime - buffer);
+
+    if (isValid) {
+        console.log("✅ Aktueller Token ist noch gültig. Kein Refresh nötig.");
+        return tokens.access_token;
+    }
+
+    console.log("⏳ Token läuft bald ab (oder ist alt). Starte Refresh...");
+    
+    // Der eigentliche Refresh Call
     try {
         const response = await axios.post('https://open.tiktokapis.com/v2/oauth/token/', qs.stringify({
             client_key: process.env.TIKTOK_CLIENT_KEY,
@@ -42,51 +67,51 @@ async function refreshAccessToken() {
 
         const newTokens = response.data;
         
-        // Speichern für den nächsten Lauf
+        // Speichern der neuen Schlüssel
         saveTokens({
             access_token: newTokens.access_token,
-            refresh_token: newTokens.refresh_token, // WICHTIG: Refresh Token rotiert oft auch!
+            refresh_token: newTokens.refresh_token, // WICHTIG: TikTok gibt oft neue Refresh Tokens mit zurück
             expires_in: newTokens.expires_in
         });
 
-        console.log("✅ Token erfolgreich erneuert!");
         return newTokens.access_token;
 
     } catch (error) {
-        console.error("❌ Token Refresh fehlgeschlagen:", error.response?.data || error.message);
-        throw error;
+        console.error("❌ REFRESH FEHLGESCHLAGEN:", error.response?.data || error.message);
+        // Im Notfall versuchen wir es trotzdem mit dem alten Token
+        return tokens.access_token;
     }
 }
 
-// 2. STATS HOLEN
+// 3. HAUPTFUNKTION: DATEN HOLEN
 async function fetchTikTokStats() {
     try {
-        // Immer erst refreshen, um sicher zu gehen
-        const accessToken = await refreshAccessToken();
+        // Hier passiert die Magie: Hole gültigen Token (egal ob alt oder neu)
+        const accessToken = await getValidAccessToken();
         
-        console.log("📊 Lade Profil & Videos...");
+        console.log("📊 Lade TikTok Daten...");
 
-        // A. Profil Daten
+        // A. User Infos laden
         const userRes = await axios.get('https://open.tiktokapis.com/v2/user/info/', {
             headers: { 'Authorization': `Bearer ${accessToken}` },
             params: { fields: 'display_name,avatar_url,follower_count,likes_count,video_count' }
         });
         
-        // B. Letzte Videos für Engagement Rate
+        // B. Letzte 10 Videos laden (für Engagement Rate)
         const videoRes = await axios.post('https://open.tiktokapis.com/v2/video/list/', {
-            max_count: 10 // Wir analysieren die letzten 10 Videos
+            max_count: 10
         }, {
             headers: { 
                 'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/json'
             },
-            params: { fields: 'id,title,view_count,like_count,comment_count,share_count' }
+            params: { fields: 'id,view_count,like_count,comment_count,share_count' }
         });
 
         const user = userRes.data.data.user;
         const videos = videoRes.data.data.videos || [];
 
-        // C. Engagement Rate Berechnen
+        // C. Engagement Berechnen
         let totalEngagements = 0;
         let totalViews = 0;
 
@@ -95,14 +120,13 @@ async function fetchTikTokStats() {
             totalViews += vid.view_count;
         });
 
-        // Formel: (Interaktionen / Views) * 100
         const engagementRate = totalViews > 0 ? ((totalEngagements / totalViews) * 100).toFixed(2) : 0;
 
-        // D. Output bauen
+        // D. Output erstellen
         const output = {
             meta: {
                 updated_at: new Date().toISOString(),
-                source: "TikTok Official API (Sandbox)"
+                source: "TikTok Official API"
             },
             profile: {
                 username: user.display_name,
@@ -114,22 +138,23 @@ async function fetchTikTokStats() {
                 likes: user.likes_count,
                 videos: user.video_count,
                 engagement_rate: engagementRate + "%",
-                avg_views: videos.length > 0 ? Math.round(totalViews / videos.length) : 0
+                avg_views_last_10: videos.length > 0 ? Math.round(totalViews / videos.length) : 0
             }
         };
 
-        // Speichern
+        // E. Speichern
         const dir = path.dirname(OUTPUT_FILE);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         
         fs.writeFileSync(OUTPUT_FILE, JSON.stringify(output, null, 2));
-        console.log(`🎉 TikTok Stats gespeichert in: ${OUTPUT_FILE}`);
+        console.log(`🎉 Success! Daten gespeichert in: ${OUTPUT_FILE}`);
 
     } catch (error) {
-        console.error("❌ Abbruch:", error.message);
+        console.error("❌ FEHLER BEIM LADEN:", error.response?.data || error.message);
     }
 }
 
+// Start
 fetchTikTokStats();
 
 

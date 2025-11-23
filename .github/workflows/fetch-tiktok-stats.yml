@@ -51,8 +51,8 @@ jobs:
           script: |
             cd /var/www/app
             
-            # Create .env.social on server (append TikTok credentials)
-            echo "${{ secrets.TIKTOK_SECRET }}" >> .env.social
+            # Create .env.social on server with TikTok credentials
+            echo "${{ secrets.TIKTOK_SECRET }}" > .env.social
             
             # Run the stats fetcher on the server to update the production database
             if docker compose exec -T web python fetch_tiktok_stats.py; then

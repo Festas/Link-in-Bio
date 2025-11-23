@@ -114,7 +114,6 @@ async def main():
             
             # Update TikTok credentials while preserving other content
             updated_lines = []
-            tiktok_section_started = False
             tiktok_vars_updated = {
                 'TIKTOK_ACCESS_TOKEN': False,
                 'TIKTOK_REFRESH_TOKEN': False,

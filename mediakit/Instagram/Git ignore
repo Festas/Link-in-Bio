@@ -1,0 +1,8 @@
+Abhängigkeiten
+node_modules/
+UMWELTVARIABLEN / SECRETS
+Das hier ist das WICHTIGSTE: Es verhindert, dass deine Secrets hochgeladen werden
+.env
+Systemdateien
+.DS_Store
+Thumbs.db

@@ -390,24 +390,32 @@ function initSpecialPageEditor() {
     }
     
     // Add block buttons (placeholder - will be implemented later)
+    const statusEl = document.getElementById('special-page-status');
+    
     const addTextBlockBtn = document.getElementById('add-text-block');
     if (addTextBlockBtn) {
         addTextBlockBtn.addEventListener('click', () => {
-            alert('Textblock-Editor kommt bald! Verwende vorerst den HTML-Editor unten.');
+            if (statusEl) {
+                UI.setFormStatus(statusEl, 'ℹ️ Textblock-Editor kommt bald! Verwende vorerst den HTML-Editor unten.', 'text-blue-400', 4000);
+            }
         });
     }
     
     const addImageBlockBtn = document.getElementById('add-image-block');
     if (addImageBlockBtn) {
         addImageBlockBtn.addEventListener('click', () => {
-            alert('Bildblock-Editor kommt bald! Verwende vorerst den HTML-Editor unten.');
+            if (statusEl) {
+                UI.setFormStatus(statusEl, 'ℹ️ Bildblock-Editor kommt bald! Verwende vorerst den HTML-Editor unten.', 'text-purple-400', 4000);
+            }
         });
     }
     
     const addSectionBlockBtn = document.getElementById('add-section-block');
     if (addSectionBlockBtn) {
         addSectionBlockBtn.addEventListener('click', () => {
-            alert('Bereichs-Editor kommt bald! Verwende vorerst den HTML-Editor unten.');
+            if (statusEl) {
+                UI.setFormStatus(statusEl, 'ℹ️ Bereichs-Editor kommt bald! Verwende vorerst den HTML-Editor unten.', 'text-green-400', 4000);
+            }
         });
     }
 }

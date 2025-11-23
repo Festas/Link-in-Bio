@@ -11,6 +11,8 @@ import { initMediaKit } from './admin_mediakit.js';
 import { initDashboard } from './admin_dashboard.js';
 import { initKeyboardShortcuts, recordAction } from './admin_keyboard.js';
 import { initLivePreview, notifyItemsChanged, notifySettingsChanged } from './admin_live_preview.js';
+import { initSmartFeatures } from './admin_smart_features.js';
+import { initScheduling, showScheduleCalendar } from './admin_scheduling.js';
 
 // Helper für Fallback-Script-Loading
 function loadScript(src) {
@@ -359,6 +361,8 @@ async function initAdmin() {
     try {
         initDashboard();
         initLivePreview();
+        initSmartFeatures();
+        initScheduling();
         
         // Initialize keyboard shortcuts with callbacks
         initKeyboardShortcuts({

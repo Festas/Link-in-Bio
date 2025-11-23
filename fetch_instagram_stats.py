@@ -105,6 +105,8 @@ async def main():
         if social_env.exists():
             logger.info("Updating .env.social with new token...")
             with open(social_env, 'w') as f:
+                f.write(f"# Instagram API Credentials - Automatisch aktualisiert am {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"# Diese Datei wird automatisch mit GitHub Secret synchronisiert\n\n")
                 f.write(f"INSTAGRAM_ACCESS_TOKEN={new_token}\n")
                 f.write(f"INSTAGRAM_USERNAME={fetcher.username}\n")
                 f.write(f"INSTAGRAM_APP_ID={fetcher.app_id}\n")

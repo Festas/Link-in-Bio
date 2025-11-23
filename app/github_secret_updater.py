@@ -12,7 +12,7 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 try:
-    from nacl import encoding, public
+    from nacl import public
     NACL_AVAILABLE = True
 except ImportError:
     NACL_AVAILABLE = False

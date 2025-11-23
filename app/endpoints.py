@@ -291,6 +291,12 @@ async def create_countdown(req: ItemCreate, user=Depends(require_auth)):
     return Item(**create_item_in_db(build_item_data("countdown", req.title, req.target_datetime, page_id=req.page_id)))
 
 
+@router.post("/footers", response_model=Item)
+async def create_footer(req: ItemCreate, user=Depends(require_auth)):
+    cache.invalidate("items")
+    return Item(**create_item_in_db(build_item_data("footer", req.title or "Footer Links", page_id=req.page_id)))
+
+
 # --- Item Management ---
 
 

@@ -15,6 +15,7 @@ jobs:
     permissions:
       contents: read
       actions: read
+      secrets: write  # Required to update repository secrets
     
     steps:
       - name: Checkout repository
@@ -35,6 +36,9 @@ jobs:
           echo "${{ secrets.INSTAGRAM_SECRET }}" > .env.social
       
       - name: Fetch Instagram stats
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           python fetch_instagram_stats.py
       

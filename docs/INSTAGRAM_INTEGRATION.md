@@ -7,7 +7,7 @@ Diese Integration ermöglicht das automatische Abrufen von Instagram-Statistiken
 ## Features
 
 - ✅ **Meta Graph API Integration**: Verwendet offizielle Instagram Business API für präzise Daten
-- ✅ **Automatische Token-Erneuerung**: Long-lived Access Tokens werden automatisch alle 60 Tage erneuert
+- ✅ **Vollautomatische Token-Erneuerung**: Long-lived Access Tokens werden automatisch alle 60 Tage erneuert UND im GitHub Secret aktualisiert - keine manuelle Arbeit erforderlich!
 - ✅ **Tägliche Updates**: GitHub Actions aktualisiert Statistiken täglich um 3 Uhr UTC
 - ✅ **Manuelle Updates**: Admin-Panel Button für sofortige Aktualisierung
 - ✅ **Datenbank-Integration**: Statistiken werden in der bestehenden `social_stats_cache` Tabelle gespeichert
@@ -23,16 +23,23 @@ Diese Integration ermöglicht das automatische Abrufen von Instagram-Statistiken
    - Erneuert Access Token automatisch
    - Formatiert Daten für MediaKit
 
-2. **`fetch_instagram_stats.py`** - CLI-Script für manuelle/automatische Updates
+2. **`app/github_secret_updater.py`** - GitHub Secret Updater (NEU!)
+   - Aktualisiert GitHub Repository Secrets automatisch
+   - Verschlüsselt Secrets mit PyNaCl/libsodium
+   - Wird automatisch bei Token-Refresh ausgeführt
+
+3. **`fetch_instagram_stats.py`** - CLI-Script für manuelle/automatische Updates
    - Lädt Credentials aus `.env.social`
    - Initialisiert Datenbank
    - Fetcht und speichert Instagram Stats
+   - Aktualisiert automatisch GitHub Secret bei Token-Refresh
    - Zeigt Zusammenfassung
 
 3. **`.env.social`** - Social Media API Credentials (NICHT in Git!)
    - Instagram Access Token
    - Instagram Username
    - App ID & App Secret (für Token Refresh)
+   - Wird automatisch aktualisiert bei Token-Refresh
    - Wird 1:1 als GitHub Secret `INSTAGRAM_SECRET` gespeichert
 
 4. **`.env.social.example`** - Template für `.env.social`
@@ -42,6 +49,8 @@ Diese Integration ermöglicht das automatische Abrufen von Instagram-Statistiken
 5. **`.github/workflows/fetch-instagram-stats.yml`** - GitHub Action Workflow
    - Läuft täglich um 3 Uhr UTC
    - Kann manuell getriggert werden
+   - Hat `secrets: write` Berechtigung für automatisches Secret-Update
+   - Aktualisiert INSTAGRAM_SECRET automatisch bei Token-Refresh
    - Deployed Stats auf Production Server
    - Speichert Logs als Artifact
 
@@ -120,27 +129,46 @@ python3 test_instagram_fetcher.py
 
 ## Nutzung
 
-### Automatisch (täglich)
+### Automatisch (täglich) - Vollständig automatisch!
 
 Die GitHub Action läuft automatisch jeden Tag um 3 Uhr UTC und:
 1. Lädt Instagram Stats
-2. Deployed sie auf den Production Server
-3. Erneuert den Access Token (alle ~30 Tage)
+2. Erneuert den Access Token (alle ~30 Tage)
+3. **Aktualisiert automatisch das GitHub Secret `INSTAGRAM_SECRET`** - keine manuelle Arbeit erforderlich!
+4. Deployed die aktualisierten Stats auf den Production Server
+
+**Das System funktioniert komplett autonom - du musst nichts machen!**
 
 ### Manuell (Admin-Panel)
 
 1. Gehe zum Admin-Panel → Media Kit Tab
 2. Klicke auf "Instagram API aktualisieren" Button
 3. Warte auf Bestätigung
-4. Falls Token erneuert wurde, erscheint eine Warnung → Update GitHub Secret!
+4. Falls Token erneuert wurde, wird .env.social lokal aktualisiert
+   - **Hinweis**: Manuelle Admin-Panel Updates können GitHub Secret nicht automatisch aktualisieren
+   - Bei Token-Refresh über Admin-Panel muss GitHub Secret manuell aktualisiert werden
+   - Empfehlung: Lass die GitHub Action den Token-Refresh automatisch handhaben
 
-### Token-Erneuerung
+### Token-Erneuerung - Vollautomatisch! 🎉
 
-Long-lived Tokens sind 60 Tage gültig. Der Fetcher erneuert sie automatisch:
+Long-lived Tokens sind 60 Tage gültig. **Das System erneuert sie jetzt vollautomatisch**:
 
-1. Script zeigt neue Token in Console/Logs
-2. `.env.social` wird lokal automatisch aktualisiert
-3. **WICHTIG**: GitHub Secret `INSTAGRAM_SECRET` muss manuell aktualisiert werden!
+1. GitHub Action erkennt, wenn Token erneuert werden muss
+2. Script erneuert Token über Meta Graph API
+3. Neuer Token wird automatisch verschlüsselt
+4. **GitHub Secret `INSTAGRAM_SECRET` wird automatisch aktualisiert**
+5. Lokale `.env.social` wird ebenfalls aktualisiert
+6. System läuft ohne Unterbrechung weiter
+
+**Du musst absolut nichts machen - alles läuft automatisch!**
+
+#### Technische Details
+
+Die automatische Token-Erneuerung nutzt:
+- GitHub Actions `GITHUB_TOKEN` mit `secrets: write` Berechtigung
+- GitHub REST API v3 für Secret-Updates
+- PyNaCl/libsodium für Secret-Verschlüsselung (wie von GitHub gefordert)
+- Sichere Speicherung nur in GitHub Secrets
 
 ## API Endpoints
 
@@ -242,10 +270,25 @@ Die Struktur ist bereits vorbereitet:
 
 - ✅ `.env.social` ist in `.gitignore` → NIE in Git committed
 - ✅ Secrets nur in GitHub Secrets gespeichert
+- ✅ Secrets werden mit PyNaCl/libsodium verschlüsselt (GitHub-Standard)
 - ✅ Access Tokens haben 60 Tage Laufzeit
-- ✅ Automatische Token-Rotation
+- ✅ Vollautomatische Token-Rotation ohne manuelle Eingriffe
+- ✅ GitHub Actions Token hat minimale Berechtigungen (nur secrets: write)
 - ✅ API verwendet HTTPS
 - ✅ Admin-Panel erfordert Authentifizierung
+
+## Abhängigkeiten
+
+Die automatische Token-Erneuerung benötigt:
+
+```txt
+PyNaCl  # Für Secret-Verschlüsselung (bereits in requirements.txt)
+```
+
+Installation:
+```bash
+pip install -r requirements.txt
+```
 
 ## Troubleshooting
 
@@ -265,7 +308,18 @@ Die Struktur ist bereits vorbereitet:
 ### GitHub Action schlägt fehl
 - Prüfe, ob `INSTAGRAM_SECRET` Secret existiert
 - Prüfe, ob der Inhalt korrekt ist (alle 4 Zeilen)
+- Prüfe, ob PyNaCl installiert ist (`pip install PyNaCl`)
 - Prüfe GitHub Action Logs für Details
+
+### "PyNaCl not available" Error
+- Installiere PyNaCl: `pip install PyNaCl`
+- Oder installiere alle Dependencies: `pip install -r requirements.txt`
+
+### GitHub Secret wird nicht automatisch aktualisiert
+- Prüfe, ob GitHub Action `secrets: write` Berechtigung hat
+- Prüfe, ob `GITHUB_TOKEN` korrekt übergeben wird
+- Prüfe Logs nach "GitHub Secret automatisch aktualisiert" Meldung
+- Bei Fehlern: Secret kann immer noch manuell aktualisiert werden
 
 ## Monitoring
 

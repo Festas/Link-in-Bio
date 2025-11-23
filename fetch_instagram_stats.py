@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from dotenv import load_dotenv
 from app.instagram_fetcher import get_instagram_fetcher_from_env
 from app.database import save_social_stats_cache, init_db
+from app.github_secret_updater import update_instagram_secret_from_env
 
 # Configure logging
 logging.basicConfig(
@@ -87,8 +88,7 @@ async def main():
     if new_token:
         print("\n🔄 ACCESS TOKEN REFRESHED!")
         print("="*60)
-        print("⚠️  WICHTIG: Dein Access Token wurde erneuert!")
-        print("Bitte aktualisiere das GitHub Secret 'INSTAGRAM_SECRET' mit dem neuen Token:")
+        print("✅ Dein Access Token wurde automatisch erneuert!")
         print("\n.env.social Inhalt:")
         print("-"*60)
         print(f"INSTAGRAM_ACCESS_TOKEN={new_token}")
@@ -98,18 +98,53 @@ async def main():
         print("-"*60)
         print("\nDieser Token ist 60 Tage gültig.\n")
         
+        # Update environment with new token for potential GitHub Secret update
+        os.environ['INSTAGRAM_ACCESS_TOKEN'] = new_token
+        
         # Save new token to .env.social if file exists
         if social_env.exists():
             logger.info("Updating .env.social with new token...")
             with open(social_env, 'w') as f:
-                f.write(f"# SOCIAL MEDIA API CREDENTIALS\n")
-                f.write(f"# Diese Datei wird als GitHub Secret 'INSTAGRAM_SECRET' gespeichert\n\n")
-                f.write(f"# Instagram (Meta Graph API)\n")
+                f.write(f"# Instagram API Credentials - Automatisch aktualisiert am {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"# Diese Datei wird automatisch mit GitHub Secret synchronisiert\n\n")
                 f.write(f"INSTAGRAM_ACCESS_TOKEN={new_token}\n")
                 f.write(f"INSTAGRAM_USERNAME={fetcher.username}\n")
                 f.write(f"INSTAGRAM_APP_ID={fetcher.app_id}\n")
                 f.write(f"INSTAGRAM_APP_SECRET={fetcher.app_secret}\n")
             logger.info("✅ .env.social updated with new token")
+        
+        # Automatically update GitHub Secret if running in GitHub Actions
+        github_token = os.getenv('GITHUB_TOKEN')
+        github_repository = os.getenv('GITHUB_REPOSITORY')  # Format: owner/repo
+        
+        if github_token and github_repository:
+            logger.info("🔐 Running in GitHub Actions - attempting to update GitHub Secret...")
+            try:
+                repo_parts = github_repository.split('/')
+                if len(repo_parts) == 2:
+                    repo_owner, repo_name = repo_parts
+                    
+                    success = update_instagram_secret_from_env(
+                        github_token=github_token,
+                        repo_owner=repo_owner,
+                        repo_name=repo_name
+                    )
+                    
+                    if success:
+                        print("\n✅ GitHub Secret 'INSTAGRAM_SECRET' wurde automatisch aktualisiert!")
+                        print("Keine manuellen Schritte erforderlich - das System läuft vollautomatisch weiter.\n")
+                    else:
+                        print("\n⚠️ GitHub Secret konnte nicht automatisch aktualisiert werden.")
+                        print("Bitte aktualisiere das GitHub Secret 'INSTAGRAM_SECRET' manuell mit dem obigen Inhalt.\n")
+                else:
+                    logger.warning(f"Invalid GITHUB_REPOSITORY format: {github_repository}")
+            except Exception as e:
+                logger.error(f"Error updating GitHub Secret: {e}")
+                print(f"\n⚠️ Fehler beim automatischen Update des GitHub Secrets: {e}")
+                print("Bitte aktualisiere das GitHub Secret 'INSTAGRAM_SECRET' manuell.\n")
+        else:
+            print("\n⚠️ Nicht in GitHub Actions - GitHub Secret muss manuell aktualisiert werden.")
+            print("Kopiere den obigen Inhalt in das GitHub Secret 'INSTAGRAM_SECRET'.\n")
     
     print("\n✅ All done! Stats are now available in the MediaKit.\n")
     return 0

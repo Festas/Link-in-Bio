@@ -7,7 +7,7 @@ import * as UI from './admin_ui.js';
 import { organizeItems, getSortableConfig, isGroup } from './groups.js';
 import { requireAuth, logout } from './utils.js';
 import { initializePageManagement, getCurrentPageId } from './admin_pages.js';
-import { initMediaKit } from './admin_mediakit.js';
+import { initMediaKitBlocks } from './admin_mediakit_blocks.js';
 import { initDashboard } from './admin_dashboard.js';
 import { initKeyboardShortcuts, recordAction } from './admin_keyboard.js';
 import { initSmartFeatures } from './admin_smart_features.js';
@@ -58,7 +58,7 @@ async function initAdmin() {
             initializeSubscribers();
             initializeInbox();
         }
-        if (tabName === 'mediakit') initMediaKit();
+        if (tabName === 'mediakit') initMediaKitBlocks();
         // Profil wird global initialisiert, muss hier nicht neu geladen werden
     }
 

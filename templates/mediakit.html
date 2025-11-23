@@ -1506,6 +1506,10 @@
             if (urgencyEl) {
                 urgencyEl.textContent = `Limited Slots Available for ${quarter} ${nextYear}`;
             }
+            
+            // Load new dynamic sections
+            loadFollowerSummary();
+            initPlatformSelector();
         });
         
         // Animated counter for social proof
@@ -1549,7 +1553,7 @@
                     totalEl.textContent = data.total_followers_formatted || '0';
                 }
                 
-                // Update last updated time
+                // Update last updated time - check if platforms array has data
                 const updatedEl = document.getElementById('follower-summary-updated');
                 if (updatedEl && data.platforms && data.platforms.length > 0) {
                     const lastUpdate = new Date(data.platforms[0].fetched_at);
@@ -1558,7 +1562,7 @@
                 
                 // Render platform list
                 const listEl = document.getElementById('qualified-platforms-list');
-                if (listEl && data.platforms) {
+                if (listEl && data.platforms && data.platforms.length > 0) {
                     listEl.innerHTML = data.platforms.map(platform => {
                         const platformIcons = {
                             'instagram': 'instagram',
@@ -1625,7 +1629,8 @@
                 // Add metrics
                 for (const [key, value] of Object.entries(data.metrics)) {
                     if (value !== null && value !== undefined) {
-                        const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        // More efficient label formatting
+                        const label = key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
                         const displayValue = typeof value === 'number' ? value.toLocaleString() : value.toString();
                         
                         metricsHtml += `
@@ -1710,15 +1715,6 @@
             // Load analytics
             loadPlatformAnalytics(platform);
         }
-        
-        // Load dynamic data on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // ... existing DOMContentLoaded code stays here
-            
-            // Load new dynamic sections
-            loadFollowerSummary();
-            initPlatformSelector();
-        });
     </script>
     
     <style>

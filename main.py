@@ -197,7 +197,7 @@ async def get_privacy_page(request: Request):
         "page_content": page_data.get("content", "") if page_data else "",
         "page_subtitle": page_data.get("subtitle", "") if page_data else "",
     }
-    return templates.TemplateResponse(request=request, name="privacy.html", context=context)
+    return templates.TemplateResponse(request=request, name="special-page.html", context=context)
 
 
 @app.get("/impressum", response_class=HTMLResponse)
@@ -215,7 +215,7 @@ async def get_impressum_page(request: Request):
         "page_content": page_data.get("content", "") if page_data else "",
         "page_subtitle": page_data.get("subtitle", "") if page_data else "",
     }
-    return templates.TemplateResponse(request=request, name="impressum.html", context=context)
+    return templates.TemplateResponse(request=request, name="special-page.html", context=context)
 
 
 @app.get("/ueber-mich", response_class=HTMLResponse)
@@ -233,7 +233,7 @@ async def get_about_page(request: Request):
         "page_content": page_data.get("content", "") if page_data else "",
         "page_subtitle": page_data.get("subtitle", "") if page_data else "",
     }
-    return templates.TemplateResponse(request=request, name="ueber-mich.html", context=context)
+    return templates.TemplateResponse(request=request, name="special-page.html", context=context)
 
 
 @app.get("/kontakt", response_class=HTMLResponse)

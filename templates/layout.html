@@ -22,6 +22,7 @@
     <script src="{{ vendor.swiper_js }}?v={{ version }}"></script>
     
     <link rel="stylesheet" href="/static/css/style.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/enhanced-animations.css?v={{ version }}">
     
     {% if custom_html_head %}
         {{ custom_html_head | safe }}
@@ -35,6 +36,7 @@
     </div>
     
     <script src="{{ vendor.lucide }}?v={{ version }}"></script>
+    <script src="/static/js/enhanced_ui.js?v={{ version }}" type="module"></script>
     <script src="/static/js/app.js?v={{ version }}" type="module" defer></script>
     
     <script type="module">

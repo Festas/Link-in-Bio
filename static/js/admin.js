@@ -7,7 +7,6 @@ import * as UI from './admin_ui.js';
 import { organizeItems, getSortableConfig, isGroup } from './groups.js';
 import { requireAuth, logout } from './utils.js';
 import { initializePageManagement, getCurrentPageId } from './admin_pages.js';
-import { initSpecialPages } from './admin_special_pages.js';
 import { initMediaKit } from './admin_mediakit.js';
 
 // Helper für Fallback-Script-Loading
@@ -54,7 +53,6 @@ async function initAdmin() {
             initializeSubscribers();
             initializeInbox();
         }
-        if (tabName === 'special-pages') initSpecialPages();
         if (tabName === 'mediakit') initMediaKit();
         // Profil wird global initialisiert, muss hier nicht neu geladen werden
     }

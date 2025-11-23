@@ -1,10 +1,24 @@
 import * as API from './admin_api.js';
 
 let currentPageId = null;
+let currentSpecialPage = null; // Track if a special page is selected
 let allPages = [];
+
+// Special pages configuration
+const SPECIAL_PAGES = [
+    { key: 'ueber-mich', title: 'Über mich', url: '/ueber-mich' },
+    { key: 'impressum', title: 'Impressum', url: '/impressum' },
+    { key: 'datenschutz', title: 'Datenschutz', url: '/datenschutz' },
+    { key: 'kontakt', title: 'Kontakt', url: '/kontakt' },
+    { key: 'mediakit', title: 'Media Kit', url: '/mediakit' }
+];
 
 export function getCurrentPageId() {
     return currentPageId;
+}
+
+export function getCurrentSpecialPage() {
+    return currentSpecialPage;
 }
 
 export function initializePageManagement() {
@@ -14,10 +28,26 @@ export function initializePageManagement() {
     const pageSelector = document.getElementById('page-selector');
     if (pageSelector) {
         pageSelector.addEventListener('change', (e) => {
-            const pageId = e.target.value ? parseInt(e.target.value) : null;
-            currentPageId = pageId;
-            // Trigger items reload
-            window.dispatchEvent(new CustomEvent('page-changed', { detail: { pageId } }));
+            const value = e.target.value;
+            
+            // Check if it's a special page (starts with 'special:')
+            if (value.startsWith('special:')) {
+                const pageKey = value.replace('special:', '');
+                currentPageId = null;
+                currentSpecialPage = pageKey;
+                showSpecialPageEditor(pageKey);
+                // Hide tabs and show only the special page editor
+                hideAllTabs();
+            } else {
+                const pageId = value ? parseInt(value) : null;
+                currentPageId = pageId;
+                currentSpecialPage = null;
+                hideSpecialPageEditor();
+                // Show tabs normally
+                showAllTabs();
+                // Trigger items reload
+                window.dispatchEvent(new CustomEvent('page-changed', { detail: { pageId } }));
+            }
         });
     }
     
@@ -38,6 +68,26 @@ export function initializePageManagement() {
     if (createPageForm) {
         createPageForm.addEventListener('submit', handleCreatePage);
     }
+    
+    // Close special page editor
+    const closeSpecialEditor = document.getElementById('close-special-editor');
+    if (closeSpecialEditor) {
+        closeSpecialEditor.addEventListener('click', () => {
+            hideSpecialPageEditor();
+            // Reset to first regular page
+            const selector = document.getElementById('page-selector');
+            if (selector && allPages.length > 0) {
+                selector.value = allPages[0].id;
+                currentPageId = allPages[0].id;
+                currentSpecialPage = null;
+                showAllTabs();
+                window.dispatchEvent(new CustomEvent('page-changed', { detail: { pageId: currentPageId } }));
+            }
+        });
+    }
+    
+    // Initialize special page editor handlers
+    initSpecialPageEditor();
 }
 
 async function loadPages() {
@@ -69,6 +119,7 @@ function updatePageSelector() {
     
     selector.innerHTML = '';
     
+    // Add regular pages
     allPages.forEach(page => {
         const option = document.createElement('option');
         option.value = page.id;
@@ -76,8 +127,24 @@ function updatePageSelector() {
         selector.appendChild(option);
     });
     
-    // Select current page if set
-    if (currentPageId) {
+    // Add separator
+    const separator = document.createElement('option');
+    separator.disabled = true;
+    separator.textContent = '──────────';
+    selector.appendChild(separator);
+    
+    // Add special pages
+    SPECIAL_PAGES.forEach(sp => {
+        const option = document.createElement('option');
+        option.value = `special:${sp.key}`;
+        option.textContent = `⚙️ ${sp.title}`;
+        selector.appendChild(option);
+    });
+    
+    // Select current page or special page if set
+    if (currentSpecialPage) {
+        selector.value = `special:${currentSpecialPage}`;
+    } else if (currentPageId) {
         selector.value = currentPageId;
     }
 }
@@ -275,4 +342,127 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Special page editor functions
+function showSpecialPageEditor(pageKey) {
+    const editorPanel = document.getElementById('special-page-editor-panel');
+    if (editorPanel) {
+        editorPanel.style.display = 'block';
+        loadSpecialPageContent(pageKey);
+        
+        // Update preview link
+        const previewLink = document.getElementById('sp-preview-link');
+        if (previewLink) {
+            const specialPageConfig = SPECIAL_PAGES.find(sp => sp.key === pageKey);
+            if (specialPageConfig) {
+                previewLink.href = specialPageConfig.url;
+            }
+        }
+    }
+}
+
+function hideSpecialPageEditor() {
+    const editorPanel = document.getElementById('special-page-editor-panel');
+    if (editorPanel) {
+        editorPanel.style.display = 'none';
+    }
+}
+
+function hideAllTabs() {
+    document.querySelectorAll('.tab-content').forEach(el => {
+        el.style.display = 'none';
+    });
+    document.querySelector('.mb-6.border-b.border-gray-700')?.style.setProperty('display', 'none');
+}
+
+function showAllTabs() {
+    document.querySelector('.mb-6.border-b.border-gray-700')?.style.removeProperty('display');
+    // The active tab will be shown by the tab switching logic
+}
+
+function initSpecialPageEditor() {
+    // Save button
+    const saveBtn = document.getElementById('save-special-page-content');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveSpecialPageContent);
+    }
+    
+    // Add block buttons (placeholder - will be implemented later)
+    const addTextBlockBtn = document.getElementById('add-text-block');
+    if (addTextBlockBtn) {
+        addTextBlockBtn.addEventListener('click', () => {
+            alert('Textblock-Editor kommt bald! Verwende vorerst den HTML-Editor unten.');
+        });
+    }
+    
+    const addImageBlockBtn = document.getElementById('add-image-block');
+    if (addImageBlockBtn) {
+        addImageBlockBtn.addEventListener('click', () => {
+            alert('Bildblock-Editor kommt bald! Verwende vorerst den HTML-Editor unten.');
+        });
+    }
+    
+    const addSectionBlockBtn = document.getElementById('add-section-block');
+    if (addSectionBlockBtn) {
+        addSectionBlockBtn.addEventListener('click', () => {
+            alert('Bereichs-Editor kommt bald! Verwende vorerst den HTML-Editor unten.');
+        });
+    }
+}
+
+async function loadSpecialPageContent(pageKey) {
+    try {
+        const response = await fetch(`/api/special-pages/${pageKey}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+        });
+        
+        if (!response.ok) throw new Error('Fehler beim Laden');
+        
+        const data = await response.json();
+        document.getElementById('sp-title-legacy').value = data.title || '';
+        document.getElementById('sp-subtitle-legacy').value = data.subtitle || '';
+        document.getElementById('sp-content-legacy').value = data.content || '';
+    } catch (error) {
+        console.error('Error loading special page:', error);
+        showStatus('special-page-status', 'Fehler beim Laden der Seite', 'error');
+    }
+}
+
+async function saveSpecialPageContent() {
+    if (!currentSpecialPage) return;
+    
+    const title = document.getElementById('sp-title-legacy').value;
+    const subtitle = document.getElementById('sp-subtitle-legacy').value;
+    const content = document.getElementById('sp-content-legacy').value;
+    
+    try {
+        const response = await fetch(`/api/special-pages/${currentSpecialPage}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+            },
+            body: JSON.stringify({ title, subtitle, content })
+        });
+        
+        if (!response.ok) throw new Error('Fehler beim Speichern');
+        
+        showStatus('special-page-status', 'Erfolgreich gespeichert! ✓', 'success');
+    } catch (error) {
+        console.error('Error saving special page:', error);
+        showStatus('special-page-status', 'Fehler beim Speichern', 'error');
+    }
+}
+
+function showStatus(elementId, message, type) {
+    const statusEl = document.getElementById(elementId);
+    if (!statusEl) return;
+    
+    statusEl.textContent = message;
+    statusEl.className = `mt-4 text-center ${type === 'success' ? 'text-green-400' : 'text-red-400'}`;
+    
+    setTimeout(() => {
+        statusEl.textContent = '';
+    }, 3000);
 }

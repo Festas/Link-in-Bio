@@ -33,15 +33,20 @@ class SettingsService:
         return settings.get(key, default)
     
     @staticmethod
+    def _execute_setting_update(cursor, key: str, value: Any):
+        """Helper method to execute a single setting update."""
+        cursor.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+            (key, value)
+        )
+    
+    @staticmethod
     def update_setting(key: str, value: Any) -> bool:
         """Update a single setting."""
         try:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute(
-                    "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-                    (key, value)
-                )
+                SettingsService._execute_setting_update(cursor, key, value)
                 conn.commit()
             
             # Invalidate cache
@@ -58,10 +63,7 @@ class SettingsService:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
                 for key, value in settings_dict.items():
-                    cursor.execute(
-                        "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-                        (key, value)
-                    )
+                    SettingsService._execute_setting_update(cursor, key, value)
                 conn.commit()
             
             # Invalidate cache

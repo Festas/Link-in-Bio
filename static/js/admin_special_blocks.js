@@ -45,6 +45,41 @@ const BLOCK_TYPES = {
         color: 'gray',
         defaultContent: '',
         defaultSettings: { size: 'medium' }
+    },
+    gallery: {
+        name: 'Galerie',
+        icon: 'images',
+        color: 'pink',
+        defaultContent: '[]',
+        defaultSettings: { columns: 3 }
+    },
+    quote: {
+        name: 'Zitat',
+        icon: 'quote',
+        color: 'yellow',
+        defaultContent: 'Dein Zitat hier',
+        defaultSettings: { author: '', style: 'default' }
+    },
+    video: {
+        name: 'Video',
+        icon: 'video',
+        color: 'red',
+        defaultContent: '',
+        defaultSettings: {}
+    },
+    columns: {
+        name: 'Spalten',
+        icon: 'columns',
+        color: 'teal',
+        defaultContent: '[]',
+        defaultSettings: { columns: 2 }
+    },
+    timeline: {
+        name: 'Timeline',
+        icon: 'calendar',
+        color: 'orange',
+        defaultContent: '[]',
+        defaultSettings: {}
     }
 };
 

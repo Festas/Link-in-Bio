@@ -273,6 +273,9 @@ BLOCK_TYPES = {
 
 def render_block_to_html(block: Dict[str, Any]) -> str:
     """Render a block dictionary to HTML."""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     block_type = block.get('block_type', 'text')
     content = block.get('content', '')
     settings = block.get('settings', {})
@@ -294,7 +297,7 @@ def render_block_to_html(block: Dict[str, Any]) -> str:
         block_instance = block_class(content=content, **settings)
         return block_instance.to_html()
     except Exception as e:
-        print(f"Error rendering block {block_type}: {e}")
+        logger.error(f"Error rendering block {block_type}: {e}")
         return f'<div class="error">Error rendering block</div>'
 
 

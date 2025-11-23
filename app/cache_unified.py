@@ -280,18 +280,30 @@ class RedisCacheBackend(CacheBackend):
             memory_info = self.client.info("memory")
             
             keys_count = len(self.client.keys(f"{REDIS_PREFIX}*"))
+            hit_rate = self._calculate_hit_rate(
+                info.get('keyspace_hits', 0),
+                info.get('keyspace_misses', 0)
+            )
             
             return {
                 "backend": "redis",
                 "hits": info.get("keyspace_hits", 0),
                 "misses": info.get("keyspace_misses", 0),
-                "hit_rate": f"{(info.get('keyspace_hits', 0) / max(info.get('keyspace_hits', 0) + info.get('keyspace_misses', 0), 1) * 100):.2f}%",
+                "hit_rate": f"{hit_rate:.2f}%",
                 "keys_count": keys_count,
                 "memory_mb": f"{memory_info.get('used_memory', 0) / 1024 / 1024:.2f}",
             }
         except redis.RedisError as e:
             logger.error(f"Redis stats error: {e}")
             return {"backend": "redis", "error": str(e)}
+    
+    @staticmethod
+    def _calculate_hit_rate(hits: int, misses: int) -> float:
+        """Calculate cache hit rate percentage."""
+        total = hits + misses
+        if total == 0:
+            return 0.0
+        return (hits / total) * 100
     
     # Legacy API compatibility
     def invalidate(self, prefix: str = ""):

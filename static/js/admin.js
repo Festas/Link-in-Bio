@@ -13,6 +13,7 @@ import { initKeyboardShortcuts, recordAction } from './admin_keyboard.js';
 import { initLivePreview, notifyItemsChanged, notifySettingsChanged } from './admin_live_preview.js';
 import { initSmartFeatures } from './admin_smart_features.js';
 import { initScheduling, showScheduleCalendar } from './admin_scheduling.js';
+import { initFixedPreviewButton } from './admin_fixed_preview.js';
 
 // Helper für Fallback-Script-Loading
 function loadScript(src) {
@@ -363,6 +364,7 @@ async function initAdmin() {
         initLivePreview();
         initSmartFeatures();
         initScheduling();
+        initFixedPreviewButton(); // Add fixed preview button
         
         // Initialize keyboard shortcuts with callbacks
         initKeyboardShortcuts({

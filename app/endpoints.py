@@ -860,10 +860,15 @@ async def get_special_pages_list():
 @router.get("/special-pages/{page_key}", dependencies=[Depends(require_auth)])
 async def get_special_page_content(page_key: str):
     """Get specific special page content."""
-    from .database import get_special_page
+    from .database import get_special_page, get_special_page_blocks
     page = get_special_page(page_key)
     if not page:
         raise HTTPException(404, "Seite nicht gefunden")
+    
+    # Get blocks if they exist
+    blocks = get_special_page_blocks(page_key)
+    page['blocks'] = blocks
+    
     return page
 
 
@@ -881,6 +886,46 @@ async def update_special_page_content(page_key: str, request: Request):
     
     update_special_page(page_key, title, subtitle, content)
     return {"message": "Seite aktualisiert"}
+
+
+# Special Page Blocks endpoints
+@router.get("/special-pages/{page_key}/blocks", dependencies=[Depends(require_auth)])
+async def get_special_page_blocks_endpoint(page_key: str):
+    """Get all blocks for a special page."""
+    from .database import get_special_page_blocks
+    blocks = get_special_page_blocks(page_key)
+    return {"blocks": blocks}
+
+
+@router.post("/special-pages/{page_key}/blocks", dependencies=[Depends(require_auth)])
+async def save_special_page_blocks_endpoint(page_key: str, request: Request):
+    """Save blocks for a special page."""
+    from .database import save_special_page_blocks
+    data = await request.json()
+    blocks = data.get("blocks", [])
+    
+    save_special_page_blocks(page_key, blocks)
+    return {"message": "Blöcke gespeichert"}
+
+
+@router.put("/special-page-blocks/{block_id}", dependencies=[Depends(require_auth)])
+async def update_special_page_block_endpoint(block_id: int, request: Request):
+    """Update a specific block."""
+    from .database import update_special_page_block
+    data = await request.json()
+    content = data.get("content", "")
+    settings = data.get("settings", {})
+    
+    update_special_page_block(block_id, content, settings)
+    return {"message": "Block aktualisiert"}
+
+
+@router.delete("/special-page-blocks/{block_id}", dependencies=[Depends(require_auth)])
+async def delete_special_page_block_endpoint(block_id: int):
+    """Delete a specific block."""
+    from .database import delete_special_page_block
+    delete_special_page_block(block_id)
+    return {"message": "Block gelöscht"}
 
 
 # --- Media Kit Management ---

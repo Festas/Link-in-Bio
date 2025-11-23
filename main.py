@@ -31,7 +31,7 @@ setup_logging(log_level=LOG_LEVEL, json_logs=JSON_LOGS)
 
 logger = get_logger(__name__)
 
-from app.database import init_db, get_settings_from_db, get_page_by_slug, get_all_pages, get_special_page, get_mediakit_data
+from app.database import init_db, get_settings_from_db, get_page_by_slug, get_all_pages, get_special_page, get_mediakit_data, get_special_page_blocks
 from app.endpoints import router as api_router
 from app.endpoints_enhanced import router as api_router_enhanced
 from app.services import APP_DOMAIN
@@ -166,6 +166,72 @@ async def get_sitemap():
     return Response(content=xml_content, media_type="application/xml")
 
 
+def render_blocks_to_html(blocks):
+    """Convert blocks array to HTML string."""
+    if not blocks:
+        return ""
+    
+    import json
+    html_parts = []
+    
+    for block in blocks:
+        block_type = block.get('block_type', 'text')
+        content = block.get('content', '')
+        settings_str = block.get('settings', '{}')
+        
+        # Parse settings if it's a string
+        if isinstance(settings_str, str):
+            try:
+                settings = json.loads(settings_str) if settings_str else {}
+            except:
+                settings = {}
+        else:
+            settings = settings_str or {}
+        
+        if block_type == 'heading':
+            level = settings.get('level', 'h2')
+            html_parts.append(f'<{level}>{content}</{level}>')
+            
+        elif block_type == 'text':
+            # Replace newlines with <br> tags
+            formatted_content = content.replace('\n', '<br>')
+            html_parts.append(f'<p>{formatted_content}</p>')
+            
+        elif block_type == 'image':
+            if content:
+                width_class = {
+                    'full': 'w-full',
+                    'large': 'max-w-4xl mx-auto',
+                    'medium': 'max-w-2xl mx-auto',
+                    'small': 'max-w-md mx-auto'
+                }.get(settings.get('width', 'full'), 'w-full')
+                html_parts.append(f'<div class="{width_class}"><img src="{content}" alt="Bild" class="rounded-lg w-full"></div>')
+            
+        elif block_type == 'list':
+            list_type = settings.get('type', 'ul')
+            items = content.split('\n') if content else []
+            items = [item.strip() for item in items if item.strip()]
+            if items:
+                list_items = ''.join([f'<li>{item}</li>' for item in items])
+                html_parts.append(f'<{list_type}>{list_items}</{list_type}>')
+            
+        elif block_type == 'section':
+            html_parts.append('<section>')
+            # Sections can contain other content in the future
+            html_parts.append('</section>')
+            
+        elif block_type == 'spacer':
+            size = settings.get('size', 'medium')
+            height_class = {
+                'small': 'h-4',
+                'medium': 'h-8',
+                'large': 'h-16'
+            }.get(size, 'h-8')
+            html_parts.append(f'<div class="{height_class}"></div>')
+    
+    return '\n'.join(html_parts)
+
+
 @app.get("/admin", response_class=HTMLResponse)
 async def get_admin_page(request: Request):
     return templates.TemplateResponse(request=request, name="admin.html")
@@ -186,6 +252,14 @@ async def get_login_page(request: Request):
 async def get_privacy_page(request: Request):
     settings = get_settings_from_db()
     page_data = get_special_page("datenschutz")
+    blocks = get_special_page_blocks("datenschutz")
+    
+    # Render blocks to HTML if they exist, otherwise use legacy content
+    if blocks:
+        page_content = render_blocks_to_html(blocks)
+    else:
+        page_content = page_data.get("content", "") if page_data else ""
+    
     page_url = f"https://{APP_DOMAIN}/datenschutz" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/datenschutz"
     context = {
         "page_title": page_data.get("title", "Datenschutzerklärung") if page_data else "Datenschutzerklärung",
@@ -194,7 +268,7 @@ async def get_privacy_page(request: Request):
         "page_url": page_url,
         "custom_html_head": settings.get("custom_html_head", ""),
         "custom_html_body": settings.get("custom_html_body", ""),
-        "page_content": page_data.get("content", "") if page_data else "",
+        "page_content": page_content,
         "page_subtitle": page_data.get("subtitle", "") if page_data else "",
     }
     return templates.TemplateResponse(request=request, name="special-page.html", context=context)
@@ -204,6 +278,14 @@ async def get_privacy_page(request: Request):
 async def get_impressum_page(request: Request):
     settings = get_settings_from_db()
     page_data = get_special_page("impressum")
+    blocks = get_special_page_blocks("impressum")
+    
+    # Render blocks to HTML if they exist, otherwise use legacy content
+    if blocks:
+        page_content = render_blocks_to_html(blocks)
+    else:
+        page_content = page_data.get("content", "") if page_data else ""
+    
     page_url = f"https://{APP_DOMAIN}/impressum" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/impressum"
     context = {
         "page_title": page_data.get("title", "Impressum") if page_data else "Impressum",
@@ -212,7 +294,7 @@ async def get_impressum_page(request: Request):
         "page_url": page_url,
         "custom_html_head": settings.get("custom_html_head", ""),
         "custom_html_body": settings.get("custom_html_body", ""),
-        "page_content": page_data.get("content", "") if page_data else "",
+        "page_content": page_content,
         "page_subtitle": page_data.get("subtitle", "") if page_data else "",
     }
     return templates.TemplateResponse(request=request, name="special-page.html", context=context)
@@ -222,6 +304,14 @@ async def get_impressum_page(request: Request):
 async def get_about_page(request: Request):
     settings = get_settings_from_db()
     page_data = get_special_page("ueber-mich")
+    blocks = get_special_page_blocks("ueber-mich")
+    
+    # Render blocks to HTML if they exist, otherwise use legacy content
+    if blocks:
+        page_content = render_blocks_to_html(blocks)
+    else:
+        page_content = page_data.get("content", "") if page_data else ""
+    
     page_url = f"https://{APP_DOMAIN}/ueber-mich" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/ueber-mich"
     context = {
         "page_title": page_data.get("title", "Über mich - Eric | Tech & Gaming") if page_data else "Über mich - Eric | Tech & Gaming",
@@ -230,7 +320,7 @@ async def get_about_page(request: Request):
         "page_url": page_url,
         "custom_html_head": settings.get("custom_html_head", ""),
         "custom_html_body": settings.get("custom_html_body", ""),
-        "page_content": page_data.get("content", "") if page_data else "",
+        "page_content": page_content,
         "page_subtitle": page_data.get("subtitle", "") if page_data else "",
     }
     return templates.TemplateResponse(request=request, name="special-page.html", context=context)

@@ -83,7 +83,23 @@ def init_db():
             title TEXT NOT NULL,
             subtitle TEXT,
             content TEXT NOT NULL,
+            blocks TEXT,
             updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
+        
+        # Special page blocks table  
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS special_page_blocks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            page_key TEXT NOT NULL,
+            block_type TEXT NOT NULL,
+            content TEXT NOT NULL,
+            settings TEXT,
+            position INTEGER NOT NULL,
+            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            FOREIGN KEY (page_key) REFERENCES special_pages(page_key) ON DELETE CASCADE
         )"""
         )
         
@@ -387,6 +403,65 @@ def update_special_page(page_key: str, title: str, subtitle: str, content: str):
                WHERE page_key = ?""",
             (title, subtitle, content, page_key)
         )
+        conn.commit()
+
+
+# Special Page Blocks functions
+def get_special_page_blocks(page_key: str) -> list:
+    """Get all blocks for a special page ordered by position."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT id, page_key, block_type, content, settings, position, created_at, updated_at
+               FROM special_page_blocks 
+               WHERE page_key = ? 
+               ORDER BY position""",
+            (page_key,)
+        )
+        return [dict(row) for row in cursor.fetchall()]
+
+
+def save_special_page_blocks(page_key: str, blocks: list):
+    """Save blocks for a special page. Replaces all existing blocks."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        # Delete existing blocks
+        cursor.execute("DELETE FROM special_page_blocks WHERE page_key = ?", (page_key,))
+        
+        # Insert new blocks
+        for i, block in enumerate(blocks):
+            cursor.execute(
+                """INSERT INTO special_page_blocks (page_key, block_type, content, settings, position)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    page_key,
+                    block.get('block_type', 'text'),
+                    block.get('content', ''),
+                    json.dumps(block.get('settings', {})) if block.get('settings') else None,
+                    i
+                )
+            )
+        conn.commit()
+
+
+def update_special_page_block(block_id: int, content: str, settings: dict = None):
+    """Update a specific block."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """UPDATE special_page_blocks 
+               SET content = ?, settings = ?, updated_at = datetime('now', 'localtime')
+               WHERE id = ?""",
+            (content, json.dumps(settings) if settings else None, block_id)
+        )
+        conn.commit()
+
+
+def delete_special_page_block(block_id: int):
+    """Delete a specific block."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM special_page_blocks WHERE id = ?", (block_id,))
         conn.commit()
 
 

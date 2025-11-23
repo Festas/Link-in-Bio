@@ -3,6 +3,7 @@ import zipfile
 import sqlite3
 import csv
 import io
+import json
 import logging
 import re
 from pathlib import Path
@@ -53,6 +54,11 @@ from .database import (
     create_page,
     update_page,
     delete_page,
+    get_mediakit_data,
+    update_mediakit_data,
+    delete_mediakit_entry,
+    save_social_stats_cache,
+    get_social_stats_cache,
 )
 from .auth import require_auth, check_auth
 from .services import (
@@ -63,6 +69,7 @@ from .services import (
     get_country_from_ip,
     APP_DOMAIN,
 )
+from .social_stats import get_stats_service
 from .rate_limit import limiter_strict, limiter_standard
 from .cache import cache
 from .config import BASE_DIR, UPLOAD_DIR
@@ -878,7 +885,6 @@ async def update_special_page_content(page_key: str, request: Request):
 @router.get("/mediakit-data", dependencies=[Depends(require_auth)])
 async def get_mediakit_admin_data():
     """Get all media kit data for admin panel."""
-    from .database import get_mediakit_data
     data = get_mediakit_data()
     return {"data": data}
 
@@ -886,7 +892,6 @@ async def get_mediakit_admin_data():
 @router.put("/mediakit-data", dependencies=[Depends(require_auth)])
 async def update_mediakit_admin_data(request: Request):
     """Update media kit data."""
-    from .database import update_mediakit_data
     data = await request.json()
     section = data.get("section", "")
     key = data.get("key", "")
@@ -903,7 +908,6 @@ async def update_mediakit_admin_data(request: Request):
 @router.post("/mediakit-data/batch", dependencies=[Depends(require_auth)])
 async def update_mediakit_batch(request: Request):
     """Batch update media kit data."""
-    from .database import update_mediakit_data
     data = await request.json()
     updates = data.get("updates", [])
     
@@ -925,7 +929,6 @@ async def update_mediakit_batch(request: Request):
 @router.delete("/mediakit-data", dependencies=[Depends(require_auth)])
 async def delete_mediakit_admin_data(request: Request):
     """Delete media kit entry."""
-    from .database import delete_mediakit_entry
     data = await request.json()
     section = data.get("section", "")
     key = data.get("key", "")
@@ -934,16 +937,13 @@ async def delete_mediakit_admin_data(request: Request):
         raise HTTPException(400, "Section und Key sind erforderlich")
     
     delete_mediakit_entry(section, key)
+    delete_mediakit_entry(section, key)
     return {"message": "Eintrag gelöscht"}
 
 
 @router.post("/mediakit/refresh-social-stats", dependencies=[Depends(require_auth)])
 async def refresh_social_stats(request: Request):
     """Fetch fresh social media statistics and update cache."""
-    import json
-    from .database import get_mediakit_data, save_social_stats_cache, update_mediakit_data
-    from .social_stats import get_stats_service
-    
     # Get current social handles from mediakit data
     mediakit_data = get_mediakit_data()
     platforms_config = mediakit_data.get('platforms', {})
@@ -992,7 +992,6 @@ async def refresh_social_stats(request: Request):
     update_mediakit_data('analytics', 'total_followers', total, 0)
     
     # Store last update timestamp
-    from datetime import datetime
     update_mediakit_data('analytics', 'last_updated', datetime.now().strftime('%d.%m.%Y'), 99)
     
     return {
@@ -1006,6 +1005,6 @@ async def refresh_social_stats(request: Request):
 @router.get("/mediakit/social-stats-cache")
 async def get_cached_social_stats():
     """Get cached social media statistics (public endpoint for frontend)."""
-    from .database import get_social_stats_cache
     cache = get_social_stats_cache()
+    return {"data": cache}
     return {"data": cache}

@@ -9,7 +9,7 @@ import logging
 import re
 import httpx
 from typing import Dict, Optional, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class SocialMediaStatsService:
                             'posts': posts,
                             'engagement_rate': None,  # Would need post-level data
                             'verified': user_data.get('is_verified', False),
-                            'fetched_at': datetime.utcnow().isoformat(),
+                            'fetched_at': datetime.now(timezone.utc).isoformat(),
                         }
                 
                 # Try alternative pattern for newer Instagram format
@@ -99,7 +99,7 @@ class SocialMediaStatsService:
                         'posts': posts,
                         'engagement_rate': None,
                         'verified': False,
-                        'fetched_at': datetime.utcnow().isoformat(),
+                        'fetched_at': datetime.now(timezone.utc).isoformat(),
                     }
                 
                 logger.warning(f"Could not extract Instagram data for @{username}")
@@ -148,7 +148,7 @@ class SocialMediaStatsService:
                             'likes': user_info.get('heartCount', 0),
                             'videos': user_info.get('videoCount', 0),
                             'verified': False,
-                            'fetched_at': datetime.utcnow().isoformat(),
+                            'fetched_at': datetime.now(timezone.utc).isoformat(),
                         }
                 
                 # Try alternative pattern
@@ -173,7 +173,7 @@ class SocialMediaStatsService:
                         'likes': likes,
                         'videos': videos,
                         'verified': False,
-                        'fetched_at': datetime.utcnow().isoformat(),
+                        'fetched_at': datetime.now(timezone.utc).isoformat(),
                     }
                 
                 logger.warning(f"Could not extract TikTok data for @{username}")
@@ -210,7 +210,7 @@ class SocialMediaStatsService:
         results = {
             'platforms': {},
             'total_followers': 0,
-            'last_updated': datetime.utcnow().isoformat(),
+            'last_updated': datetime.now(timezone.utc).isoformat(),
             'errors': [],
         }
         

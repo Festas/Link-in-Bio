@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import json
 from typing import Dict, Any, Optional
 from contextlib import contextmanager
 from dotenv import load_dotenv
@@ -421,7 +422,6 @@ def get_social_stats_cache(platform: Optional[str] = None) -> Dict[str, Any]:
         rows = cursor.fetchall()
         result = {}
         for row in rows:
-            import json
             result[row[0]] = {
                 'username': row[1],
                 'data': json.loads(row[2]),

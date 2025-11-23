@@ -958,11 +958,19 @@ async def refresh_social_stats(request: Request):
     config = {k: v for k, v in config.items() if v}
     
     if not config:
-        raise HTTPException(400, "Keine Social Media Handles konfiguriert")
+        raise HTTPException(400, "Keine Social Media Handles konfiguriert. Bitte zuerst Handles eingeben und speichern.")
     
     # Fetch stats
     stats_service = get_stats_service()
     results = await stats_service.fetch_all_stats(config)
+    
+    # Check if we got any data
+    if not results.get('platforms'):
+        # If scraping failed, provide helpful error message
+        error_msg = "Konnte keine Daten abrufen. "
+        if results.get('errors'):
+            error_msg += " Mögliche Gründe: " + ", ".join(results['errors'][:2])
+        raise HTTPException(500, error_msg)
     
     # Save to cache
     for platform, stats in results.get('platforms', {}).items():
@@ -983,10 +991,15 @@ async def refresh_social_stats(request: Request):
     total = stats_service.format_number(results.get('total_followers', 0))
     update_mediakit_data('analytics', 'total_followers', total, 0)
     
+    # Store last update timestamp
+    from datetime import datetime
+    update_mediakit_data('analytics', 'last_updated', datetime.now().strftime('%d.%m.%Y'), 99)
+    
     return {
         "message": "Social Media Statistiken erfolgreich aktualisiert",
         "data": results,
-        "total_followers": total
+        "total_followers": total,
+        "platforms_updated": list(results.get('platforms', {}).keys())
     }
 
 

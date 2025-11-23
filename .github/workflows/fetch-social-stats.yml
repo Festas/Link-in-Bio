@@ -1,0 +1,97 @@
+name: Daily Social Media Stats Update
+
+on:
+  # Run daily at 3 AM UTC
+  schedule:
+    - cron: '0 3 * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  fetch-social-stats:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      actions: read
+      secrets: write  # Required to update repository secrets
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11.x'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Create .env.social from secrets
+        run: |
+          # Combine both Instagram and TikTok secrets into one file
+          echo "${{ secrets.INSTAGRAM_SECRET }}" > .env.social
+          echo "" >> .env.social
+          echo "${{ secrets.TIKTOK_SECRET }}" >> .env.social
+      
+      - name: Fetch Instagram stats
+        id: instagram
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python fetch_instagram_stats.py
+      
+      - name: Fetch TikTok stats
+        id: tiktok
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python fetch_tiktok_stats.py
+      
+      - name: Check stats fetch results
+        run: |
+          echo "Instagram fetch: ${{ steps.instagram.outcome }}"
+          echo "TikTok fetch: ${{ steps.tiktok.outcome }}"
+          
+          # Fail the workflow if both fetches failed
+          if [ "${{ steps.instagram.outcome }}" = "failure" ] && [ "${{ steps.tiktok.outcome }}" = "failure" ]; then
+            echo "❌ Both Instagram and TikTok stats fetch failed"
+            exit 1
+          fi
+          
+          echo "✅ At least one platform stats fetch succeeded"
+      
+      - name: Deploy updated stats to server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/app
+            
+            # Create .env.social on server with both Instagram and TikTok credentials
+            echo "${{ secrets.INSTAGRAM_SECRET }}" > .env.social
+            echo "" >> .env.social
+            echo "${{ secrets.TIKTOK_SECRET }}" >> .env.social
+            
+            # Run both stats fetchers on the server to update the production database
+            docker compose exec -T web python fetch_instagram_stats.py || echo "⚠️ Instagram stats fetch failed on server, continuing..."
+            docker compose exec -T web python fetch_tiktok_stats.py || echo "⚠️ TikTok stats fetch failed on server, continuing..."
+            
+      - name: Upload stats as artifact (for debugging)
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: social-media-stats
+          path: |
+            *.log
+          retention-days: 7

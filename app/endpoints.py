@@ -59,6 +59,16 @@ from .database import (
     delete_mediakit_entry,
     save_social_stats_cache,
     get_social_stats_cache,
+    get_mediakit_setting,
+    update_mediakit_setting,
+    get_all_mediakit_settings,
+    track_mediakit_view,
+    get_mediakit_views,
+    get_mediakit_views_stats,
+    create_access_request,
+    get_access_requests,
+    update_access_request_status,
+    check_access_approved,
 )
 from .auth import require_auth, check_auth
 from .services import (
@@ -1000,3 +1010,145 @@ async def get_cached_social_stats():
     """Get cached social media statistics (public endpoint for frontend)."""
     cache = get_social_stats_cache()
     return {"data": cache}
+
+
+# Media Kit Settings Endpoints
+@router.get("/mediakit/settings", dependencies=[Depends(require_auth)])
+async def get_mediakit_settings_endpoint():
+    """Get all media kit settings."""
+    settings = get_all_mediakit_settings()
+    return {"settings": settings}
+
+
+@router.put("/mediakit/settings", dependencies=[Depends(require_auth)])
+async def update_mediakit_settings_endpoint(request: Request):
+    """Update media kit settings."""
+    data = await request.json()
+    
+    for key, value in data.items():
+        update_mediakit_setting(key, str(value) if value is not None else "")
+    
+    return {"message": "Media Kit Einstellungen aktualisiert"}
+
+
+# Media Kit Views Tracking Endpoints
+@router.post("/mediakit/track-view", dependencies=[Depends(limiter_standard)])
+async def track_mediakit_view_endpoint(request: Request):
+    """Track a media kit view (public endpoint)."""
+    data = await request.json()
+    
+    # Get viewer info
+    viewer_email = data.get("email")
+    viewer_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    
+    # Get country from IP
+    viewer_country = None
+    if viewer_ip:
+        viewer_country = get_country_from_ip(viewer_ip)
+    
+    # Track the view
+    track_mediakit_view(
+        viewer_email=viewer_email,
+        viewer_ip=viewer_ip,
+        viewer_country=viewer_country,
+        user_agent=user_agent
+    )
+    
+    return {"message": "View tracked successfully"}
+
+
+@router.get("/mediakit/views", dependencies=[Depends(require_auth)])
+async def get_mediakit_views_endpoint(limit: int = 100):
+    """Get recent media kit views."""
+    views = get_mediakit_views(limit)
+    return {"views": views}
+
+
+@router.get("/mediakit/views/stats", dependencies=[Depends(require_auth)])
+async def get_mediakit_views_stats_endpoint():
+    """Get media kit views statistics."""
+    stats = get_mediakit_views_stats()
+    return stats
+
+
+# Media Kit Access Request Endpoints
+@router.post("/mediakit/request-access", dependencies=[Depends(limiter_strict)])
+async def request_mediakit_access(request: Request):
+    """Request access to view media kit (for gated access)."""
+    data = await request.json()
+    
+    email = data.get("email", "").strip()
+    name = data.get("name", "").strip()
+    company = data.get("company", "").strip()
+    message = data.get("message", "").strip()
+    
+    if not email:
+        raise HTTPException(400, "Email ist erforderlich")
+    
+    # Validate email format
+    import re
+    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if not re.match(email_pattern, email):
+        raise HTTPException(400, "Ungültige E-Mail-Adresse")
+    
+    # Get IP address
+    ip_address = request.client.host if request.client else None
+    
+    # Create access request
+    request_id = create_access_request(
+        email=email,
+        name=name,
+        company=company,
+        message=message,
+        ip_address=ip_address
+    )
+    
+    return {
+        "message": "Zugriffsanfrage wurde gesendet. Sie erhalten eine E-Mail, sobald Ihre Anfrage genehmigt wurde.",
+        "request_id": request_id
+    }
+
+
+@router.get("/mediakit/access-requests", dependencies=[Depends(require_auth)])
+async def get_access_requests_endpoint(status: Optional[str] = None):
+    """Get access requests."""
+    requests = get_access_requests(status)
+    return {"requests": requests}
+
+
+@router.put("/mediakit/access-requests/{request_id}", dependencies=[Depends(require_auth)])
+async def update_access_request_endpoint(request_id: int, request: Request):
+    """Update access request status."""
+    data = await request.json()
+    status = data.get("status", "").strip()
+    
+    if status not in ["approved", "rejected", "pending"]:
+        raise HTTPException(400, "Ungültiger Status")
+    
+    update_access_request_status(request_id, status)
+    
+    return {"message": f"Zugriffsanfrage wurde {status}"}
+
+
+@router.get("/mediakit/check-access")
+async def check_mediakit_access(email: str):
+    """Check if an email has approved access."""
+    has_access = check_access_approved(email)
+    return {"has_access": has_access}
+
+
+# Media Kit PDF Export Endpoint
+@router.get("/mediakit/export/pdf", dependencies=[Depends(require_auth)])
+async def export_mediakit_pdf():
+    """Export media kit as PDF."""
+    try:
+        # We'll use a library to generate PDF from HTML
+        # For now, return a placeholder response
+        # In production, you'd use something like weasyprint or pdfkit
+        
+        raise HTTPException(501, "PDF Export wird in Kürze verfügbar sein. Bitte verwenden Sie vorerst die Browser-Druckfunktion (Strg+P).")
+        
+    except Exception as e:
+        logging.error(f"Error exporting PDF: {e}")
+        raise HTTPException(500, "Fehler beim Exportieren des PDFs")

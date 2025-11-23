@@ -409,13 +409,13 @@ async function loadSocialAnalytics() {
 function formatNumber(num) {
     if (num === undefined || num === null) return '---';
     
-    const n = parseInt(num);
+    const n = parseInt(num, 10);
     if (isNaN(n)) return '---';
     
     if (n >= 1000000) {
-        return (n / 1000000).toFixed(1) + 'M';
+        return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
     } else if (n >= 1000) {
-        return (n / 1000).toFixed(1) + 'K';
+        return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
     }
     return n.toString();
 }

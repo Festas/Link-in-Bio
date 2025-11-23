@@ -1155,9 +1155,6 @@ async def refresh_instagram_api_stats():
     from dotenv import load_dotenv
     from .instagram_fetcher import get_instagram_fetcher_from_env
     
-    # Constants
-    TOKEN_PREVIEW_LENGTH = 20  # Number of chars to show from token for security
-    
     # Load .env.social if it exists
     social_env_path = Path(__file__).parent.parent / '.env.social'
     if social_env_path.exists():
@@ -1218,7 +1215,7 @@ async def refresh_instagram_api_stats():
         if new_token:
             response_data["token_refreshed"] = True
             response_data["warning"] = "Access Token wurde erneuert. Bitte GitHub Secret 'INSTAGRAM_SECRET' aktualisieren!"
-            response_data["new_token"] = new_token[:TOKEN_PREVIEW_LENGTH] + "..."  # Show only first chars for security
+            # Note: Do not expose any part of the token for security reasons
         
         return response_data
         
@@ -1235,9 +1232,6 @@ async def refresh_tiktok_api_stats():
     """
     from dotenv import load_dotenv
     from .tiktok_fetcher import get_tiktok_fetcher_from_env
-    
-    # Constants
-    TOKEN_PREVIEW_LENGTH = 20  # Number of chars to show from token for security
     
     # Load .env.social if it exists
     social_env_path = Path(__file__).parent.parent / '.env.social'
@@ -1298,8 +1292,7 @@ async def refresh_tiktok_api_stats():
             new_access_token, new_refresh_token = new_tokens
             response_data["token_refreshed"] = True
             response_data["warning"] = "Access Token wurde erneuert. Bitte GitHub Secret 'TIKTOK_SECRET' aktualisieren!"
-            response_data["new_access_token"] = new_access_token[:TOKEN_PREVIEW_LENGTH] + "..."  # Show only first chars for security
-            response_data["new_refresh_token"] = new_refresh_token[:TOKEN_PREVIEW_LENGTH] + "..."  # Show only first chars for security
+            # Note: Do not expose any part of the tokens for security reasons
         
         return response_data
         

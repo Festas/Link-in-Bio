@@ -55,7 +55,12 @@ jobs:
             echo "${{ secrets.TIKTOK_SECRET }}" >> .env.social
             
             # Run the stats fetcher on the server to update the production database
-            docker compose exec -T web python fetch_tiktok_stats.py || echo "Stats fetch completed"
+            if docker compose exec -T web python fetch_tiktok_stats.py; then
+              echo "✅ TikTok stats fetch successful"
+            else
+              echo "⚠️ TikTok stats fetch failed on server"
+              exit 1
+            fi
             
       - name: Upload stats as artifact (for debugging)
         uses: actions/upload-artifact@v3

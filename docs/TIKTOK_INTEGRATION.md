@@ -117,17 +117,17 @@ curl -X POST 'https://open.tiktokapis.com/v2/oauth/token/' \
 Die Dateien im Verzeichnis `mediakit/Instagram/TikTok/` enthalten bereits konfigurierte Credentials:
 
 ```bash
-# Aus tiktok_tokens.json
+# Aus tiktok_tokens.json (Beispiel - ersetze mit deinen echten Tokens)
 {
-  "access_token": "act.ZhfXrpZArkczUkA9QO8iFIeZBvzQq2WY6ejmvJtgnyBIrsqIRR8iQZaETWJP!4667.e1",
+  "access_token": "your_access_token_here",
   "expires_in": 86400,
-  "refresh_token": "rft.y8OL4vuYn8Qrh0dt91abykkdta1axz6RpgFsZutRBympX2irCEA92jqoDWyk!4675.e1",
+  "refresh_token": "your_refresh_token_here",
   "refresh_expires_in": 31536000
 }
 
-# Aus .env
-TIKTOK_CLIENT_KEY=sbawjlk44o4nkm4arb
-TIKTOK_CLIENT_SECRET=poGrbxRtnkardHNBUGXcSi5OdYsJD20l
+# Aus .env (Beispiel - ersetze mit deinen echten Credentials)
+TIKTOK_CLIENT_KEY=your_client_key_here
+TIKTOK_CLIENT_SECRET=your_client_secret_here
 ```
 
 ### 2. `.env.social` Datei erstellen
@@ -135,11 +135,11 @@ TIKTOK_CLIENT_SECRET=poGrbxRtnkardHNBUGXcSi5OdYsJD20l
 Erstelle `.env.social` im Root-Verzeichnis:
 
 ```bash
-# TikTok API Credentials
-TIKTOK_ACCESS_TOKEN=act.ZhfXrpZArkczUkA9QO8iFIeZBvzQq2WY6ejmvJtgnyBIrsqIRR8iQZaETWJP!4667.e1
-TIKTOK_REFRESH_TOKEN=rft.y8OL4vuYn8Qrh0dt91abykkdta1axz6RpgFsZutRBympX2irCEA92jqoDWyk!4675.e1
-TIKTOK_CLIENT_KEY=sbawjlk44o4nkm4arb
-TIKTOK_CLIENT_SECRET=poGrbxRtnkardHNBUGXcSi5OdYsJD20l
+# TikTok API Credentials (ersetze mit deinen echten Credentials)
+TIKTOK_ACCESS_TOKEN=your_tiktok_access_token_here
+TIKTOK_REFRESH_TOKEN=your_tiktok_refresh_token_here
+TIKTOK_CLIENT_KEY=your_tiktok_client_key_here
+TIKTOK_CLIENT_SECRET=your_tiktok_client_secret_here
 
 # Instagram Credentials (falls bereits vorhanden)
 INSTAGRAM_ACCESS_TOKEN=...
@@ -160,10 +160,10 @@ Der Inhalt von `.env.social` muss als GitHub Secret gespeichert werden:
 4. Value: Kopiere den **kompletten TikTok-Teil** aus `.env.social`:
 
 ```
-TIKTOK_ACCESS_TOKEN=act.ZhfXrpZArkczUkA9QO8iFIeZBvzQq2WY6ejmvJtgnyBIrsqIRR8iQZaETWJP!4667.e1
-TIKTOK_REFRESH_TOKEN=rft.y8OL4vuYn8Qrh0dt91abykkdta1axz6RpgFsZutRBympX2irCEA92jqoDWyk!4675.e1
-TIKTOK_CLIENT_KEY=sbawjlk44o4nkm4arb
-TIKTOK_CLIENT_SECRET=poGrbxRtnkardHNBUGXcSi5OdYsJD20l
+TIKTOK_ACCESS_TOKEN=your_tiktok_access_token_here
+TIKTOK_REFRESH_TOKEN=your_tiktok_refresh_token_here
+TIKTOK_CLIENT_KEY=your_tiktok_client_key_here
+TIKTOK_CLIENT_SECRET=your_tiktok_client_secret_here
 ```
 
 5. Klicke **Add secret**

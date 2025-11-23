@@ -30,12 +30,12 @@ async def test_with_prepared_credentials():
     print("INTEGRATION TEST: TikTok Fetcher with Prepared Credentials")
     print("="*60)
     
-    # Use credentials from mediakit/Instagram/TikTok/
-    # These are the sandbox/test credentials prepared by the user
-    access_token = "act.ZhfXrpZArkczUkA9QO8iFIeZBvzQq2WY6ejmvJtgnyBIrsqIRR8iQZaETWJP!4667.e1"
-    refresh_token = "rft.y8OL4vuYn8Qrh0dt91abykkdta1axz6RpgFsZutRBympX2irCEA92jqoDWyk!4675.e1"
-    client_key = "sbawjlk44o4nkm4arb"
-    client_secret = "poGrbxRtnkardHNBUGXcSi5OdYsJD20l"
+    # Load credentials from environment or use test values
+    # For real testing, set these environment variables or load from .env.social
+    access_token = os.getenv('TIKTOK_ACCESS_TOKEN', 'test_access_token_here')
+    refresh_token = os.getenv('TIKTOK_REFRESH_TOKEN', 'test_refresh_token_here')
+    client_key = os.getenv('TIKTOK_CLIENT_KEY', 'test_client_key_here')
+    client_secret = os.getenv('TIKTOK_CLIENT_SECRET', 'test_client_secret_here')
     
     print("\n📋 Configuration:")
     print(f"  Access Token: {access_token[:20]}...")

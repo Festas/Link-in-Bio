@@ -39,18 +39,35 @@ jobs:
           echo "${{ secrets.TIKTOK_SECRET }}" >> .env.social
       
       - name: Fetch Instagram stats
+        id: instagram
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          python fetch_instagram_stats.py || echo "Instagram fetch completed with warnings"
+          python fetch_instagram_stats.py
       
       - name: Fetch TikTok stats
+        id: tiktok
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          python fetch_tiktok_stats.py || echo "TikTok fetch completed with warnings"
+          python fetch_tiktok_stats.py
+      
+      - name: Check stats fetch results
+        run: |
+          echo "Instagram fetch: ${{ steps.instagram.outcome }}"
+          echo "TikTok fetch: ${{ steps.tiktok.outcome }}"
+          
+          # Fail the workflow if both fetches failed
+          if [ "${{ steps.instagram.outcome }}" = "failure" ] && [ "${{ steps.tiktok.outcome }}" = "failure" ]; then
+            echo "❌ Both Instagram and TikTok stats fetch failed"
+            exit 1
+          fi
+          
+          echo "✅ At least one platform stats fetch succeeded"
       
       - name: Deploy updated stats to server
         uses: appleboy/ssh-action@master

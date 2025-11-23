@@ -31,7 +31,7 @@ setup_logging(log_level=LOG_LEVEL, json_logs=JSON_LOGS)
 
 logger = get_logger(__name__)
 
-from app.database import init_db, get_settings_from_db, get_page_by_slug, get_all_pages, get_special_page, get_mediakit_data, get_special_page_blocks
+from app.database import init_db, get_settings_from_db, get_page_by_slug, get_all_pages, get_special_page, get_mediakit_data, get_special_page_blocks, get_visible_mediakit_blocks
 from app.endpoints import router as api_router
 from app.endpoints_enhanced import router as api_router_enhanced
 from app.services import APP_DOMAIN
@@ -344,16 +344,17 @@ async def get_contact_page(request: Request):
 @app.get("/mediakit", response_class=HTMLResponse)
 async def get_mediakit_page(request: Request):
     settings = get_settings_from_db()
-    mediakit_data = get_mediakit_data()
+    # Use new block-based system
+    mediakit_blocks = get_visible_mediakit_blocks()
     page_url = f"https://{APP_DOMAIN}/mediakit" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/mediakit"
     context = {
-        "page_title": "Media Kit - Eric (@festas_builds) | 189.5K Followers",
-        "page_description": "Tech & Gaming content creator with 189.5K total followers across Instagram (104.7K), TikTok (65.8K), and more. View stats, demographics, brand partnerships, and collaboration rates.",
+        "page_title": "Media Kit - Professional Content Creator",
+        "page_description": "View my media kit with stats, collaborations, and partnership opportunities.",
         "page_image": "",
         "page_url": page_url,
         "custom_html_head": settings.get("custom_html_head", ""),
         "custom_html_body": settings.get("custom_html_body", ""),
-        "mediakit_data": mediakit_data,
+        "mediakit_blocks": mediakit_blocks,
     }
     return templates.TemplateResponse(request=request, name="mediakit.html", context=context)
 

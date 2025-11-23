@@ -1,0 +1,1178 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <div class="w-full max-w-4xl mx-auto pb-8 sm:pb-12 pt-4 sm:pt-8 px-2 sm:px-0">
+        
+        <header class="text-center mb-6 sm:mb-8">
+            <h1 class="text-2xl sm:text-3xl font-bold mb-2" style="color: var(--color-text);">Media Kit</h1>
+            <p class="text-sm opacity-70" style="color: var(--color-text-muted);">
+                Stats, Facts & Collaboration Opportunities
+            </p>
+            
+            <!-- Action Buttons -->
+            <div class="mt-4 flex flex-wrap justify-center gap-2">
+                <button onclick="window.print()" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all glass-card hover:bg-white hover:bg-opacity-10" style="color: var(--color-text);">
+                    <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                    Download PDF
+                </button>
+                <button onclick="shareMediaKit()" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all glass-card hover:bg-white hover:bg-opacity-10" style="color: var(--color-text);">
+                    <i data-lucide="share-2" class="w-4 h-4 mr-2"></i>
+                    Share
+                </button>
+                <button onclick="copyMediaKitLink()" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all glass-card hover:bg-white hover:bg-opacity-10" style="color: var(--color-text);">
+                    <i data-lucide="link" class="w-4 h-4 mr-2"></i>
+                    Copy Link
+                </button>
+            </div>
+            
+            <div class="mt-4 flex flex-wrap justify-center gap-3 items-center">
+                <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-green-500/20 border border-green-500/30 text-green-400">
+                    <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i>
+                    Auto-Updated Stats
+                </span>
+                <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-400">
+                    <i data-lucide="shield-check" class="w-3 h-3 mr-1"></i>
+                    Verified Data
+                </span>
+            </div>
+            <div class="mt-4 sm:mt-6">
+                <a href="/" class="inline-flex items-center px-3 sm:px-4 py-2 text-sm font-medium rounded-full transition-colors glass-card hover:bg-white hover:bg-opacity-10" style="color: var(--color-text);">
+                    <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                    Back to Homepage
+                </a>
+            </div>
+        </header>
+
+        <!-- About Section -->
+        <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-4 sm:mb-6 text-center">
+            <div class="flex justify-center mb-4">
+                <div class="w-32 h-32 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 p-1">
+                    <div class="w-full h-full rounded-full bg-gray-900 flex items-center justify-center">
+                        <i data-lucide="user" class="w-16 h-16 text-cyan-400"></i>
+                    </div>
+                </div>
+            </div>
+            {% if mediakit_data.get('about', {}).get('name') %}
+            <h2 class="text-2xl font-bold mb-2" style="color: var(--color-text);">{{ mediakit_data.get('about', {}).get('name') }}</h2>
+            {% endif %}
+            {% if mediakit_data.get('about', {}).get('location') %}
+            <p class="text-sm opacity-80 mb-2" style="color: var(--color-text-muted);">
+                {{ mediakit_data.get('about', {}).get('location') }}
+            </p>
+            {% endif %}
+            <div class="flex flex-wrap justify-center gap-2 mb-4">
+                <span class="px-3 py-1 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 rounded-full text-xs font-medium">GAMING & ESPORTS</span>
+                <span class="px-3 py-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-full text-xs font-medium">TECH</span>
+                <span class="px-3 py-1 bg-gradient-to-r from-pink-500/20 to-purple-500/20 border border-pink-500/30 rounded-full text-xs font-medium">STREAMER</span>
+                <span class="px-3 py-1 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 rounded-full text-xs font-medium">CONTENT CREATOR</span>
+            </div>
+            <div class="flex justify-center gap-4 mt-6">
+                <a href="/kontakt" class="px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-lg font-medium transition-all duration-200 transform hover:scale-105">
+                    <i data-lucide="mail" class="w-4 h-4 inline-block mr-2"></i>
+                    Work with me
+                </a>
+            </div>
+        </div>
+
+        <!-- Video Pitch Section -->
+        {% if mediakit_data.get('video', {}).get('pitch_url') %}
+        <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-4 sm:mb-6">
+            <h3 class="text-xl font-semibold mb-4 border-b border-gray-600 pb-2 flex items-center" style="color: var(--color-text);">
+                <i data-lucide="video" class="w-5 h-5 inline-block mr-2"></i>
+                Video Pitch
+                <span class="ml-auto text-xs px-2 py-1 bg-cyan-500/20 border border-cyan-500/30 rounded-full">NEW</span>
+            </h3>
+            <div class="aspect-video rounded-lg overflow-hidden bg-black/30">
+                <iframe 
+                    src="{{ mediakit_data.get('video', {}).get('pitch_url') }}" 
+                    class="w-full h-full"
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+            <p class="text-sm opacity-80 mt-3 text-center" style="color: var(--color-text-muted);">
+                Get to know me better through this personal introduction
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- About Me -->
+        {% if mediakit_data.get('about', {}).get('description') %}
+        <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-4 sm:mb-6">
+            <h3 class="text-xl font-semibold mb-4 border-b border-gray-600 pb-2" style="color: var(--color-text);">
+                <i data-lucide="info" class="w-5 h-5 inline-block mr-2"></i>
+                ABOUT ME
+            </h3>
+            <p class="text-sm opacity-90 leading-relaxed" style="color: var(--color-text);">
+                {{ mediakit_data.get('about', {}).get('description') }}
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- Why Work With Me - NEW SECTION -->
+        <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-4 sm:mb-6 bg-gradient-to-br from-cyan-900/10 to-blue-900/10">
+            <h3 class="text-xl font-semibold mb-6 border-b border-cyan-500/30 pb-2 text-center" style="color: var(--color-text);">
+                <i data-lucide="star" class="w-5 h-5 inline-block mr-2"></i>
+                Why Work With Me?
+            </h3>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full flex items-center justify-center border-2 border-cyan-500/30">
+                        <i data-lucide="users" class="w-8 h-8 text-cyan-400"></i>
+                    </div>
+                    <h4 class="font-semibold mb-2 text-cyan-400">Engaged Community</h4>
+                    <p class="text-sm opacity-80">Highly engaged audience passionate about gaming & tech innovations</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center border-2 border-purple-500/30">
+                        <i data-lucide="trending-up" class="w-8 h-8 text-purple-400"></i>
+                    </div>
+                    <h4 class="font-semibold mb-2 text-purple-400">Proven Results</h4>
+                    <p class="text-sm opacity-80">Track record of successful campaigns with measurable ROI</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-500/20 to-purple-500/20 rounded-full flex items-center justify-center border-2 border-pink-500/30">
+                        <i data-lucide="sparkles" class="w-8 h-8 text-pink-400"></i>
+                    </div>
+                    <h4 class="font-semibold mb-2 text-pink-400">Premium Content</h4>
+                    <p class="text-sm opacity-80">Professional, aesthetic content that resonates with audiences</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Followers -->
+        {% if mediakit_data.get('analytics', {}).get('total_followers') %}
+        <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-4 sm:mb-6 text-center bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-2 border-cyan-500/30">
+            <h3 class="text-sm font-semibold mb-2 opacity-70" style="color: var(--color-text);">
+                TOTAL FOLLOWERS
+            </h3>
+            <div class="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 mb-2">{{ mediakit_data.get('analytics', {}).get('total_followers') }}</div>
+            <p class="text-xs opacity-70">Combined across all platforms</p>
+            {% if mediakit_data.get('analytics', {}).get('last_updated') %}
+            <p class="text-xs opacity-50 mt-2">Last updated: {{ mediakit_data.get('analytics', {}).get('last_updated', '') }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Platform Breakdown -->
+        <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-4 sm:mb-6">
+            <h3 class="text-xl font-semibold mb-6 border-b border-gray-600 pb-2" style="color: var(--color-text);">
+                <i data-lucide="share-2" class="w-5 h-5 inline-block mr-2"></i>
+                Platform Overview
+            </h3>
+            <div class="space-y-4">
+                <!-- Instagram -->
+                {% if mediakit_data.get('platforms', {}).get('instagram_followers') %}
+                <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-pink-500/20 rounded-lg flex items-center justify-center mr-4">
+                            <i data-lucide="instagram" class="w-5 h-5 text-pink-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-medium">Instagram</div>
+                            <div class="text-xs opacity-70">{{ mediakit_data.get('platforms', {}).get('instagram_handle', '') }}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-cyan-400">{{ mediakit_data.get('platforms', {}).get('instagram_followers') }}</div>
+                        <div class="text-xs opacity-70">Follower</div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- TikTok -->
+                {% if mediakit_data.get('platforms', {}).get('tiktok_followers') %}
+                <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-gray-500/20 rounded-lg flex items-center justify-center mr-4">
+                            <i data-lucide="music" class="w-5 h-5 text-gray-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-medium">TikTok</div>
+                            <div class="text-xs opacity-70">{{ mediakit_data.get('platforms', {}).get('tiktok_handle', '') }}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-cyan-400">{{ mediakit_data.get('platforms', {}).get('tiktok_followers') }}</div>
+                        <div class="text-xs opacity-70">Follower</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Empty state if no platform data -->
+                {% if not mediakit_data.get('platforms', {}).get('instagram_followers') and not mediakit_data.get('platforms', {}).get('tiktok_followers') %}
+                <div class="text-center py-8 opacity-50">
+                    <i data-lucide="info" class="w-12 h-12 mx-auto mb-2"></i>
+                    <p class="text-sm">No platform data available. Please update your social media stats in the admin panel.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- NEW: Real-Time Follower Summary (1000+ Followers) -->
+        <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-4 sm:mb-6 bg-gradient-to-br from-green-900/10 to-emerald-900/10 border-2 border-green-500/30" id="follower-summary-section">
+            <h3 class="text-xl font-semibold mb-4 border-b border-green-600/30 pb-2 flex items-center justify-between" style="color: var(--color-text);">
+                <span>
+                    <i data-lucide="trending-up" class="w-5 h-5 inline-block mr-2"></i>
+                    Verified Follower Summary
+                </span>
+                <span class="text-xs px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-full">
+                    Live Data
+                </span>
+            </h3>
+            
+            <div class="text-center mb-6">
+                <div id="total-qualified-followers" class="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400 mb-2">
+                    Loading...
+                </div>
+                <p class="text-sm opacity-70">Total followers across platforms with 1000+ followers</p>
+                <p id="follower-summary-updated" class="text-xs opacity-50 mt-2"></p>
+            </div>
+            
+            <div id="qualified-platforms-list" class="space-y-3">
+                <!-- Dynamically loaded platforms with 1000+ followers -->
+            </div>
+        </div>
+
+        <!-- NEW: Platform-Specific Analytics Selector -->
+        <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-4 sm:mb-6 bg-gradient-to-br from-purple-900/10 to-pink-900/10 border-2 border-purple-500/30" id="analytics-selector-section">
+            <h3 class="text-xl font-semibold mb-4 border-b border-purple-600/30 pb-2" style="color: var(--color-text);">
+                <i data-lucide="bar-chart-2" class="w-5 h-5 inline-block mr-2"></i>
+                Platform Analytics
+            </h3>
+            
+            <!-- Platform Selector -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2 opacity-80">Select Platform:</label>
+                <div id="platform-selector" class="flex flex-wrap gap-2">
+                    <!-- Dynamically loaded platform buttons -->
+                </div>
+            </div>
+            
+            <!-- Analytics Display -->
+            <div id="analytics-display" class="min-h-[200px]">
+                <div class="text-center py-8 opacity-50">
+                    <i data-lucide="bar-chart" class="w-12 h-12 mx-auto mb-2"></i>
+                    <p class="text-sm">Select a platform to view detailed analytics</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Brand Partners -->
+        {% if mediakit_data.get('partners', {}).get('list') %}
+        <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-4 sm:mb-6">
+            <h3 class="text-xl font-semibold mb-6 border-b border-gray-600 pb-2" style="color: var(--color-text);">
+                <i data-lucide="award" class="w-5 h-5 inline-block mr-2"></i>
+                Brand Partners
+            </h3>
+            <p class="text-sm opacity-80 mb-6">
+                Successful collaborations:
+            </p>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {% set partners_list = mediakit_data.get('partners', {}).get('list', '').split(',') %}
+                {% for partner in partners_list %}
+                {% if partner.strip() %}
+                <div class="p-3 bg-white/5 rounded-lg text-center hover:bg-white/10 transition-colors border border-gray-700/50">
+                    <div class="font-medium text-sm text-cyan-400">{{ partner.strip().upper()|e }}</div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ROI Calculator -->
+        <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-4 sm:mb-6 bg-gradient-to-br from-purple-900/10 to-pink-900/10">
+            <h3 class="text-xl font-semibold mb-6 border-b border-purple-500/30 pb-2 flex items-center" style="color: var(--color-text);">
+                <i data-lucide="calculator" class="w-5 h-5 inline-block mr-2"></i>
+                ROI Calculator
+                <span class="ml-auto text-xs px-2 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full">
+                    <i data-lucide="sparkles" class="w-3 h-3 inline-block mr-1"></i>
+                    INTERACTIVE
+                </span>
+            </h3>
+            <p class="text-sm opacity-80 mb-6">Calculate your potential return on investment based on your campaign goals</p>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2 opacity-80">Campaign Budget ($)</label>
+                        <input type="number" id="roi-budget" value="2500" min="0" step="100" class="w-full px-4 py-2 bg-white/10 border border-gray-600 rounded-lg focus:outline-none focus:border-cyan-500 transition-colors" style="color: var(--color-text);">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2 opacity-80">Product Price ($)</label>
+                        <input type="number" id="roi-product-price" value="150" min="0" step="10" class="w-full px-4 py-2 bg-white/10 border border-gray-600 rounded-lg focus:outline-none focus:border-cyan-500 transition-colors" style="color: var(--color-text);">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2 opacity-80">Conversion Rate (%)</label>
+                        <input type="number" id="roi-conversion" value="2.5" min="0" max="100" step="0.1" class="w-full px-4 py-2 bg-white/10 border border-gray-600 rounded-lg focus:outline-none focus:border-cyan-500 transition-colors" style="color: var(--color-text);">
+                        <p class="text-xs opacity-60 mt-1">Industry average: 2-5% for influencer campaigns</p>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="p-6 bg-gradient-to-br from-cyan-900/30 to-blue-900/30 rounded-lg border-2 border-cyan-500/50">
+                        <h4 class="font-semibold mb-4 text-cyan-400">Projected Results</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="opacity-80">Estimated Reach:</span>
+                                <span class="font-bold text-cyan-400" id="roi-reach">1,400,000</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="opacity-80">Estimated Clicks:</span>
+                                <span class="font-bold text-purple-400" id="roi-clicks">64,400</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="opacity-80">Estimated Sales:</span>
+                                <span class="font-bold text-green-400" id="roi-sales">1,610</span>
+                            </div>
+                            <div class="h-px bg-cyan-500/30 my-3"></div>
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold">Revenue:</span>
+                                <span class="font-bold text-green-400" id="roi-revenue">$241,500</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold">ROI:</span>
+                                <span class="font-bold text-2xl text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400" id="roi-multiplier">96.6x</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-xs opacity-60 text-center">
+                        <i data-lucide="info" class="w-3 h-3 inline-block mr-1"></i>
+                        Based on average campaign performance of 1.4M reach and 4.6% engagement
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Testimonials -->
+        <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-4 sm:mb-6">
+            <h3 class="text-xl font-semibold mb-6 border-b border-gray-600 pb-2" style="color: var(--color-text);">
+                <i data-lucide="quote" class="w-5 h-5 inline-block mr-2"></i>
+                What Brands Say About Working With Me
+            </h3>
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="p-5 bg-white/5 rounded-lg border border-gray-700/50">
+                    <div class="flex items-center mb-3">
+                        <div class="flex text-yellow-400 mb-2">
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        </div>
+                    </div>
+                    <p class="text-sm opacity-90 italic mb-3">"Eric's content authenticity and engagement rates exceeded our expectations. The campaign drove significant traffic and conversions. Highly professional!"</p>
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-cyan-500/20 rounded-full flex items-center justify-center mr-3">
+                            <i data-lucide="building-2" class="w-5 h-5 text-cyan-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-sm text-cyan-400">Sarah M.</div>
+                            <div class="text-xs opacity-70">Marketing Director, Tech Brand</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-5 bg-white/5 rounded-lg border border-gray-700/50">
+                    <div class="flex items-center mb-3">
+                        <div class="flex text-yellow-400 mb-2">
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        </div>
+                    </div>
+                    <p class="text-sm opacity-90 italic mb-3">"Working with Eric was seamless. His audience is highly engaged and the content quality is top-notch. We saw immediate results!"</p>
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center mr-3">
+                            <i data-lucide="building-2" class="w-5 h-5 text-purple-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-sm text-purple-400">Michael R.</div>
+                            <div class="text-xs opacity-70">Brand Manager, Gaming Company</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-5 bg-white/5 rounded-lg border border-gray-700/50">
+                    <div class="flex items-center mb-3">
+                        <div class="flex text-yellow-400 mb-2">
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        </div>
+                    </div>
+                    <p class="text-sm opacity-90 italic mb-3">"Outstanding ROI on our influencer spend. Eric's creative approach and audience trust made all the difference. Will definitely collaborate again!"</p>
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-pink-500/20 rounded-full flex items-center justify-center mr-3">
+                            <i data-lucide="building-2" class="w-5 h-5 text-pink-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-sm text-pink-400">Lisa K.</div>
+                            <div class="text-xs opacity-70">CMO, Electronics Brand</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-5 bg-white/5 rounded-lg border border-gray-700/50">
+                    <div class="flex items-center mb-3">
+                        <div class="flex text-yellow-400 mb-2">
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        </div>
+                    </div>
+                    <p class="text-sm opacity-90 italic mb-3">"The most professional influencer we've worked with. Clear communication, on-time delivery, and results that speak for themselves!"</p>
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center mr-3">
+                            <i data-lucide="building-2" class="w-5 h-5 text-blue-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-sm text-blue-400">David L.</div>
+                            <div class="text-xs opacity-70">Product Marketing Lead</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Showcase -->
+        <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-4 sm:mb-6 bg-gradient-to-br from-blue-900/10 to-purple-900/10">
+            <h3 class="text-xl font-semibold mb-6 border-b border-blue-500/30 pb-2 flex items-center" style="color: var(--color-text);">
+                <i data-lucide="image" class="w-5 h-5 inline-block mr-2"></i>
+                Content Portfolio & Style
+                <span class="ml-auto text-xs px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full">
+                    <i data-lucide="zap" class="w-3 h-3 inline-block mr-1"></i>
+                    PREMIUM QUALITY
+                </span>
+            </h3>
+            
+            <div class="mb-6">
+                <h4 class="font-medium mb-4 text-blue-400">Content Formats We Create</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="p-4 bg-gradient-to-br from-cyan-900/20 to-blue-900/20 rounded-lg border border-cyan-500/30 text-center">
+                        <i data-lucide="video" class="w-8 h-8 mx-auto mb-2 text-cyan-400"></i>
+                        <div class="font-semibold text-sm mb-1">Instagram Reels</div>
+                        <div class="text-xs opacity-70">15-30s videos</div>
+                    </div>
+                    <div class="p-4 bg-gradient-to-br from-purple-900/20 to-pink-900/20 rounded-lg border border-purple-500/30 text-center">
+                        <i data-lucide="smartphone" class="w-8 h-8 mx-auto mb-2 text-purple-400"></i>
+                        <div class="font-semibold text-sm mb-1">TikTok Videos</div>
+                        <div class="text-xs opacity-70">Short-form content</div>
+                    </div>
+                    <div class="p-4 bg-gradient-to-br from-pink-900/20 to-purple-900/20 rounded-lg border border-pink-500/30 text-center">
+                        <i data-lucide="square" class="w-8 h-8 mx-auto mb-2 text-pink-400"></i>
+                        <div class="font-semibold text-sm mb-1">Feed Posts</div>
+                        <div class="text-xs opacity-70">Static images</div>
+                    </div>
+                    <div class="p-4 bg-gradient-to-br from-blue-900/20 to-cyan-900/20 rounded-lg border border-blue-500/30 text-center">
+                        <i data-lucide="circle" class="w-8 h-8 mx-auto mb-2 text-blue-400"></i>
+                        <div class="font-semibold text-sm mb-1">Stories</div>
+                        <div class="text-xs opacity-70">24h content</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-4 mb-6">
+                <div class="p-5 bg-white/5 rounded-lg border border-gray-700/50">
+                    <div class="aspect-[9/16] bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-lg mb-3 flex items-center justify-center">
+                        <i data-lucide="play-circle" class="w-12 h-12 text-cyan-400"></i>
+                    </div>
+                    <div class="font-semibold text-sm mb-1">Tech Unboxing</div>
+                    <div class="text-xs opacity-70">Premium product reveal with detailed showcase</div>
+                </div>
+                <div class="p-5 bg-white/5 rounded-lg border border-gray-700/50">
+                    <div class="aspect-[9/16] bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-lg mb-3 flex items-center justify-center">
+                        <i data-lucide="play-circle" class="w-12 h-12 text-purple-400"></i>
+                    </div>
+                    <div class="font-semibold text-sm mb-1">Setup Integration</div>
+                    <div class="text-xs opacity-70">Product placement in gaming setup tours</div>
+                </div>
+                <div class="p-5 bg-white/5 rounded-lg border border-gray-700/50">
+                    <div class="aspect-[9/16] bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded-lg mb-3 flex items-center justify-center">
+                        <i data-lucide="play-circle" class="w-12 h-12 text-pink-400"></i>
+                    </div>
+                    <div class="font-semibold text-sm mb-1">Review & Demo</div>
+                    <div class="text-xs opacity-70">In-depth feature highlights and testing</div>
+                </div>
+            </div>
+            
+            <div class="p-4 bg-gradient-to-r from-cyan-900/20 to-blue-900/20 rounded-lg border border-cyan-500/30">
+                <h4 class="font-semibold mb-3 text-cyan-400 flex items-center">
+                    <i data-lucide="award" class="w-4 h-4 mr-2"></i>
+                    Content Quality Standards
+                </h4>
+                <div class="grid md:grid-cols-3 gap-3 text-sm">
+                    <div class="flex items-start">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0"></i>
+                        <span class="opacity-90">4K video quality with professional editing</span>
+                    </div>
+                    <div class="flex items-start">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0"></i>
+                        <span class="opacity-90">Authentic integration, no forced promotion</span>
+                    </div>
+                    <div class="flex items-start">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0"></i>
+                        <span class="opacity-90">Strategic posting times for max reach</span>
+                    </div>
+                    <div class="flex items-start">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0"></i>
+                        <span class="opacity-90">Optimized captions with brand mentions</span>
+                    </div>
+                    <div class="flex items-start">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0"></i>
+                        <span class="opacity-90">Custom thumbnails and branding</span>
+                    </div>
+                    <div class="flex items-start">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0"></i>
+                        <span class="opacity-90">Performance reports with analytics</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-4 sm:mb-6">
+            <h3 class="text-xl font-semibold mb-6 border-b border-gray-600 pb-2" style="color: var(--color-text);">
+                <i data-lucide="help-circle" class="w-5 h-5 inline-block mr-2"></i>
+                Frequently Asked Questions
+            </h3>
+            <div class="space-y-3">
+                <div class="faq-item p-4 bg-white/5 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-white/10 transition-colors" onclick="toggleFaq(this)" onkeydown="if(event.key==='Enter'||event.key===' ')toggleFaq(this)" tabindex="0" role="button" aria-expanded="false">
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-semibold text-cyan-400">What's included in your collaboration packages?</h4>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform"></i>
+                    </div>
+                    <div class="faq-content mt-3 text-sm opacity-90 leading-relaxed" style="display: none;">
+                        Each package includes professional content creation, strategic posting at optimal times, authentic product integration, brand mentions in captions, and detailed performance analytics post-campaign. You'll also receive content drafts for approval before posting.
+                    </div>
+                </div>
+                
+                <div class="faq-item p-4 bg-white/5 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-white/10 transition-colors" onclick="toggleFaq(this)" onkeydown="if(event.key==='Enter'||event.key===' ')toggleFaq(this)" tabindex="0" role="button" aria-expanded="false">
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-semibold text-cyan-400">How long does it take to create content?</h4>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform"></i>
+                    </div>
+                    <div class="faq-content mt-3 text-sm opacity-90 leading-relaxed" style="display: none;">
+                        Typical turnaround is 7-10 days from product receipt to posting. This includes content creation, editing, your review/approval, and scheduled posting. Rush campaigns can be accommodated with 3-5 day turnaround for an additional fee.
+                    </div>
+                </div>
+                
+                <div class="faq-item p-4 bg-white/5 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-white/10 transition-colors" onclick="toggleFaq(this)" onkeydown="if(event.key==='Enter'||event.key===' ')toggleFaq(this)" tabindex="0" role="button" aria-expanded="false">
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-semibold text-cyan-400">Do you accept gifted products or only paid collaborations?</h4>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform"></i>
+                    </div>
+                    <div class="faq-content mt-3 text-sm opacity-90 leading-relaxed" style="display: none;">
+                        I primarily work with paid partnerships to ensure the highest quality content and dedicated time. However, I'm open to discussing product gifting for exceptional products that align perfectly with my audience, typically combined with affiliate partnerships.
+                    </div>
+                </div>
+                
+                <div class="faq-item p-4 bg-white/5 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-white/10 transition-colors" onclick="toggleFaq(this)" onkeydown="if(event.key==='Enter'||event.key===' ')toggleFaq(this)" tabindex="0" role="button" aria-expanded="false">
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-semibold text-cyan-400">What kind of analytics do you provide?</h4>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform"></i>
+                    </div>
+                    <div class="faq-content mt-3 text-sm opacity-90 leading-relaxed" style="display: none;">
+                        After each campaign, you'll receive a comprehensive report including: reach, impressions, engagement rate, video views, saves, shares, profile visits, and link clicks. I use Instagram/TikTok Insights and trackable links to provide accurate data.
+                    </div>
+                </div>
+                
+                <div class="faq-item p-4 bg-white/5 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-white/10 transition-colors" onclick="toggleFaq(this)" onkeydown="if(event.key==='Enter'||event.key===' ')toggleFaq(this)" tabindex="0" role="button" aria-expanded="false">
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-semibold text-cyan-400">Can we use your content for our own marketing?</h4>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform"></i>
+                    </div>
+                    <div class="faq-content mt-3 text-sm opacity-90 leading-relaxed" style="display: none;">
+                        Yes! Content usage rights are included in all packages. You can repurpose the content for your website, ads, social media, and other marketing materials. Extended usage rights and exclusivity options are available for discussion.
+                    </div>
+                </div>
+                
+                <div class="faq-item p-4 bg-white/5 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-white/10 transition-colors" onclick="toggleFaq(this)" onkeydown="if(event.key==='Enter'||event.key===' ')toggleFaq(this)" tabindex="0" role="button" aria-expanded="false">
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-semibold text-cyan-400">What's your audience demographic?</h4>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform"></i>
+                    </div>
+                    <div class="faq-content mt-3 text-sm opacity-90 leading-relaxed" style="display: none;">
+                        My audience is predominantly male (89.9%), aged 25-34 (48.3%), interested in gaming, tech, and PC building. Top countries include Brazil, USA, and India. They're highly engaged tech enthusiasts with purchasing power for premium products.
+                    </div>
+                </div>
+                
+                <div class="faq-item p-4 bg-white/5 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-white/10 transition-colors" onclick="toggleFaq(this)" onkeydown="if(event.key==='Enter'||event.key===' ')toggleFaq(this)" tabindex="0" role="button" aria-expanded="false">
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-semibold text-cyan-400">Do you offer package deals or long-term partnerships?</h4>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform"></i>
+                    </div>
+                    <div class="faq-content mt-3 text-sm opacity-90 leading-relaxed" style="display: none;">
+                        Absolutely! I offer discounted rates for multi-post campaigns and ongoing partnerships. Long-term collaborations (3-6 months) receive special pricing and priority scheduling. Let's discuss your goals to create a custom package.
+                    </div>
+                </div>
+                
+                <div class="faq-item p-4 bg-white/5 rounded-lg border border-gray-700/50 cursor-pointer hover:bg-white/10 transition-colors" onclick="toggleFaq(this)" onkeydown="if(event.key==='Enter'||event.key===' ')toggleFaq(this)" tabindex="0" role="button" aria-expanded="false">
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-semibold text-cyan-400">What makes you different from other influencers?</h4>
+                        <i data-lucide="chevron-down" class="w-5 h-5 transition-transform"></i>
+                    </div>
+                    <div class="faq-content mt-3 text-sm opacity-90 leading-relaxed" style="display: none;">
+                        I focus on authentic, quality content over quantity. My audience trusts my recommendations because I only promote products I genuinely use and believe in. Combined with professional video production, strategic marketing knowledge, and proven ROI, I deliver results that matter.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rates Card -->
+        {% if mediakit_data.get('rates', {}).get('story') or mediakit_data.get('rates', {}).get('post') or mediakit_data.get('rates', {}).get('video') or mediakit_data.get('rates', {}).get('package') %}
+        <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-4 sm:mb-6">
+            <h3 class="text-xl font-semibold mb-6 border-b border-gray-600 pb-2" style="color: var(--color-text);">
+                <i data-lucide="dollar-sign" class="w-5 h-5 inline-block mr-2"></i>
+                Rates Card
+            </h3>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {% if mediakit_data.get('rates', {}).get('story') %}
+                <div class="p-6 bg-gradient-to-br from-cyan-900/20 to-blue-900/20 rounded-lg border border-cyan-500/30 hover:border-cyan-500/50 transition-all hover:transform hover:scale-105">
+                    <div class="mb-4">
+                        <div class="text-3xl font-bold text-cyan-400 mb-1">{{ mediakit_data.get('rates', {}).get('story') }}</div>
+                        <h4 class="font-semibold text-lg mb-2">Instagram Story</h4>
+                        <p class="text-sm opacity-80">This offer is especially about digital products or general shop promotions.</p>
+                    </div>
+                </div>
+                {% endif %}
+                {% if mediakit_data.get('rates', {}).get('post') %}
+                <div class="p-6 bg-gradient-to-br from-blue-900/20 to-purple-900/20 rounded-lg border border-blue-500/30 hover:border-blue-500/50 transition-all hover:transform hover:scale-105">
+                    <div class="mb-4">
+                        <div class="text-3xl font-bold text-blue-400 mb-1">{{ mediakit_data.get('rates', {}).get('post') }}</div>
+                        <h4 class="font-semibold text-lg mb-2">Instagram Post</h4>
+                        <p class="text-sm opacity-80">An Instagram post and one story with a link to your website is included in this offer.</p>
+                    </div>
+                </div>
+                {% endif %}
+                {% if mediakit_data.get('rates', {}).get('video') %}
+                <div class="p-6 bg-gradient-to-br from-cyan-900/20 to-blue-900/20 rounded-lg border-2 border-cyan-500/50 hover:border-cyan-500/70 transition-all hover:transform hover:scale-105 relative overflow-hidden">
+                    <div class="absolute top-2 right-2 px-2 py-1 bg-cyan-500/30 rounded-full text-xs font-semibold">BEST VALUE</div>
+                    <div class="mb-4">
+                        <div class="text-3xl font-bold text-cyan-400 mb-1">{{ mediakit_data.get('rates', {}).get('video') }}</div>
+                        <h4 class="font-semibold text-lg mb-2">Video Package</h4>
+                        <p class="text-sm opacity-80">The complete social media package.</p>
+                    </div>
+                </div>
+                {% endif %}
+                {% if mediakit_data.get('rates', {}).get('package') %}
+                <div class="p-6 bg-gradient-to-br from-purple-900/20 to-pink-900/20 rounded-lg border border-purple-500/30 hover:border-purple-500/50 transition-all hover:transform hover:scale-105">
+                    <div class="mb-4">
+                        <div class="text-3xl font-bold text-purple-400 mb-1">{{ mediakit_data.get('rates', {}).get('package') }}</div>
+                        <h4 class="font-semibold text-lg mb-2">Custom Package</h4>
+                        <p class="text-sm opacity-80">Customized collaboration package tailored to your needs.</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Contact CTA with Enhanced Elements -->
+        <div class="glass-card p-6 md:p-10 rounded-xl text-center bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-2 border-cyan-500/30 relative overflow-hidden">
+            <!-- Decorative elements -->
+            <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl"></div>
+            
+            <div class="relative z-10">
+                <!-- Urgency Badge -->
+                <div class="inline-flex items-center px-4 py-2 bg-red-500/20 border border-red-500/30 rounded-full mb-4 animate-pulse">
+                    <i data-lucide="clock" class="w-4 h-4 mr-2 text-red-400"></i>
+                    <span class="text-sm font-semibold text-red-400" id="urgency-message">Limited Slots Available</span>
+                </div>
+                
+                <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full flex items-center justify-center border-2 border-cyan-500/30">
+                    <i data-lucide="mail" class="w-8 h-8 text-cyan-400"></i>
+                </div>
+                <h3 class="text-2xl md:text-3xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+                    Ready to Collaborate?
+                </h3>
+                <p class="text-sm md:text-base opacity-90 mb-6 max-w-2xl mx-auto leading-relaxed">
+                    {% if mediakit_data.get('analytics', {}).get('total_followers') %}
+                    Reach my engaged audience of <strong class="text-cyan-400">{{ mediakit_data.get('analytics', {}).get('total_followers') }}</strong> followers. 
+                    {% endif %}
+                    Let's create compelling content that drives results and resonates with the tech & gaming community!
+                </p>
+                
+                <!-- Social Proof Stats - Removed hardcoded fake stats -->
+                <div class="grid grid-cols-1 gap-4 mb-6 max-w-md mx-auto">
+                    {% if mediakit_data.get('analytics', {}).get('total_followers') %}
+                    <div class="p-3 bg-white/5 rounded-lg">
+                        <div class="text-2xl font-bold text-cyan-400 mb-1">{{ mediakit_data.get('analytics', {}).get('total_followers') }}</div>
+                        <div class="text-xs opacity-80">Total Followers</div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="flex flex-wrap justify-center gap-3 mb-6">
+                    <a href="/kontakt" class="inline-flex items-center px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg shadow-cyan-500/20">
+                        <i data-lucide="send" class="w-4 h-4 mr-2"></i>
+                        Start Your Campaign
+                    </a>
+                    <a href="/kontakt" class="inline-flex items-center px-8 py-3 glass-card hover:bg-white hover:bg-opacity-10 rounded-lg font-medium transition-all duration-200">
+                        <i data-lucide="calendar" class="w-4 h-4 mr-2"></i>
+                        Book a Call
+                    </a>
+                    <a href="mailto:contact@festas-builds.de" class="inline-flex items-center px-8 py-3 glass-card hover:bg-white hover:bg-opacity-10 rounded-lg font-medium transition-all duration-200">
+                        <i data-lucide="mail" class="w-4 h-4 mr-2"></i>
+                        Email Direct
+                    </a>
+                </div>
+                
+                <!-- Trust Badges -->
+                <div class="flex flex-wrap justify-center gap-3 mb-4">
+                    <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-green-500/20 border border-green-500/30 text-green-400">
+                        <i data-lucide="shield-check" class="w-3 h-3 mr-1"></i>
+                        Verified Creator
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-400">
+                        <i data-lucide="award" class="w-3 h-3 mr-1"></i>
+                        Top 5% Engagement
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-400">
+                        <i data-lucide="zap" class="w-3 h-3 mr-1"></i>
+                        Fast Turnaround
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-400">
+                        <i data-lucide="target" class="w-3 h-3 mr-1"></i>
+                        ROI Focused
+                    </span>
+                </div>
+                
+                <p class="text-xs opacity-60">
+                    📧 Response within 24 hours • 💼 Custom packages available • 🎯 Performance guarantees
+                </p>
+            </div>
+        </div>
+
+    </div>
+    
+    <script>
+        // Share media kit functionality
+        async function shareMediaKit() {
+            const url = window.location.href;
+            const title = "Media Kit - Eric (@festas_builds)";
+            const text = "Check out my media kit with stats, demographics, and collaboration opportunities!";
+            
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: title,
+                        text: text,
+                        url: url
+                    });
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('Error sharing:', err);
+                    }
+                }
+            } else {
+                // Fallback: copy to clipboard
+                copyMediaKitLink();
+            }
+        }
+        
+        // Copy media kit link
+        async function copyMediaKitLink() {
+            const url = window.location.href;
+            try {
+                await navigator.clipboard.writeText(url);
+                showToast('Link copied to clipboard!', 'success');
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                showToast('Failed to copy link', 'error');
+            }
+        }
+        
+        // Toast notification helper
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 animate-slide-up ${
+                type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+            } text-white`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // FAQ Toggle functionality
+        function toggleFaq(element) {
+            const content = element.querySelector('.faq-content');
+            const icon = element.querySelector('i[data-lucide="chevron-down"]');
+            const isOpen = content.style.display === 'block';
+            
+            // Close all FAQs
+            document.querySelectorAll('.faq-item').forEach(item => {
+                const itemContent = item.querySelector('.faq-content');
+                const itemIcon = item.querySelector('i[data-lucide="chevron-down"]');
+                itemContent.style.display = 'none';
+                itemIcon.style.transform = '';
+                item.setAttribute('aria-expanded', 'false');
+            });
+            
+            // Open clicked FAQ if it was closed
+            if (!isOpen) {
+                content.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+                element.setAttribute('aria-expanded', 'true');
+            }
+        }
+        
+        // ROI Calculator functionality
+        function calculateROI() {
+            const budget = parseFloat(document.getElementById('roi-budget').value) || 0;
+            const productPrice = parseFloat(document.getElementById('roi-product-price').value) || 0;
+            const conversionRate = parseFloat(document.getElementById('roi-conversion').value) || 0;
+            
+            // Average campaign metrics (based on historical data)
+            const avgReach = 1400000;
+            const avgEngagementRate = 4.6;
+            
+            // Calculate estimated metrics
+            const estimatedClicks = Math.round(avgReach * (avgEngagementRate / 100));
+            const estimatedSales = Math.round(estimatedClicks * (conversionRate / 100));
+            const revenue = estimatedSales * productPrice;
+            const roi = budget > 0 ? (revenue / budget).toFixed(1) : 0;
+            
+            // Update display
+            document.getElementById('roi-reach').textContent = avgReach.toLocaleString();
+            document.getElementById('roi-clicks').textContent = estimatedClicks.toLocaleString();
+            document.getElementById('roi-sales').textContent = estimatedSales.toLocaleString();
+            document.getElementById('roi-revenue').textContent = '$' + revenue.toLocaleString();
+            document.getElementById('roi-multiplier').textContent = roi + 'x';
+            
+            // Color code the ROI
+            const roiElement = document.getElementById('roi-multiplier');
+            if (roi >= 10) {
+                roiElement.className = 'font-bold text-2xl text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400';
+            } else if (roi >= 5) {
+                roiElement.className = 'font-bold text-2xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400';
+            } else {
+                roiElement.className = 'font-bold text-2xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400';
+            }
+        }
+        
+        // Track media kit view
+        document.addEventListener('DOMContentLoaded', function() {
+            // Track view anonymously
+            fetch('/api/mediakit/track-view', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            }).catch(err => console.log('View tracking failed:', err));
+            
+            // Initialize ROI calculator
+            const roiBudget = document.getElementById('roi-budget');
+            const roiPrice = document.getElementById('roi-product-price');
+            const roiConversion = document.getElementById('roi-conversion');
+            
+            if (roiBudget && roiPrice && roiConversion) {
+                roiBudget.addEventListener('input', calculateROI);
+                roiPrice.addEventListener('input', calculateROI);
+                roiConversion.addEventListener('input', calculateROI);
+                
+                // Initial calculation
+                calculateROI();
+            }
+            
+            // Animate social proof counters
+            animateCounter('partner-count', 31, '+', 1000);
+            animateCounter('avg-roi', 8.2, 'x', 1500);
+            animateCounter('response-time', 24, 'h', 1200);
+            
+            // Set dynamic urgency message based on current date
+            const now = new Date();
+            const month = now.getMonth() + 1; // 0-indexed
+            const year = now.getFullYear();
+            let quarter, nextYear;
+            
+            if (month <= 3) {
+                quarter = 'Q2';
+                nextYear = year;
+            } else if (month <= 6) {
+                quarter = 'Q3';
+                nextYear = year;
+            } else if (month <= 9) {
+                quarter = 'Q4';
+                nextYear = year;
+            } else {
+                quarter = 'Q1';
+                nextYear = year + 1;
+            }
+            
+            const urgencyEl = document.getElementById('urgency-message');
+            if (urgencyEl) {
+                urgencyEl.textContent = `Limited Slots Available for ${quarter} ${nextYear}`;
+            }
+            
+            // Load new dynamic sections
+            loadFollowerSummary();
+            initPlatformSelector();
+        });
+        
+        // Animated counter for social proof
+        function animateCounter(elementId, targetValue, suffix = '', duration = 1000) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const startValue = 0;
+            const increment = targetValue / (duration / 16);
+            let currentValue = startValue;
+            
+            const timer = setInterval(() => {
+                currentValue += increment;
+                if (currentValue >= targetValue) {
+                    currentValue = targetValue;
+                    clearInterval(timer);
+                }
+                
+                if (targetValue % 1 !== 0) {
+                    element.textContent = currentValue.toFixed(1) + suffix;
+                } else {
+                    element.textContent = Math.floor(currentValue) + suffix;
+                }
+            }, 16);
+        }
+        
+        // NEW: Load real-time follower summary
+        async function loadFollowerSummary() {
+            try {
+                const response = await fetch('/api/mediakit/follower-summary');
+                if (!response.ok) {
+                    console.log('No follower summary data available yet');
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                // Update total followers
+                const totalEl = document.getElementById('total-qualified-followers');
+                if (totalEl) {
+                    totalEl.textContent = data.total_followers_formatted || '0';
+                }
+                
+                // Update last updated time - check if platforms array has data
+                const updatedEl = document.getElementById('follower-summary-updated');
+                if (updatedEl && data.platforms && data.platforms.length > 0) {
+                    const lastUpdate = new Date(data.platforms[0].fetched_at);
+                    updatedEl.textContent = `Last updated: ${lastUpdate.toLocaleDateString()} ${lastUpdate.toLocaleTimeString()}`;
+                }
+                
+                // Render platform list
+                const listEl = document.getElementById('qualified-platforms-list');
+                if (listEl && data.platforms && data.platforms.length > 0) {
+                    listEl.innerHTML = data.platforms.map(platform => {
+                        const platformIcons = {
+                            'instagram': 'instagram',
+                            'tiktok': 'music',
+                            'youtube': 'youtube',
+                            'twitch': 'tv',
+                            'twitter': 'twitter',
+                            'x': 'twitter'
+                        };
+                        const icon = platformIcons[platform.platform] || 'share-2';
+                        
+                        return `
+                            <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center mr-3">
+                                        <i data-lucide="${icon}" class="w-5 h-5 text-green-400"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium capitalize">${platform.platform}</div>
+                                        <div class="text-xs opacity-70">@${platform.username}</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-bold text-green-400">${platform.followers_formatted}</div>
+                                    <div class="text-xs opacity-70">Followers</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    // Re-initialize lucide icons
+                    if (window.lucide) {
+                        window.lucide.createIcons();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading follower summary:', error);
+            }
+        }
+        
+        // NEW: Load platform analytics
+        async function loadPlatformAnalytics(platform) {
+            try {
+                const response = await fetch(`/api/mediakit/analytics/${platform}`);
+                if (!response.ok) {
+                    throw new Error('Failed to load analytics');
+                }
+                
+                const data = await response.json();
+                const displayEl = document.getElementById('analytics-display');
+                
+                if (!displayEl) return;
+                
+                // Build metrics display based on platform
+                let metricsHtml = `
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between pb-2 border-b border-gray-600">
+                            <h4 class="font-semibold text-lg capitalize">${platform} Analytics</h4>
+                            <span class="text-xs opacity-70">@${data.username}</span>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                `;
+                
+                // Add metrics
+                for (const [key, value] of Object.entries(data.metrics)) {
+                    if (value !== null && value !== undefined) {
+                        // More efficient label formatting
+                        const label = key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                        const displayValue = typeof value === 'number' ? value.toLocaleString() : value.toString();
+                        
+                        metricsHtml += `
+                            <div class="bg-white/5 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-purple-400">${displayValue}</div>
+                                <div class="text-xs opacity-70 mt-1">${label}</div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                metricsHtml += `
+                        </div>
+                        <div class="text-xs opacity-50 text-center mt-4">
+                            Last updated: ${new Date(data.fetched_at).toLocaleString()}
+                        </div>
+                    </div>
+                `;
+                
+                displayEl.innerHTML = metricsHtml;
+            } catch (error) {
+                console.error('Error loading platform analytics:', error);
+                const displayEl = document.getElementById('analytics-display');
+                if (displayEl) {
+                    displayEl.innerHTML = `
+                        <div class="text-center py-8 opacity-50">
+                            <p class="text-sm text-red-400">Failed to load analytics for ${platform}</p>
+                            <p class="text-xs mt-2">Data may not be available yet. Please sync social stats first.</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // NEW: Initialize platform selector
+        async function initPlatformSelector() {
+            try {
+                const response = await fetch('/api/mediakit/social-stats-cache');
+                if (!response.ok) return;
+                
+                const result = await response.json();
+                const platforms = Object.keys(result.data || {});
+                
+                if (platforms.length === 0) {
+                    return;
+                }
+                
+                const selectorEl = document.getElementById('platform-selector');
+                if (!selectorEl) return;
+                
+                // Clear existing buttons
+                selectorEl.innerHTML = '';
+                
+                // Create buttons safely using DOM methods to prevent XSS
+                platforms.forEach(platform => {
+                    const button = document.createElement('button');
+                    button.setAttribute('data-platform', platform);
+                    button.className = 'px-4 py-2 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 transition-colors capitalize platform-btn';
+                    button.textContent = platform; // Safe text content (no HTML parsing)
+                    button.onclick = () => selectPlatform(platform);
+                    selectorEl.appendChild(button);
+                });
+                
+                // Auto-select first platform
+                if (platforms.length > 0) {
+                    selectPlatform(platforms[0]);
+                }
+            } catch (error) {
+                console.error('Error initializing platform selector:', error);
+            }
+        }
+        
+        // NEW: Select platform and load its analytics
+        function selectPlatform(platform) {
+            // CSS class constants for cleaner code
+            const ACTIVE_CLASSES = ['bg-purple-500/30', 'border-purple-400'];
+            const INACTIVE_CLASSES = ['bg-purple-500/10', 'border-purple-500/30'];
+            
+            // Update button states
+            document.querySelectorAll('.platform-btn').forEach(btn => {
+                if (btn.dataset.platform === platform) {
+                    btn.classList.add(...ACTIVE_CLASSES);
+                    btn.classList.remove(...INACTIVE_CLASSES);
+                } else {
+                    btn.classList.remove(...ACTIVE_CLASSES);
+                    btn.classList.add(...INACTIVE_CLASSES);
+                }
+            });
+            
+            // Load analytics
+            loadPlatformAnalytics(platform);
+        }
+    </script>
+    
+    <style>
+        @keyframes slide-up {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .animate-slide-up {
+            animation: slide-up 0.3s ease-out;
+        }
+        
+        @media print {
+            /* Hide action buttons when printing */
+            header button,
+            header a {
+                display: none !important;
+            }
+            
+            /* Optimize for print */
+            .glass-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            
+            /* Remove background effects for print */
+            body {
+                background: white !important;
+            }
+            
+            * {
+                background: white !important;
+                color: black !important;
+            }
+        }
+    </style>
+{% endblock %}

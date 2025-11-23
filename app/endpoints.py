@@ -68,6 +68,12 @@ from .database import (
     create_access_request,
     get_access_requests,
     update_access_request_status,
+    get_mediakit_blocks,
+    get_visible_mediakit_blocks,
+    create_mediakit_block,
+    update_mediakit_block,
+    delete_mediakit_block,
+    reorder_mediakit_blocks,
     check_access_approved,
 )
 from .auth import require_auth, check_auth
@@ -1279,3 +1285,77 @@ async def export_mediakit_pdf():
     except Exception as e:
         logging.error(f"Error exporting PDF: {e}")
         raise HTTPException(500, "Fehler beim Exportieren des PDFs")
+
+
+# New Media Kit Blocks API (Block-based system)
+@router.get("/mediakit/blocks", dependencies=[Depends(require_auth)])
+async def get_all_mediakit_blocks():
+    """Get all media kit blocks for admin."""
+    try:
+        blocks = get_mediakit_blocks()
+        return {"blocks": blocks}
+    except Exception as e:
+        logger.error(f"Error getting media kit blocks: {e}")
+        return JSONResponse(status_code=500, content={"detail": str(e)})
+
+
+@router.post("/mediakit/blocks", dependencies=[Depends(require_auth)])
+async def create_new_mediakit_block(request: Request):
+    """Create a new media kit block."""
+    try:
+        data = await request.json()
+        block_type = data.get('block_type')
+        title = data.get('title')
+        content = data.get('content')
+        settings = data.get('settings', {})
+        position = data.get('position')
+        
+        if not block_type:
+            return JSONResponse(status_code=400, content={"detail": "block_type is required"})
+        
+        block_id = create_mediakit_block(block_type, title, content, settings, position)
+        return {"success": True, "block_id": block_id}
+    except Exception as e:
+        logger.error(f"Error creating media kit block: {e}")
+        return JSONResponse(status_code=500, content={"detail": str(e)})
+
+
+@router.put("/mediakit/blocks/{block_id}", dependencies=[Depends(require_auth)])
+async def update_existing_mediakit_block(block_id: int, request: Request):
+    """Update a media kit block."""
+    try:
+        data = await request.json()
+        title = data.get('title')
+        content = data.get('content')
+        settings = data.get('settings')
+        is_visible = data.get('is_visible')
+        
+        update_mediakit_block(block_id, title, content, settings, is_visible)
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Error updating media kit block: {e}")
+        return JSONResponse(status_code=500, content={"detail": str(e)})
+
+
+@router.delete("/mediakit/blocks/{block_id}", dependencies=[Depends(require_auth)])
+async def delete_existing_mediakit_block(block_id: int):
+    """Delete a media kit block."""
+    try:
+        delete_mediakit_block(block_id)
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Error deleting media kit block: {e}")
+        return JSONResponse(status_code=500, content={"detail": str(e)})
+
+
+@router.post("/mediakit/blocks/reorder", dependencies=[Depends(require_auth)])
+async def reorder_blocks(request: Request):
+    """Reorder media kit blocks."""
+    try:
+        data = await request.json()
+        block_positions = data.get('blocks', [])
+        reorder_mediakit_blocks(block_positions)
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Error reordering media kit blocks: {e}")
+        return JSONResponse(status_code=500, content={"detail": str(e)})

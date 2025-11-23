@@ -164,6 +164,21 @@ def init_db():
             approved_at DATETIME
         )"""
         )
+        
+        # Media kit blocks table (new flexible block-based system)
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_blocks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            block_type TEXT NOT NULL,
+            title TEXT,
+            content TEXT,
+            settings TEXT,
+            position INTEGER NOT NULL DEFAULT 0,
+            is_visible BOOLEAN DEFAULT 1,
+            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_display_order ON items(display_order)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_item_id ON clicks(item_id)")
@@ -724,3 +739,129 @@ def check_access_approved(email: str) -> bool:
             (email,)
         )
         return cursor.fetchone()[0] > 0
+
+
+# Media Kit Blocks Functions (New Block-Based System)
+def get_mediakit_blocks() -> list:
+    """Get all media kit blocks ordered by position."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT id, block_type, title, content, settings, position, is_visible 
+               FROM mediakit_blocks 
+               ORDER BY position ASC"""
+        )
+        rows = cursor.fetchall()
+        blocks = []
+        for row in rows:
+            blocks.append({
+                'id': row[0],
+                'block_type': row[1],
+                'title': row[2],
+                'content': row[3],
+                'settings': json.loads(row[4]) if row[4] else {},
+                'position': row[5],
+                'is_visible': bool(row[6])
+            })
+        return blocks
+
+
+def get_visible_mediakit_blocks() -> list:
+    """Get only visible media kit blocks ordered by position."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT id, block_type, title, content, settings, position 
+               FROM mediakit_blocks 
+               WHERE is_visible = 1
+               ORDER BY position ASC"""
+        )
+        rows = cursor.fetchall()
+        blocks = []
+        for row in rows:
+            blocks.append({
+                'id': row[0],
+                'block_type': row[1],
+                'title': row[2],
+                'content': row[3],
+                'settings': json.loads(row[4]) if row[4] else {},
+                'position': row[5]
+            })
+        return blocks
+
+
+def create_mediakit_block(block_type: str, title: str = None, content: str = None, 
+                          settings: dict = None, position: int = None) -> int:
+    """Create a new media kit block."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # If position not provided, add at the end
+        if position is None:
+            cursor.execute("SELECT MAX(position) FROM mediakit_blocks")
+            max_pos = cursor.fetchone()[0]
+            position = (max_pos + 1) if max_pos is not None else 0
+        
+        settings_json = json.dumps(settings) if settings else None
+        
+        cursor.execute(
+            """INSERT INTO mediakit_blocks (block_type, title, content, settings, position, is_visible, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, 1, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
+            (block_type, title, content, settings_json, position)
+        )
+        conn.commit()
+        return cursor.lastrowid
+
+
+def update_mediakit_block(block_id: int, title: str = None, content: str = None, 
+                          settings: dict = None, is_visible: bool = None):
+    """Update a media kit block."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        updates = []
+        params = []
+        
+        if title is not None:
+            updates.append("title = ?")
+            params.append(title)
+        
+        if content is not None:
+            updates.append("content = ?")
+            params.append(content)
+        
+        if settings is not None:
+            updates.append("settings = ?")
+            params.append(json.dumps(settings))
+        
+        if is_visible is not None:
+            updates.append("is_visible = ?")
+            params.append(1 if is_visible else 0)
+        
+        if updates:
+            updates.append("updated_at = datetime('now', 'localtime')")
+            params.append(block_id)
+            
+            sql = f"UPDATE mediakit_blocks SET {', '.join(updates)} WHERE id = ?"
+            cursor.execute(sql, params)
+            conn.commit()
+
+
+def delete_mediakit_block(block_id: int):
+    """Delete a media kit block."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM mediakit_blocks WHERE id = ?", (block_id,))
+        conn.commit()
+
+
+def reorder_mediakit_blocks(block_positions: list):
+    """Reorder media kit blocks. Expects list of {'id': int, 'position': int}."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        for item in block_positions:
+            cursor.execute(
+                "UPDATE mediakit_blocks SET position = ?, updated_at = datetime('now', 'localtime') WHERE id = ?",
+                (item['position'], item['id'])
+            )
+        conn.commit()

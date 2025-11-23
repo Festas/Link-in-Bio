@@ -991,22 +991,23 @@ async def delete_mediakit_admin_data(request: Request):
 
 @router.post("/mediakit/refresh-social-stats", dependencies=[Depends(require_auth)])
 async def refresh_social_stats(request: Request):
-    """Fetch fresh social media statistics and update cache."""
-    # Get current social handles from mediakit data
-    mediakit_data = get_mediakit_data()
-    platforms_config = mediakit_data.get('platforms', {})
+    """Fetch fresh social media statistics from Profile tab handles and update cache."""
+    # Get social handles from Profile tab (settings) instead of mediakit_data
+    settings = get_settings_from_db()
     
     config = {
-        'instagram_handle': platforms_config.get('instagram_handle', ''),
-        'tiktok_handle': platforms_config.get('tiktok_handle', ''),
-        'youtube_handle': platforms_config.get('youtube_handle', ''),
+        'instagram_handle': settings.get('social_instagram', ''),
+        'tiktok_handle': settings.get('social_tiktok', ''),
+        'youtube_handle': settings.get('social_youtube', ''),
+        'twitch_handle': settings.get('social_twitch', ''),
+        'x_handle': settings.get('social_x', ''),
     }
     
     # Remove empty handles
     config = {k: v for k, v in config.items() if v}
     
     if not config:
-        raise HTTPException(400, "Keine Social Media Handles konfiguriert. Bitte zuerst Handles eingeben und speichern.")
+        raise HTTPException(400, "Keine Social Media Handles konfiguriert. Bitte zuerst im Profil-Tab Social Media Handles eingeben und speichern.")
     
     # Fetch stats
     stats_service = get_stats_service()
@@ -1020,20 +1021,22 @@ async def refresh_social_stats(request: Request):
             error_msg += " Mögliche Gründe: " + ", ".join(results['errors'][:2])
         raise HTTPException(500, error_msg)
     
-    # Save to cache
+    # Save to cache with full analytics data
     for platform, stats in results.get('platforms', {}).items():
         save_social_stats_cache(platform, stats['username'], json.dumps(stats))
     
-    # Update mediakit_data with new stats
+    # Update mediakit_data with new stats for backward compatibility
     if 'instagram' in results['platforms']:
         ig_stats = results['platforms']['instagram']
         followers = stats_service.format_number(ig_stats.get('followers', 0))
         update_mediakit_data('platforms', 'instagram_followers', followers, 1)
+        update_mediakit_data('platforms', 'instagram_handle', f"@{ig_stats['username']}", 1)
     
     if 'tiktok' in results['platforms']:
         tt_stats = results['platforms']['tiktok']
         followers = stats_service.format_number(tt_stats.get('followers', 0))
         update_mediakit_data('platforms', 'tiktok_followers', followers, 2)
+        update_mediakit_data('platforms', 'tiktok_handle', f"@{tt_stats['username']}", 2)
     
     # Update total
     total = stats_service.format_number(results.get('total_followers', 0))
@@ -1046,6 +1049,7 @@ async def refresh_social_stats(request: Request):
         "message": "Social Media Statistiken erfolgreich aktualisiert",
         "data": results,
         "total_followers": total,
+        "total_followers_raw": results.get('total_followers', 0),
         "platforms_updated": list(results.get('platforms', {}).keys())
     }
 
@@ -1055,6 +1059,85 @@ async def get_cached_social_stats():
     """Get cached social media statistics (public endpoint for frontend)."""
     cache = get_social_stats_cache()
     return {"data": cache}
+
+
+@router.get("/mediakit/follower-summary")
+async def get_follower_summary():
+    """Get follower summary for platforms with 1000+ followers (public endpoint)."""
+    cache = get_social_stats_cache()
+    stats_service = get_stats_service()
+    
+    qualified_platforms = []
+    total_qualified_followers = 0
+    
+    for platform, data in cache.items():
+        stats = data.get('data', {})
+        followers = stats.get('followers', 0)
+        
+        # Only include platforms with 1000+ followers
+        if followers >= 1000:
+            qualified_platforms.append({
+                'platform': platform,
+                'username': data.get('username', ''),
+                'followers': followers,
+                'followers_formatted': stats_service.format_number(followers),
+                'verified': stats.get('verified', False),
+                'fetched_at': data.get('fetched_at', '')
+            })
+            total_qualified_followers += followers
+    
+    return {
+        "total_followers": total_qualified_followers,
+        "total_followers_formatted": stats_service.format_number(total_qualified_followers),
+        "platforms": qualified_platforms,
+        "platform_count": len(qualified_platforms)
+    }
+
+
+@router.get("/mediakit/analytics/{platform}")
+async def get_platform_analytics(platform: str):
+    """Get detailed analytics for a specific platform (public endpoint)."""
+    cache = get_social_stats_cache(platform)
+    
+    # Check if we got any data back for this platform
+    if not cache:
+        raise HTTPException(404, f"Keine Daten für Plattform '{platform}' gefunden")
+    
+    # The filtered cache should have the platform as a key
+    if platform not in cache:
+        raise HTTPException(404, f"Keine Daten für Plattform '{platform}' gefunden")
+    
+    data = cache[platform]
+    stats = data.get('data', {})
+    
+    # Build platform-specific analytics response
+    analytics = {
+        'platform': platform,
+        'username': data.get('username', ''),
+        'fetched_at': data.get('fetched_at', ''),
+        'metrics': {}
+    }
+    
+    # Common metrics
+    if 'followers' in stats:
+        analytics['metrics']['followers'] = stats['followers']
+    if 'following' in stats:
+        analytics['metrics']['following'] = stats['following']
+    
+    # Platform-specific metrics
+    if platform == 'instagram':
+        analytics['metrics']['posts'] = stats.get('posts', 0)
+        analytics['metrics']['engagement_rate'] = stats.get('engagement_rate')
+        analytics['metrics']['verified'] = stats.get('verified', False)
+    elif platform == 'tiktok':
+        analytics['metrics']['likes'] = stats.get('likes', 0)
+        analytics['metrics']['videos'] = stats.get('videos', 0)
+    elif platform == 'youtube':
+        analytics['metrics']['subscribers'] = stats.get('subscribers', 0)
+        analytics['metrics']['videos'] = stats.get('videos', 0)
+        analytics['metrics']['views'] = stats.get('views', 0)
+    
+    return analytics
 
 
 # Media Kit Settings Endpoints

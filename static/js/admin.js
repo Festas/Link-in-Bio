@@ -10,10 +10,8 @@ import { initializePageManagement, getCurrentPageId } from './admin_pages.js';
 import { initMediaKit } from './admin_mediakit.js';
 import { initDashboard } from './admin_dashboard.js';
 import { initKeyboardShortcuts, recordAction } from './admin_keyboard.js';
-import { initLivePreview, notifyItemsChanged, notifySettingsChanged } from './admin_live_preview.js';
 import { initSmartFeatures } from './admin_smart_features.js';
 import { initScheduling, showScheduleCalendar } from './admin_scheduling.js';
-import { initFixedPreviewButton } from './admin_fixed_preview.js';
 
 // Helper für Fallback-Script-Loading
 function loadScript(src) {
@@ -100,9 +98,60 @@ async function initAdmin() {
     const previewCloseBtn = document.getElementById('preview-close-button');
     const previewIframe = document.getElementById('preview-iframe');
 
-    function showPreview() {
-        previewIframe.src = `/?t=${Date.now()}`;
+    async function showPreview() {
+        // Save any pending changes before showing preview
+        await saveBeforePreview();
+        
+        // Determine which page to show
+        let previewUrl = getPreviewUrl();
+        
+        // Show the modal
+        previewIframe.src = `${previewUrl}?t=${Date.now()}`;
         previewModal.classList.add('active');
+    }
+    
+    function getPreviewUrl() {
+        // Check if we're on a special page
+        const pageSelector = document.getElementById('page-selector');
+        if (pageSelector && pageSelector.value) {
+            const value = pageSelector.value;
+            
+            if (value.startsWith('special:')) {
+                // Special page
+                const pageKey = value.replace('special:', '');
+                const specialPages = {
+                    'ueber-mich': '/ueber-mich',
+                    'impressum': '/impressum',
+                    'datenschutz': '/datenschutz',
+                    'kontakt': '/kontakt',
+                    'mediakit': '/mediakit'
+                };
+                return specialPages[pageKey] || '/';
+            }
+        }
+        
+        // Default to main page
+        return '/';
+    }
+    
+    async function saveBeforePreview() {
+        // Check if we're editing a special page
+        const specialPageEditor = document.getElementById('special-page-editor-panel');
+        if (specialPageEditor && specialPageEditor.style.display !== 'none') {
+            // Save special page
+            const saveBtn = document.getElementById('save-special-page-content');
+            if (saveBtn) {
+                saveBtn.click();
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+        
+        // Check if there are unsaved item order changes
+        const saveOrderBtn = document.getElementById('save-order-button');
+        if (saveOrderBtn && saveOrderBtn.style.display !== 'none') {
+            saveOrderBtn.click();
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
     }
 
     if (previewBtn) previewBtn.onclick = showPreview;
@@ -110,7 +159,10 @@ async function initAdmin() {
         previewModal.classList.remove('active'); 
         previewIframe.src = 'about:blank'; 
     };
-    if (previewRefreshBtn) previewRefreshBtn.onclick = () => { previewIframe.src = `/?t=${Date.now()}`; };
+    if (previewRefreshBtn) previewRefreshBtn.onclick = () => { 
+        const previewUrl = getPreviewUrl();
+        previewIframe.src = `${previewUrl}?t=${Date.now()}`; 
+    };
     if (previewModal) previewModal.onclick = (e) => { if (e.target === previewModal) previewCloseBtn.click(); };
 
     // 6. Forms (Items erstellen)
@@ -361,10 +413,8 @@ async function initAdmin() {
     // Initialize new features
     try {
         initDashboard();
-        initLivePreview();
         initSmartFeatures();
         initScheduling();
-        initFixedPreviewButton(); // Add fixed preview button
         
         // Initialize keyboard shortcuts with callbacks
         initKeyboardShortcuts({
@@ -375,7 +425,7 @@ async function initAdmin() {
                 }
             },
             onPreview: () => {
-                const previewBtn = document.getElementById('toggle-live-preview');
+                const previewBtn = document.getElementById('preview-button');
                 if (previewBtn) previewBtn.click();
             },
             onSwitchTab: (tab) => {
@@ -417,7 +467,6 @@ async function initAdmin() {
                     }
                 }
                 loadItems();
-                notifyItemsChanged();
             },
             onDuplicate: async (itemIds) => {
                 // Implement duplication logic
@@ -429,7 +478,6 @@ async function initAdmin() {
                     await API.deleteItem(id);
                 }
                 loadItems();
-                notifyItemsChanged();
             },
             onUndo: (action) => {
                 console.log('Undo:', action);

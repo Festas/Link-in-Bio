@@ -935,3 +935,64 @@ async def delete_mediakit_admin_data(request: Request):
     
     delete_mediakit_entry(section, key)
     return {"message": "Eintrag gelöscht"}
+
+
+@router.post("/mediakit/refresh-social-stats", dependencies=[Depends(require_auth)])
+async def refresh_social_stats(request: Request):
+    """Fetch fresh social media statistics and update cache."""
+    import json
+    from .database import get_mediakit_data, save_social_stats_cache, update_mediakit_data
+    from .social_stats import get_stats_service
+    
+    # Get current social handles from mediakit data
+    mediakit_data = get_mediakit_data()
+    platforms_config = mediakit_data.get('platforms', {})
+    
+    config = {
+        'instagram_handle': platforms_config.get('instagram_handle', ''),
+        'tiktok_handle': platforms_config.get('tiktok_handle', ''),
+        'youtube_handle': platforms_config.get('youtube_handle', ''),
+    }
+    
+    # Remove empty handles
+    config = {k: v for k, v in config.items() if v}
+    
+    if not config:
+        raise HTTPException(400, "Keine Social Media Handles konfiguriert")
+    
+    # Fetch stats
+    stats_service = get_stats_service()
+    results = await stats_service.fetch_all_stats(config)
+    
+    # Save to cache
+    for platform, stats in results.get('platforms', {}).items():
+        save_social_stats_cache(platform, stats['username'], json.dumps(stats))
+    
+    # Update mediakit_data with new stats
+    if 'instagram' in results['platforms']:
+        ig_stats = results['platforms']['instagram']
+        followers = stats_service.format_number(ig_stats.get('followers', 0))
+        update_mediakit_data('platforms', 'instagram_followers', followers, 1)
+    
+    if 'tiktok' in results['platforms']:
+        tt_stats = results['platforms']['tiktok']
+        followers = stats_service.format_number(tt_stats.get('followers', 0))
+        update_mediakit_data('platforms', 'tiktok_followers', followers, 2)
+    
+    # Update total
+    total = stats_service.format_number(results.get('total_followers', 0))
+    update_mediakit_data('analytics', 'total_followers', total, 0)
+    
+    return {
+        "message": "Social Media Statistiken erfolgreich aktualisiert",
+        "data": results,
+        "total_followers": total
+    }
+
+
+@router.get("/mediakit/social-stats-cache")
+async def get_cached_social_stats():
+    """Get cached social media statistics (public endpoint for frontend)."""
+    from .database import get_social_stats_cache
+    cache = get_social_stats_cache()
+    return {"data": cache}

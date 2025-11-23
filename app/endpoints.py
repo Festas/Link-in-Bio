@@ -7,7 +7,7 @@ import json
 import logging
 import re
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
@@ -937,7 +937,6 @@ async def delete_mediakit_admin_data(request: Request):
         raise HTTPException(400, "Section und Key sind erforderlich")
     
     delete_mediakit_entry(section, key)
-    delete_mediakit_entry(section, key)
     return {"message": "Eintrag gelöscht"}
 
 
@@ -1006,5 +1005,4 @@ async def refresh_social_stats(request: Request):
 async def get_cached_social_stats():
     """Get cached social media statistics (public endpoint for frontend)."""
     cache = get_social_stats_cache()
-    return {"data": cache}
     return {"data": cache}

@@ -894,6 +894,28 @@ async def update_mediakit_admin_data(request: Request):
     return {"message": "Media Kit Daten aktualisiert"}
 
 
+@router.post("/mediakit-data/batch", dependencies=[Depends(require_auth)])
+async def update_mediakit_batch(request: Request):
+    """Batch update media kit data."""
+    from .database import update_mediakit_data
+    data = await request.json()
+    updates = data.get("updates", [])
+    
+    if not updates:
+        raise HTTPException(400, "Keine Updates bereitgestellt")
+    
+    for update in updates:
+        section = update.get("section", "")
+        key = update.get("key", "")
+        value = update.get("value", "")
+        display_order = update.get("display_order", 0)
+        
+        if section and key:
+            update_mediakit_data(section, key, value, display_order)
+    
+    return {"message": "Alle Media Kit Daten aktualisiert"}
+
+
 @router.delete("/mediakit-data", dependencies=[Depends(require_auth)])
 async def delete_mediakit_admin_data(request: Request):
     """Delete media kit entry."""

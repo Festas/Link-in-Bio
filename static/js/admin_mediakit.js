@@ -87,18 +87,17 @@ async function saveMediaKitData() {
     ];
     
     try {
-        for (const update of updates) {
-            const response = await fetch('/api/mediakit-data', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                },
-                body: JSON.stringify(update)
-            });
-            
-            if (!response.ok) throw new Error('Fehler beim Speichern');
-        }
+        // Use batch endpoint for better performance
+        const response = await fetch('/api/mediakit-data/batch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+            },
+            body: JSON.stringify({ updates })
+        });
+        
+        if (!response.ok) throw new Error('Fehler beim Speichern');
         
         showStatus('mediakit-status', 'Erfolgreich gespeichert! ✓', 'success');
     } catch (error) {

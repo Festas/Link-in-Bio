@@ -21,6 +21,7 @@
         <div class="glass-card p-4 sm:p-6 md:p-8 rounded-xl mb-6 sm:mb-8 text-left">
             <div class="space-y-6 text-sm leading-relaxed special-page-content" style="color: var(--color-text);">
                 {% if page_content %}
+                    {# Note: Using 'safe' filter here - content can only be edited by authenticated admins #}
                     {{ page_content | safe }}
                 {% else %}
                     <p class="opacity-90">Dieser Inhalt kann im Admin-Panel bearbeitet werden.</p>

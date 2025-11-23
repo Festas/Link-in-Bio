@@ -9,6 +9,12 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
+try:
+    from dotenv import dotenv_values
+    DOTENV_AVAILABLE = True
+except ImportError:
+    DOTENV_AVAILABLE = False
+
 
 def print_header(text):
     """Print formatted header"""
@@ -85,20 +91,22 @@ def get_tiktok_credentials():
     use_prepared = input("Möchtest du Credentials aus mediakit/Instagram/TikTok/.env laden? (y/N): ").strip().lower()
     
     if use_prepared == 'y':
-        tiktok_env = Path('mediakit/Instagram/TikTok/.env')
-        if tiktok_env.exists():
-            print(f"✅ Lade Credentials aus {tiktok_env}")
-            # Load from file instead of hardcoding
-            from dotenv import dotenv_values
-            config = dotenv_values(tiktok_env)
-            return {
-                'access_token': config.get('TIKTOK_ACCESS_TOKEN', ''),
-                'refresh_token': config.get('TIKTOK_REFRESH_TOKEN', ''),
-                'client_key': config.get('TIKTOK_CLIENT_KEY', ''),
-                'client_secret': config.get('TIKTOK_CLIENT_SECRET', '')
-            }
+        if not DOTENV_AVAILABLE:
+            print("⚠️  python-dotenv nicht installiert. Installiere mit: pip install python-dotenv")
+            print("Fahre mit manueller Eingabe fort...")
         else:
-            print(f"⚠️  Datei {tiktok_env} nicht gefunden. Manuelle Eingabe erforderlich.")
+            tiktok_env = Path('mediakit/Instagram/TikTok/.env')
+            if tiktok_env.exists():
+                print(f"✅ Lade Credentials aus {tiktok_env}")
+                config = dotenv_values(tiktok_env)
+                return {
+                    'access_token': config.get('TIKTOK_ACCESS_TOKEN', ''),
+                    'refresh_token': config.get('TIKTOK_REFRESH_TOKEN', ''),
+                    'client_key': config.get('TIKTOK_CLIENT_KEY', ''),
+                    'client_secret': config.get('TIKTOK_CLIENT_SECRET', '')
+                }
+            else:
+                print(f"⚠️  Datei {tiktok_env} nicht gefunden. Manuelle Eingabe erforderlich.")
     
     print("\nBitte gib deine TikTok API Credentials ein:")
     access_token = input("TIKTOK_ACCESS_TOKEN: ").strip()

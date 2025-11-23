@@ -109,9 +109,8 @@ async def main():
             
             # Read existing content
             existing_lines = []
-            if social_env.exists():
-                with open(social_env, 'r') as f:
-                    existing_lines = f.readlines()
+            with open(social_env, 'r') as f:
+                existing_lines = f.readlines()
             
             # Update TikTok credentials while preserving other content
             updated_lines = []

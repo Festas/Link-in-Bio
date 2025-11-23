@@ -28,46 +28,11 @@
     {% endif %}
     
 </head>
-<body class="min-h-screen flex flex-col" data-page-id="{{ page_id or '' }}">
+<body class="min-h-screen" data-page-id="{{ page_id or '' }}">
 
-    <div class="flex-grow px-3 py-4 sm:p-4">
+    <div class="px-3 py-4 sm:p-4">
         {% block content %}{% endblock %}
     </div>
-    
-    <!-- Global Footer - Full Width Banner -->
-    <footer class="global-footer w-full mt-auto border-t border-gray-800/50">
-        <div class="w-full py-4 px-3 sm:py-6 sm:px-4">
-            <div class="max-w-4xl mx-auto">
-                <!-- Footer Links -->
-                <nav class="footer-links flex justify-center items-center gap-2 sm:gap-4 mb-3 sm:mb-4 text-xs flex-wrap">
-                    <a href="/ueber-mich" class="footer-link transition-all duration-200 hover:text-cyan-400">
-                        Über mich
-                    </a>
-                    <span class="text-gray-600 hidden sm:inline">•</span>
-                    <a href="/kontakt" class="footer-link transition-all duration-200 hover:text-cyan-400">
-                        Kontakt
-                    </a>
-                    <span class="text-gray-600 hidden sm:inline">•</span>
-                    <a href="/mediakit" class="footer-link transition-all duration-200 hover:text-cyan-400">
-                        Media Kit
-                    </a>
-                    <span class="text-gray-600 hidden sm:inline">•</span>
-                    <a href="/datenschutz" class="footer-link transition-all duration-200 hover:text-cyan-400">
-                        Datenschutz
-                    </a>
-                    <span class="text-gray-600 hidden sm:inline">•</span>
-                    <a href="/impressum" class="footer-link transition-all duration-200 hover:text-cyan-400">
-                        Impressum
-                    </a>
-                </nav>
-                
-                <!-- Copyright -->
-                <p class="text-xs text-gray-500 opacity-60 hover:opacity-100 transition-opacity text-center px-2">
-                    &copy; 2024 Eric | Tech & Gaming aus Hamburg 🎮⚡ | Made with 💙
-                </p>
-            </div>
-        </div>
-    </footer>
     
     <script src="{{ vendor.lucide }}?v={{ version }}"></script>
     <script src="/static/js/app.js?v={{ version }}" type="module" defer></script>

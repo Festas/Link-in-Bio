@@ -944,38 +944,7 @@ body > * {
     }
 }
 
-/* Footer Enhancement - Eric's Hamburg Branding */
-footer {
-    margin-top: 5rem;
-    padding: 2.5rem 1rem;
-    text-align: center;
-    opacity: 0.7;
-    transition: all 0.4s ease;
-    position: relative;
-}
 
-footer::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 120px;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--color-tech-accent), transparent);
-    opacity: 0.3;
-}
-
-footer:hover {
-    opacity: 1;
-}
-
-footer p {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    font-weight: 500;
-    letter-spacing: 0.02em;
-}
 
 /* Responsive Enhancements - Mobile First for Influencer Audience */
 @media (max-width: 640px) {
@@ -1023,15 +992,7 @@ footer p {
         font-size: 1.0625rem;
     }
     
-    /* Ensure footer links wrap properly on mobile */
-    .footer-links {
-        font-size: 0.75rem;
-        gap: 0.5rem;
-    }
-    
-    .footer-links span {
-        display: none; /* Hide bullet separators on very small screens */
-    }
+
     
     /* Adjust glass cards padding for mobile */
     .glass-card {
@@ -1355,45 +1316,6 @@ button:focus-visible, a:focus-visible {
     text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
 }
 
-/* Global Footer Styles - Full Width Banner */
-.global-footer {
-    width: 100%;
-    position: relative;
-    z-index: 10;
-    background: rgba(17, 24, 39, 0.3);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-}
 
-.footer-links {
-    color: var(--color-text-muted);
-}
-
-.footer-link {
-    color: var(--color-text-muted);
-    text-decoration: none;
-    font-weight: 500;
-    position: relative;
-}
-
-.footer-link:hover {
-    color: var(--color-tech-accent);
-    text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
-}
-
-.footer-link::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 0;
-    height: 1px;
-    background: linear-gradient(90deg, var(--color-tech-accent), var(--color-gaming-accent));
-    transition: width 0.3s ease;
-}
-
-.footer-link:hover::after {
-    width: 100%;
-}
 
 

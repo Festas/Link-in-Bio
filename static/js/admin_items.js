@@ -120,18 +120,6 @@ function setupItemEvents(item, { viewContainer, editContainer, childrenContainer
             is_affiliate: getChk('.edit-is_affiliate'),
         };
         
-        // Special handling for footer items - build JSON from checkboxes
-        if (item.item_type === 'footer') {
-            const checkboxes = editContainer.querySelectorAll('.footer-link-checkbox');
-            const selectedLinks = Array.from(checkboxes)
-                .filter(cb => cb.checked)
-                .map(cb => ({
-                    text: cb.dataset.linkText,
-                    url: cb.dataset.linkUrl
-                }));
-            payload.url = JSON.stringify(selectedLinks);
-        }
-        
         const pId = parseInt(getVal('.edit-parent-id'));
         if (!isNaN(pId)) payload.parent_id = pId === 0 ? null : pId;
         

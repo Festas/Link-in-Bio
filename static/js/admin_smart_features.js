@@ -251,9 +251,10 @@ async function moveItemToTop(itemId) {
         const itemIndex = items.findIndex(i => i.id === itemId);
         if (itemIndex === -1) return;
         
-        // Move to position 0
+        // Extract the item before splicing
+        const item = items[itemIndex];
         items.splice(itemIndex, 1);
-        items.unshift(items[itemIndex]);
+        items.unshift(item);
         
         const ids = items.map(i => i.id);
         await API.reorderItems(ids);

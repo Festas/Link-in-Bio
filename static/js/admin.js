@@ -406,8 +406,10 @@ async function initAdmin() {
                 }
             },
             onToggle: async (itemIds) => {
+                // Fetch items once to avoid N+1 queries
+                const allItems = await API.getItems();
                 for (const id of itemIds) {
-                    const item = await API.getItems().then(items => items.find(i => i.id === parseInt(id)));
+                    const item = allItems.find(i => i.id === parseInt(id));
                     if (item) {
                         await API.updateItem(id, { is_active: !item.is_active });
                     }

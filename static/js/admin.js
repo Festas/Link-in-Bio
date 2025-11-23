@@ -8,6 +8,9 @@ import { organizeItems, getSortableConfig, isGroup } from './groups.js';
 import { requireAuth, logout } from './utils.js';
 import { initializePageManagement, getCurrentPageId } from './admin_pages.js';
 import { initMediaKit } from './admin_mediakit.js';
+import { initDashboard } from './admin_dashboard.js';
+import { initKeyboardShortcuts, recordAction } from './admin_keyboard.js';
+import { initLivePreview, notifyItemsChanged, notifySettingsChanged } from './admin_live_preview.js';
 
 // Helper für Fallback-Script-Loading
 function loadScript(src) {
@@ -48,6 +51,7 @@ async function initAdmin() {
                 }
         });
 
+        if (tabName === 'dashboard') initDashboard();
         if (tabName === 'media') initializeMediaManager();
         if (tabName === 'community') {
             initializeSubscribers();
@@ -350,6 +354,89 @@ async function initAdmin() {
     window.addEventListener('page-changed', (e) => {
         loadItems();
     });
+    
+    // Initialize new features
+    try {
+        initDashboard();
+        initLivePreview();
+        
+        // Initialize keyboard shortcuts with callbacks
+        initKeyboardShortcuts({
+            onSave: async () => {
+                const saveBtn = document.getElementById('save-order-button');
+                if (saveBtn && saveBtn.style.display !== 'none') {
+                    saveBtn.click();
+                }
+            },
+            onPreview: () => {
+                const previewBtn = document.getElementById('toggle-live-preview');
+                if (previewBtn) previewBtn.click();
+            },
+            onSwitchTab: (tab) => {
+                const tabBtn = document.querySelector(`[data-tab="${tab}"]`);
+                if (tabBtn) tabBtn.click();
+            },
+            onNewItem: () => {
+                const itemsTab = document.querySelector('[data-tab="items"]');
+                if (itemsTab) itemsTab.click();
+            },
+            onSearch: async (query) => {
+                // Search through items
+                const items = await API.getItems();
+                const lowerQuery = query.toLowerCase();
+                return items.filter(item => 
+                    item.title?.toLowerCase().includes(lowerQuery) ||
+                    item.url?.toLowerCase().includes(lowerQuery) ||
+                    item.item_type?.toLowerCase().includes(lowerQuery)
+                );
+            },
+            onSelectItem: (itemId) => {
+                // Scroll to and highlight item
+                const itemCard = document.querySelector(`[data-id="${itemId}"]`);
+                if (itemCard) {
+                    itemCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    itemCard.classList.add('ring-2', 'ring-blue-500');
+                    setTimeout(() => {
+                        itemCard.classList.remove('ring-2', 'ring-blue-500');
+                    }, 2000);
+                }
+            },
+            onToggle: async (itemIds) => {
+                for (const id of itemIds) {
+                    const item = await API.getItems().then(items => items.find(i => i.id === parseInt(id)));
+                    if (item) {
+                        await API.updateItem(id, { is_active: !item.is_active });
+                    }
+                }
+                loadItems();
+                notifyItemsChanged();
+            },
+            onDuplicate: async (itemIds) => {
+                // Implement duplication logic
+                console.log('Duplicate items:', itemIds);
+                // TODO: Add API endpoint for duplication
+            },
+            onDelete: async (itemIds) => {
+                for (const id of itemIds) {
+                    await API.deleteItem(id);
+                }
+                loadItems();
+                notifyItemsChanged();
+            },
+            onUndo: (action) => {
+                console.log('Undo:', action);
+                // Implement undo logic based on action type
+            },
+            onRedo: (action) => {
+                console.log('Redo:', action);
+                // Implement redo logic based on action type
+            }
+        });
+        
+        console.log('✨ Enhanced admin features loaded successfully!');
+    } catch (error) {
+        console.error('Error initializing enhanced features:', error);
+    }
     
     // WICHTIG: Profil-Modul initialisieren (dieser Aufruf fehlte!)
     // Das lädt die Settings, Social Inputs und Stylings

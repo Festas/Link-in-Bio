@@ -3,10 +3,11 @@ import zipfile
 import sqlite3
 import csv
 import io
+import json
 import logging
 import re
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
@@ -53,6 +54,11 @@ from .database import (
     create_page,
     update_page,
     delete_page,
+    get_mediakit_data,
+    update_mediakit_data,
+    delete_mediakit_entry,
+    save_social_stats_cache,
+    get_social_stats_cache,
 )
 from .auth import require_auth, check_auth
 from .services import (
@@ -63,6 +69,7 @@ from .services import (
     get_country_from_ip,
     APP_DOMAIN,
 )
+from .social_stats import get_stats_service
 from .rate_limit import limiter_strict, limiter_standard
 from .cache import cache
 from .config import BASE_DIR, UPLOAD_DIR
@@ -878,7 +885,6 @@ async def update_special_page_content(page_key: str, request: Request):
 @router.get("/mediakit-data", dependencies=[Depends(require_auth)])
 async def get_mediakit_admin_data():
     """Get all media kit data for admin panel."""
-    from .database import get_mediakit_data
     data = get_mediakit_data()
     return {"data": data}
 
@@ -886,7 +892,6 @@ async def get_mediakit_admin_data():
 @router.put("/mediakit-data", dependencies=[Depends(require_auth)])
 async def update_mediakit_admin_data(request: Request):
     """Update media kit data."""
-    from .database import update_mediakit_data
     data = await request.json()
     section = data.get("section", "")
     key = data.get("key", "")
@@ -903,7 +908,6 @@ async def update_mediakit_admin_data(request: Request):
 @router.post("/mediakit-data/batch", dependencies=[Depends(require_auth)])
 async def update_mediakit_batch(request: Request):
     """Batch update media kit data."""
-    from .database import update_mediakit_data
     data = await request.json()
     updates = data.get("updates", [])
     
@@ -925,7 +929,6 @@ async def update_mediakit_batch(request: Request):
 @router.delete("/mediakit-data", dependencies=[Depends(require_auth)])
 async def delete_mediakit_admin_data(request: Request):
     """Delete media kit entry."""
-    from .database import delete_mediakit_entry
     data = await request.json()
     section = data.get("section", "")
     key = data.get("key", "")
@@ -935,3 +938,71 @@ async def delete_mediakit_admin_data(request: Request):
     
     delete_mediakit_entry(section, key)
     return {"message": "Eintrag gelöscht"}
+
+
+@router.post("/mediakit/refresh-social-stats", dependencies=[Depends(require_auth)])
+async def refresh_social_stats(request: Request):
+    """Fetch fresh social media statistics and update cache."""
+    # Get current social handles from mediakit data
+    mediakit_data = get_mediakit_data()
+    platforms_config = mediakit_data.get('platforms', {})
+    
+    config = {
+        'instagram_handle': platforms_config.get('instagram_handle', ''),
+        'tiktok_handle': platforms_config.get('tiktok_handle', ''),
+        'youtube_handle': platforms_config.get('youtube_handle', ''),
+    }
+    
+    # Remove empty handles
+    config = {k: v for k, v in config.items() if v}
+    
+    if not config:
+        raise HTTPException(400, "Keine Social Media Handles konfiguriert. Bitte zuerst Handles eingeben und speichern.")
+    
+    # Fetch stats
+    stats_service = get_stats_service()
+    results = await stats_service.fetch_all_stats(config)
+    
+    # Check if we got any data
+    if not results.get('platforms'):
+        # If scraping failed, provide helpful error message
+        error_msg = "Konnte keine Daten abrufen. "
+        if results.get('errors'):
+            error_msg += " Mögliche Gründe: " + ", ".join(results['errors'][:2])
+        raise HTTPException(500, error_msg)
+    
+    # Save to cache
+    for platform, stats in results.get('platforms', {}).items():
+        save_social_stats_cache(platform, stats['username'], json.dumps(stats))
+    
+    # Update mediakit_data with new stats
+    if 'instagram' in results['platforms']:
+        ig_stats = results['platforms']['instagram']
+        followers = stats_service.format_number(ig_stats.get('followers', 0))
+        update_mediakit_data('platforms', 'instagram_followers', followers, 1)
+    
+    if 'tiktok' in results['platforms']:
+        tt_stats = results['platforms']['tiktok']
+        followers = stats_service.format_number(tt_stats.get('followers', 0))
+        update_mediakit_data('platforms', 'tiktok_followers', followers, 2)
+    
+    # Update total
+    total = stats_service.format_number(results.get('total_followers', 0))
+    update_mediakit_data('analytics', 'total_followers', total, 0)
+    
+    # Store last update timestamp
+    update_mediakit_data('analytics', 'last_updated', datetime.now().strftime('%d.%m.%Y'), 99)
+    
+    return {
+        "message": "Social Media Statistiken erfolgreich aktualisiert",
+        "data": results,
+        "total_followers": total,
+        "platforms_updated": list(results.get('platforms', {}).keys())
+    }
+
+
+@router.get("/mediakit/social-stats-cache")
+async def get_cached_social_stats():
+    """Get cached social media statistics (public endpoint for frontend)."""
+    cache = get_social_stats_cache()
+    return {"data": cache}

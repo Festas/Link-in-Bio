@@ -451,7 +451,14 @@
                 
                 <!-- Platforms Section -->
                 <div class="mb-6 p-4 bg-gray-700 rounded">
-                    <h3 class="text-lg font-semibold mb-4">Social Media Accounts</h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">Social Media Accounts</h3>
+                        <button id="refresh-social-stats-btn" class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded text-sm inline-flex items-center">
+                            <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
+                            Social Stats aktualisieren
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mb-4">Gib deine Social Media Handles ein und klicke auf "Social Stats aktualisieren", um automatisch deine Follower-Zahlen zu laden.</p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label for="mk-instagram-followers" class="block text-sm font-medium text-gray-300">Instagram Follower</label>

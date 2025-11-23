@@ -110,3 +110,4 @@ celerybeat.pid
 # profiling data
 .prof
 
+test_mediakit_feature.py

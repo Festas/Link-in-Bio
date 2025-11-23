@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import json
 from typing import Dict, Any, Optional
 from contextlib import contextmanager
 from dotenv import load_dotenv
@@ -96,6 +97,18 @@ def init_db():
             display_order INTEGER DEFAULT 0,
             updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
             UNIQUE(section, key)
+        )"""
+        )
+        
+        # Social media stats cache table
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS social_stats_cache (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            platform TEXT NOT NULL,
+            username TEXT NOT NULL,
+            stats_data TEXT NOT NULL,
+            fetched_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            UNIQUE(platform, username)
         )"""
         )
 
@@ -377,4 +390,49 @@ def delete_mediakit_entry(section: str, key: str):
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM mediakit_data WHERE section = ? AND key = ?", (section, key))
+        conn.commit()
+
+
+def save_social_stats_cache(platform: str, username: str, stats_data: str):
+    """Save or update social media stats in cache."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO social_stats_cache (platform, username, stats_data, fetched_at)
+               VALUES (?, ?, ?, datetime('now', 'localtime'))
+               ON CONFLICT(platform, username)
+               DO UPDATE SET stats_data = ?, fetched_at = datetime('now', 'localtime')""",
+            (platform, username, stats_data, stats_data)
+        )
+        conn.commit()
+
+
+def get_social_stats_cache(platform: Optional[str] = None) -> Dict[str, Any]:
+    """Get cached social media stats, optionally filtered by platform."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        if platform:
+            cursor.execute(
+                "SELECT platform, username, stats_data, fetched_at FROM social_stats_cache WHERE platform = ?",
+                (platform,)
+            )
+        else:
+            cursor.execute("SELECT platform, username, stats_data, fetched_at FROM social_stats_cache")
+        
+        rows = cursor.fetchall()
+        result = {}
+        for row in rows:
+            result[row[0]] = {
+                'username': row[1],
+                'data': json.loads(row[2]),
+                'fetched_at': row[3]
+            }
+        return result
+
+
+def clear_social_stats_cache():
+    """Clear all cached social media stats."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM social_stats_cache")
         conn.commit()

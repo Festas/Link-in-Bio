@@ -1,6 +1,7 @@
 // Media Kit Management
 export function initMediaKit() {
     const saveBtn = document.getElementById('save-mediakit-btn');
+    const refreshBtn = document.getElementById('refresh-social-stats-btn');
     
     if (!saveBtn) return;
     
@@ -11,6 +12,66 @@ export function initMediaKit() {
     saveBtn.addEventListener('click', async () => {
         await saveMediaKitData();
     });
+    
+    // Refresh social stats button
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            await refreshSocialStats();
+        });
+    }
+}
+
+async function refreshSocialStats() {
+    const statusEl = document.getElementById('mediakit-status');
+    const refreshBtn = document.getElementById('refresh-social-stats-btn');
+    
+    try {
+        // Disable button and show loading
+        if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 inline-block mr-2 animate-spin"></i>Aktualisiere...';
+        }
+        
+        showStatus('mediakit-status', 'Hole aktuelle Social Media Daten...', 'info');
+        
+        const response = await fetch('/api/mediakit/refresh-social-stats', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+            }
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Fehler beim Aktualisieren');
+        }
+        
+        const result = await response.json();
+        
+        // Show success message
+        showStatus('mediakit-status', `✓ Erfolgreich! Gesamt: ${result.total_followers} Follower`, 'success');
+        
+        // Reload data to show updated values
+        await loadMediaKitData();
+        
+        // Re-initialize lucide icons for the refresh button
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+        
+    } catch (error) {
+        console.error('Error refreshing social stats:', error);
+        showStatus('mediakit-status', `✗ ${error.message}`, 'error');
+    } finally {
+        // Re-enable button
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4 inline-block mr-2"></i>Social Stats aktualisieren';
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+        }
+    }
 }
 
 async function loadMediaKitData() {
@@ -111,9 +172,16 @@ function showStatus(elementId, message, type) {
     if (!statusEl) return;
     
     statusEl.textContent = message;
-    statusEl.className = `mt-4 text-center ${type === 'success' ? 'text-green-400' : 'text-red-400'}`;
+    let colorClass = 'text-gray-400';
+    if (type === 'success') colorClass = 'text-green-400';
+    else if (type === 'error') colorClass = 'text-red-400';
+    else if (type === 'info') colorClass = 'text-blue-400';
     
-    setTimeout(() => {
-        statusEl.textContent = '';
-    }, 3000);
+    statusEl.className = `mt-4 text-center ${colorClass}`;
+    
+    if (type !== 'info') {
+        setTimeout(() => {
+            statusEl.textContent = '';
+        }, 5000);
+    }
 }

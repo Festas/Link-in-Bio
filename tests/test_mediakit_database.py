@@ -45,13 +45,9 @@ def clean_mediakit_db():
         os.remove("mediakit.db")
 
 
-def test_mediakit_database_creation():
+def test_mediakit_database_creation(clean_mediakit_db):
     """Test that mediakit database is created with correct tables"""
-    if os.path.exists("mediakit.db"):
-        os.remove("mediakit.db")
-
-    init_mediakit_db()
-
+    # Database is already initialized by fixture
     assert os.path.exists("mediakit.db")
 
     # Check tables exist
@@ -71,9 +67,6 @@ def test_mediakit_database_creation():
 
     for table in expected_tables:
         assert table in tables, f"Table {table} not found in mediakit.db"
-
-    # Cleanup
-    os.remove("mediakit.db")
 
 
 def test_mediakit_data_operations(clean_mediakit_db):
@@ -193,13 +186,9 @@ def test_mediakit_access_requests(clean_mediakit_db):
     assert len(pending) == 0
 
 
-def test_mediakit_database_indexes():
+def test_mediakit_database_indexes(clean_mediakit_db):
     """Test that proper indexes are created"""
-    if os.path.exists("mediakit.db"):
-        os.remove("mediakit.db")
-
-    init_mediakit_db()
-
+    # Database is already initialized by fixture
     conn = sqlite3.connect("mediakit.db")
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='index' ORDER BY name")
@@ -215,9 +204,6 @@ def test_mediakit_database_indexes():
 
     for idx in expected_indexes:
         assert idx in indexes, f"Index {idx} not found"
-
-    # Cleanup
-    os.remove("mediakit.db")
 
 
 if __name__ == "__main__":

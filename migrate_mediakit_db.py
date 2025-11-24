@@ -74,9 +74,23 @@ def migrate_mediakit_data():
     tables_migrated = 0
     total_rows_migrated = 0
 
+    # Whitelist of allowed mediakit tables for security
+    allowed_tables = {
+        "mediakit_data",
+        "mediakit_settings",
+        "mediakit_views",
+        "mediakit_access_requests",
+        "mediakit_blocks",
+    }
+
     for table in mediakit_tables:
+        # Security: Only process whitelisted mediakit tables
+        if table not in allowed_tables:
+            print(f"  ⚠️  {table}: Skipped (not in whitelist)")
+            continue
+
         try:
-            # Get row count from old database
+            # Get row count from old database (safe: table is whitelisted)
             cursor_old.execute(f"SELECT COUNT(*) FROM {table}")
             row_count = cursor_old.fetchone()[0]
 
@@ -84,18 +98,18 @@ def migrate_mediakit_data():
                 print(f"  ⊘ {table}: 0 rows (empty)")
                 continue
 
-            # Get all data from old table
+            # Get all data from old table (safe: table is whitelisted)
             cursor_old.execute(f"SELECT * FROM {table}")
             rows = cursor_old.fetchall()
 
-            # Get column names
+            # Get column names (safe: table is whitelisted)
             cursor_old.execute(f"PRAGMA table_info({table})")
             columns = [col[1] for col in cursor_old.fetchall()]
 
-            # Delete existing data in new table (in case of re-run)
+            # Delete existing data in new table (safe: table is whitelisted)
             cursor_new.execute(f"DELETE FROM {table}")
 
-            # Insert data into new table
+            # Insert data into new table (safe: table is whitelisted, values are parameterized)
             placeholders = ",".join(["?"] * len(columns))
             cursor_new.executemany(f"INSERT INTO {table} VALUES ({placeholders})", rows)
 

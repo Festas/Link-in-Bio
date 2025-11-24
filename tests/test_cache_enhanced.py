@@ -167,7 +167,7 @@ class TestEnhancedCache:
         """Test cache decorator with sync function."""
         call_count = 0
         
-        @self.cache.cached(key="expensive", ttl=60)
+        @self.cache.cached(ttl=60)  # No fixed key - auto-generate from args
         def expensive_function(x, y):
             nonlocal call_count
             call_count += 1
@@ -183,10 +183,10 @@ class TestEnhancedCache:
         assert result2 == 5
         assert call_count == 1  # Not incremented
         
-        # Different args - should execute
+        # Different args - should execute (different cache key)
         result3 = expensive_function(3, 4)
         assert result3 == 7
-        # Call count depends on auto-generated key
+        assert call_count == 2  # Incremented for new args
     
     def test_cache_decorator_async(self):
         """Test cache decorator with async function."""

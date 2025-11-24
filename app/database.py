@@ -357,16 +357,33 @@ def init_custom_pages_db():
         # Create default page if none exists (for backward compatibility)
         cursor.execute("SELECT COUNT(*) FROM pages")
         if cursor.fetchone()[0] == 0:
-            # Get default values from main database settings
-            with get_db_connection() as main_conn:
-                main_cursor = main_conn.cursor()
-                main_cursor.execute("SELECT key, value FROM settings")
-                settings = {row[0]: row[1] for row in main_cursor.fetchall()}
+            # Try to get default values from main database settings if it exists
+            # Otherwise use environment variables or hardcoded defaults
+            default_title = os.getenv("DEFAULT_PROFILE_NAME", "Eric | Tech & Gaming")
+            default_bio = os.getenv(
+                "DEFAULT_PROFILE_BIO",
+                "Tech & Gaming Influencer aus Hamburg 🎮⚡ | Ingenieur & Content Creator | Ästhetik trifft Innovation",
+            )
+            default_image = ""
+            default_bg = ""
 
-            default_title = settings.get("title", "Mein Link-in-Bio")
-            default_bio = settings.get("bio", "")
-            default_image = settings.get("image_url", "")
-            default_bg = settings.get("bg_image_url", "")
+            # Try to get settings from main database if it already exists
+            if os.path.exists(DATABASE_FILE):
+                try:
+                    with get_db_connection() as main_conn:
+                        main_cursor = main_conn.cursor()
+                        main_cursor.execute(
+                            "SELECT key, value FROM settings WHERE key IN ('title', 'bio', 'image_url', 'bg_image_url')"
+                        )
+                        settings = {row[0]: row[1] for row in main_cursor.fetchall()}
+                        default_title = settings.get("title", default_title)
+                        default_bio = settings.get("bio", default_bio)
+                        default_image = settings.get("image_url", default_image)
+                        default_bg = settings.get("bg_image_url", default_bg)
+                except Exception:
+                    # If main database doesn't have settings table yet, use defaults
+                    pass
+
             cursor.execute(
                 """INSERT INTO pages (slug, title, bio, image_url, bg_image_url, is_active) 
                    VALUES ('', ?, ?, ?, ?, 1)""",

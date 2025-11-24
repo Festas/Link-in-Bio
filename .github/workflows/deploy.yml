@@ -19,12 +19,12 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "."
           target: "/var/www/app"
-          # Ausschließen: DB, Uploads, Git, Tests, Dev-Dateien, Archiv-Docs
+          # Ausschließen: DB-Dateien (alle drei Datenbanken), Uploads, Git, Tests, Dev-Dateien, Archiv-Docs
           rm: false 
-          exclude: "linktree.db,static/uploads,venv,.git,.github,tests,docs/archive,.pytest_cache,.mypy_cache,htmlcov,*.pyc,__pycache__,.env.example,Makefile,.flake8,pyproject.toml"
+          exclude: "linktree.db,special_pages.db,pages.db,static/uploads,venv,.git,.github,tests,docs/archive,.pytest_cache,.mypy_cache,htmlcov,*.pyc,__pycache__,.env.example,Makefile,.flake8,pyproject.toml"
 
-      # 2. .env Datei aus Secrets erstellen
-      - name: Create .env file
+      # 2. .env Datei aus Secrets erstellen und Datenbanken initialisieren
+      - name: Create .env file and initialize databases
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -33,6 +33,8 @@ jobs:
           script: |
             cd /var/www/app
             echo "${{ secrets.ENV_FILE }}" > .env
+            # Initialize databases (creates them if they don't exist)
+            python3 init_databases.py
 
       # 3. Docker neu starten
       - name: Restart Docker Containers

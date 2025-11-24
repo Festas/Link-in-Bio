@@ -2,7 +2,7 @@
 Tests for Enhanced Authentication Module
 """
 import pytest
-from app.auth_enhanced import (
+from app.auth_unified import (
     hash_password,
     verify_password,
     validate_password_strength,
@@ -108,7 +108,7 @@ class TestSessionManagement:
     
     def setup_method(self):
         """Clear sessions before each test."""
-        from app.auth_enhanced import sessions
+        from app.auth_unified import sessions
         sessions.clear()
     
     def test_create_session(self):
@@ -138,7 +138,7 @@ class TestSessionManagement:
     
     def test_session_expiry(self):
         """Test that expired sessions are invalid."""
-        from app.auth_enhanced import sessions
+        from app.auth_unified import sessions
         
         # Create a session
         token = create_session("testuser")
@@ -152,7 +152,7 @@ class TestSessionManagement:
     
     def test_remember_me_extends_session(self):
         """Test that remember_me creates longer sessions."""
-        from app.auth_enhanced import sessions, SESSION_EXPIRY_HOURS
+        from app.auth_unified import sessions, SESSION_EXPIRY_HOURS
         
         # Normal session
         token1 = create_session("testuser", remember_me=False)
@@ -215,12 +215,12 @@ class TestSessionCleanup:
     
     def setup_method(self):
         """Clear sessions before each test."""
-        from app.auth_enhanced import sessions
+        from app.auth_unified import sessions
         sessions.clear()
     
     def test_cleanup_expired_sessions(self):
         """Test cleaning up expired sessions."""
-        from app.auth_enhanced import sessions
+        from app.auth_unified import sessions
         
         # Create some sessions
         token1 = create_session("user1")

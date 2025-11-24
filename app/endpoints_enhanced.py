@@ -66,7 +66,7 @@ class Setup2FAResponse(BaseModel):
 @router.post("/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest, http_request: Request, response: Response):
     """Enhanced login with session management and 2FA support."""
-    from .auth_enhanced import ADMIN_USERNAME, ADMIN_PASSWORD_HASH, REQUIRE_2FA, verify_password
+    from .auth_unified import ADMIN_USERNAME, ADMIN_PASSWORD_HASH, REQUIRE_2FA, verify_password
     import os
     
     # Validate credentials
@@ -126,7 +126,7 @@ async def change_password(
     username: str = Depends(require_auth)
 ):
     """Change admin password."""
-    from .auth_enhanced import ADMIN_PASSWORD_HASH, verify_password
+    from .auth_unified import ADMIN_PASSWORD_HASH, verify_password
     import os
     
     # Verify current password

@@ -3,7 +3,7 @@ Tests for Enhanced Caching Module
 """
 import pytest
 import time
-from app.cache_enhanced import (
+from app.cache_unified import (
     InMemoryCacheBackend,
     EnhancedCache,
     DEFAULT_TTL,

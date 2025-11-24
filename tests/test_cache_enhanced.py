@@ -5,7 +5,7 @@ import pytest
 import time
 from app.cache_unified import (
     InMemoryCacheBackend,
-    EnhancedCache,
+    UnifiedCache,
     DEFAULT_TTL,
 )
 
@@ -121,7 +121,7 @@ class TestEnhancedCache:
     
     def setup_method(self):
         """Create fresh cache for each test."""
-        self.cache = EnhancedCache()
+        self.cache = UnifiedCache()
         self.cache.clear()
     
     def test_basic_operations(self):
@@ -230,7 +230,7 @@ class TestCachePerformance:
     
     def setup_method(self):
         """Create fresh cache for each test."""
-        self.cache = EnhancedCache()
+        self.cache = UnifiedCache()
         self.cache.clear()
     
     def test_large_dataset(self):

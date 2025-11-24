@@ -7,6 +7,7 @@ import secrets
 import base64
 import logging
 import pyotp
+import hashlib
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Tuple
 from fastapi import Request, HTTPException, Depends
@@ -54,13 +55,25 @@ WEAK_PASSWORDS = {
 # ============================================================================
 
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt."""
+    """
+    Hash a password using bcrypt.
+    Pre-hashes with SHA256 if password > 72 bytes to work around bcrypt limitation.
+    """
+    # Bcrypt has a 72-byte limit, so we pre-hash with SHA256 for long passwords
+    if len(password.encode('utf-8')) > 72:
+        password = hashlib.sha256(password.encode('utf-8')).hexdigest()
     return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash."""
+    """
+    Verify a password against its hash.
+    Handles pre-hashed passwords for bcrypt 72-byte limit.
+    """
     try:
+        # Pre-hash if password is too long
+        if len(plain_password.encode('utf-8')) > 72:
+            plain_password = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
         return pwd_context.verify(plain_password, hashed_password)
     except Exception as e:
         logger.error(f"Password verification error: {e}")

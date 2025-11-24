@@ -2,7 +2,7 @@ import uvicorn
 import sys
 import asyncio
 import os
-from fastapi import FastAPI, Request, Response, Depends
+from fastapi import FastAPI, Request, Response, Depends, HTTPException
 from fastapi.responses import (
     HTMLResponse,
     JSONResponse,

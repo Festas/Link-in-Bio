@@ -22,11 +22,13 @@ if __name__ == "__main__":
     linktree_exists = os.path.exists("linktree.db")
     special_pages_exists = os.path.exists("special_pages.db")
     pages_exists = os.path.exists("pages.db")
+    mediakit_exists = os.path.exists("mediakit.db")
 
     print(f"\nCurrent database status:")
     print(f"  linktree.db: {'EXISTS' if linktree_exists else 'MISSING'}")
     print(f"  special_pages.db: {'EXISTS' if special_pages_exists else 'MISSING'}")
     print(f"  pages.db: {'EXISTS' if pages_exists else 'MISSING'}")
+    print(f"  mediakit.db: {'EXISTS' if mediakit_exists else 'MISSING'}")
 
     print("\nInitializing databases...")
     init_db()
@@ -36,6 +38,7 @@ if __name__ == "__main__":
     print("=" * 60)
     print("\nDatabase files created/updated:")
     print(f"  ✓ linktree.db (main database)")
-    print(f"  ✓ special_pages.db (special pages & media kit)")
+    print(f"  ✓ special_pages.db (special pages)")
     print(f"  ✓ pages.db (custom pages)")
+    print(f"  ✓ mediakit.db (media kit)")
     print("\nAll databases are ready to use.")

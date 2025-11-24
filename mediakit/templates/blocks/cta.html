@@ -1,0 +1,33 @@
+<!-- CTA Block -->
+{% set cta_data = block.content|from_json if block.content else {} %}
+<div class="glass-card p-6 sm:p-8 md:p-10 rounded-xl mb-6 text-center bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-2 border-cyan-500/30">
+    <div class="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full flex items-center justify-center border-2 border-cyan-500/30">
+        <i data-lucide="mail" class="w-8 h-8 text-cyan-400"></i>
+    </div>
+    
+    {% if block.title %}
+    <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 gradient-text">
+        {{ block.title }}
+    </h2>
+    {% endif %}
+    
+    {% if cta_data.description %}
+    <p class="text-base sm:text-lg opacity-90 mb-8 max-w-2xl mx-auto leading-relaxed">
+        {{ cta_data.description }}
+    </p>
+    {% endif %}
+    
+    <div class="flex flex-wrap justify-center gap-3">
+        {% if cta_data.button_url and cta_data.button_text %}
+        <a href="{{ cta_data.button_url }}" class="inline-flex items-center px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg shadow-cyan-500/20">
+            {{ cta_data.button_text }}
+            <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+        </a>
+        {% endif %}
+        {% if cta_data.secondary_url and cta_data.secondary_text %}
+        <a href="{{ cta_data.secondary_url }}" class="inline-flex items-center px-8 py-3 glass-card hover:bg-white hover:bg-opacity-10 rounded-lg font-medium transition-all duration-200">
+            {{ cta_data.secondary_text }}
+        </a>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="{{ branding.language or 'de' }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ branding.metadata.title or 'Media Kit' }} - {{ profile.name or branding.brand_name }}</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: {{ branding.fonts.body or 'Arial, sans-serif' }};
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: #ffffff;
+            padding: 20mm;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: {{ branding.fonts.heading or 'Arial, sans-serif' }};
+            margin-bottom: 0.5em;
+            color: {{ branding.colors.primary or '#06b6d4' }};
+        }
+        
+        h1 { font-size: 32pt; }
+        h2 { font-size: 24pt; margin-top: 1em; }
+        h3 { font-size: 18pt; }
+        
+        p { margin-bottom: 0.5em; }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid {{ branding.colors.primary or '#06b6d4' }};
+        }
+        
+        .header img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .stat-card {
+            border: 2px solid {{ branding.colors.primary or '#06b6d4' }};
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+        }
+        
+        .stat-value {
+            font-size: 24pt;
+            font-weight: bold;
+            color: {{ branding.colors.primary or '#06b6d4' }};
+        }
+        
+        .stat-label {
+            font-size: 10pt;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .platforms {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .platform-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .platform-name {
+            font-weight: bold;
+            font-size: 14pt;
+            margin-bottom: 5px;
+        }
+        
+        .platform-followers {
+            font-size: 18pt;
+            color: {{ branding.colors.secondary or '#3b82f6' }};
+            font-weight: bold;
+        }
+        
+        .partners-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .partner-badge {
+            background: #f0f0f0;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 10pt;
+            border: 1px solid #ddd;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+        }
+        
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        {% if profile.avatar_url %}
+        <img src="{{ profile.avatar_url }}" alt="{{ profile.name }}">
+        {% endif %}
+        <h1>{{ profile.name or branding.brand_name }}</h1>
+        {% if profile.bio %}
+        <p>{{ profile.bio }}</p>
+        {% endif %}
+        {% if profile.location %}
+        <p><small>📍 {{ profile.location }}</small></p>
+        {% endif %}
+    </div>
+
+    {% for block in blocks %}
+        <div class="section">
+            {% if block.block_type == 'hero' %}
+                {% set hero_data = block.content|from_json if block.content else {} %}
+                {% if block.title %}
+                <h2>{{ block.title }}</h2>
+                {% endif %}
+                {% if hero_data.tagline %}
+                <p><strong>{{ hero_data.tagline }}</strong></p>
+                {% endif %}
+                {% if hero_data.description %}
+                <p>{{ hero_data.description }}</p>
+                {% endif %}
+            
+            {% elif block.block_type == 'text' %}
+                {% if block.title %}
+                <h2>{{ block.title }}</h2>
+                {% endif %}
+                {% if block.content %}
+                <p>{{ block.content }}</p>
+                {% endif %}
+            
+            {% elif block.block_type == 'stats' %}
+                {% set stats_data = block.content|from_json if block.content else [] %}
+                {% if block.title %}
+                <h2>{{ block.title }}</h2>
+                {% endif %}
+                <div class="stats-grid">
+                    {% for stat in stats_data %}
+                    <div class="stat-card">
+                        <div class="stat-value">{{ stat.value }}</div>
+                        <div class="stat-label">{{ stat.label }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            
+            {% elif block.block_type == 'platforms' %}
+                {% set platforms_data = block.content|from_json if block.content else [] %}
+                {% if block.title %}
+                <h2>{{ block.title }}</h2>
+                {% endif %}
+                <div class="platforms">
+                    {% for platform in platforms_data %}
+                    <div class="platform-card">
+                        <div class="platform-name">{{ platform.name }}</div>
+                        {% if platform.handle %}
+                        <div style="font-size: 10pt; color: #666;">{{ platform.handle }}</div>
+                        {% endif %}
+                        {% if platform.followers %}
+                        <div class="platform-followers">{{ platform.followers }}</div>
+                        <div style="font-size: 9pt; color: #999;">Followers</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            
+            {% elif block.block_type == 'partners' %}
+                {% if block.title %}
+                <h2>{{ block.title }}</h2>
+                {% endif %}
+                {% if block.content %}
+                {% set partners = block.content|split(',') if block.content else [] %}
+                <div class="partners-list">
+                    {% for partner in partners %}
+                    <span class="partner-badge">{{ partner.strip()|e }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            
+            {% elif block.block_type == 'rates' %}
+                {% set rates_data = block.content|from_json if block.content else [] %}
+                {% if block.title %}
+                <h2>{{ block.title }}</h2>
+                {% endif %}
+                {% for rate in rates_data %}
+                <div style="margin: 10px 0;">
+                    <strong>{{ rate.service }}:</strong> {{ rate.price }}
+                    {% if rate.description %}
+                    <br><small style="color: #666;">{{ rate.description }}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            
+            {% elif block.block_type == 'audience' %}
+                {% set audience_data = block.content|from_json if block.content else {} %}
+                {% if block.title %}
+                <h2>{{ block.title }}</h2>
+                {% endif %}
+                <h3>Demographics</h3>
+                {% if audience_data.gender_female or audience_data.gender_male %}
+                <p><strong>Gender:</strong> 
+                    {% if audience_data.gender_female %}Female: {{ audience_data.gender_female }}%{% endif %}
+                    {% if audience_data.gender_male %} | Male: {{ audience_data.gender_male }}%{% endif %}
+                </p>
+                {% endif %}
+                {% if audience_data.top_countries %}
+                <p><strong>Top Countries:</strong> {{ audience_data.top_countries }}</p>
+                {% endif %}
+                {% if audience_data.top_cities %}
+                <p><strong>Top Cities:</strong> {{ audience_data.top_cities }}</p>
+                {% endif %}
+            
+            {% endif %}
+        </div>
+    {% endfor %}
+
+    <div class="footer">
+        <p>Generated on {{ generated_date }}</p>
+        {% if branding.contact.email %}
+        <p>Contact: {{ branding.contact.email }}</p>
+        {% endif %}
+        {% if branding.contact.website %}
+        <p>{{ branding.contact.website }}</p>
+        {% endif %}
+    </div>
+</body>
+</html>

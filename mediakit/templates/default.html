@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="{{ branding.language or 'de' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ branding.metadata.title or 'Media Kit' }} - {{ profile.name or branding.brand_name }}</title>
+    <meta name="description" content="{{ branding.metadata.description or 'Professional Media Kit' }}">
+    <meta name="keywords" content="{{ branding.metadata.keywords or 'media kit, influencer' }}">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="{{ base_url }}/mediakit/assets/css/mediakit.css">
+    
+    <style>
+        :root {
+            --color-primary: {{ branding.colors.primary or '#06b6d4' }};
+            --color-secondary: {{ branding.colors.secondary or '#3b82f6' }};
+            --color-accent: {{ branding.colors.accent or '#8b5cf6' }};
+            --color-text: {{ branding.colors.text or '#ffffff' }};
+            --color-text-muted: {{ branding.colors.text_muted or '#94a3b8' }};
+        }
+        
+        body {
+            font-family: {{ branding.fonts.body or 'Inter, sans-serif' }};
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--color-text);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: {{ branding.fonts.heading or 'Inter, sans-serif' }};
+        }
+        
+        .glass-card {
+            background: {{ branding.colors.card_bg or 'rgba(30, 41, 59, 0.5)' }};
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="w-full max-w-5xl mx-auto pb-8 sm:pb-12 pt-4 sm:pt-8 px-3 sm:px-4">
+        
+        <!-- Header Actions -->
+        <div class="text-center mb-6 sm:mb-8 no-print">
+            <div class="flex flex-wrap justify-center gap-2 mb-4">
+                <button onclick="window.print()" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all glass-card hover:bg-white hover:bg-opacity-10">
+                    <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                    Download PDF
+                </button>
+                <button onclick="shareMediaKit()" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all glass-card hover:bg-white hover:bg-opacity-10">
+                    <i data-lucide="share-2" class="w-4 h-4 mr-2"></i>
+                    Share
+                </button>
+            </div>
+        </div>
+
+        <!-- Media Kit Blocks -->
+        {% if blocks %}
+            {% for block in blocks %}
+                {% if block.block_type == 'hero' %}
+                    {% include 'blocks/hero.html' %}
+                {% elif block.block_type == 'text' %}
+                    {% include 'blocks/text.html' %}
+                {% elif block.block_type == 'stats' %}
+                    {% include 'blocks/stats.html' %}
+                {% elif block.block_type == 'platforms' %}
+                    {% include 'blocks/platforms.html' %}
+                {% elif block.block_type == 'partners' %}
+                    {% include 'blocks/partners.html' %}
+                {% elif block.block_type == 'rates' %}
+                    {% include 'blocks/rates.html' %}
+                {% elif block.block_type == 'cta' %}
+                    {% include 'blocks/cta.html' %}
+                {% elif block.block_type == 'video' %}
+                    {% include 'blocks/video.html' %}
+                {% elif block.block_type == 'audience' %}
+                    {% include 'blocks/audience.html' %}
+                {% elif block.block_type == 'custom' %}
+                    {% include 'blocks/custom.html' %}
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <!-- Empty State -->
+            <div class="glass-card p-12 rounded-xl text-center">
+                <div class="w-20 h-20 mx-auto mb-6 bg-cyan-500/10 rounded-full flex items-center justify-center">
+                    <i data-lucide="file-text" class="w-10 h-10 text-cyan-400"></i>
+                </div>
+                <h2 class="text-2xl font-bold mb-4">Media Kit Coming Soon</h2>
+                <p class="text-base opacity-80 mb-6 max-w-md mx-auto" style="color: var(--color-text-muted);">
+                    This media kit is currently being set up. Check back soon for stats, collaborations, and partnership opportunities.
+                </p>
+            </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="mt-12 text-center text-sm opacity-60 no-print">
+            <p>Generated on {{ generated_date }}</p>
+            {% if branding.contact.email %}
+                <p class="mt-2">Contact: <a href="mailto:{{ branding.contact.email }}" class="text-cyan-400 hover:underline">{{ branding.contact.email }}</a></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Share function
+        async function shareMediaKit() {
+            const url = window.location.href;
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: '{{ branding.metadata.title or "Media Kit" }}',
+                        text: 'Check out this media kit!',
+                        url: url
+                    });
+                } catch (err) {
+                    console.log('Share cancelled');
+                }
+            } else {
+                try {
+                    await navigator.clipboard.writeText(url);
+                    alert('Link copied to clipboard!');
+                } catch (err) {
+                    console.error('Could not copy link');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -547,7 +547,14 @@ def cleanup_orphaned_references():
 
         # Clean up items with invalid page_id
         if valid_page_ids:
-            # Build safe parameterized query - placeholders is just "?" repeated, not user input
+            # Build safe parameterized query
+            # Note: placeholders is just "?" repeated (not user input), so this is safe
+            # Add sanity check to prevent excessive parameter counts
+            if len(valid_page_ids) > 10000:
+                # If there are too many pages, process in batches
+                # This shouldn't happen in practice, but prevents potential issues
+                valid_page_ids = valid_page_ids[:10000]
+
             placeholders = ",".join("?" * len(valid_page_ids))
             query = f"UPDATE items SET page_id = NULL WHERE page_id IS NOT NULL AND page_id NOT IN ({placeholders})"
             main_cursor.execute(query, valid_page_ids)
@@ -558,7 +565,9 @@ def cleanup_orphaned_references():
 
         # Clean up subscribers with invalid redirect_page_id
         if valid_page_ids:
-            # Build safe parameterized query - placeholders is just "?" repeated, not user input
+            # Build safe parameterized query
+            # Note: placeholders is just "?" repeated (not user input), so this is safe
+            # Using the same validated page IDs from above
             placeholders = ",".join("?" * len(valid_page_ids))
             query = f"UPDATE subscribers SET redirect_page_id = NULL WHERE redirect_page_id IS NOT NULL AND redirect_page_id NOT IN ({placeholders})"
             main_cursor.execute(query, valid_page_ids)

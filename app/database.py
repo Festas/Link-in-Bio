@@ -506,10 +506,64 @@ def update_page(page_id: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 
 
 def delete_page(page_id: int):
-    """Delete a page and all its items."""
+    """Delete a page and all its items. Also handles cleanup of related records in main database."""
+    # First, delete related items from the main database
+    with get_db_connection() as main_conn:
+        main_cursor = main_conn.cursor()
+        # Delete items associated with this page
+        main_cursor.execute("DELETE FROM items WHERE page_id = ?", (page_id,))
+        # Set redirect_page_id to NULL for subscribers referencing this page
+        main_cursor.execute("UPDATE subscribers SET redirect_page_id = NULL WHERE redirect_page_id = ?", (page_id,))
+        main_conn.commit()
+
+    # Then delete the page from the custom pages database
     with get_custom_pages_db_connection() as conn:
         conn.execute("DELETE FROM pages WHERE id = ?", (page_id,))
         conn.commit()
+
+
+def cleanup_orphaned_references():
+    """
+    Clean up orphaned references in main database.
+    Since foreign key constraints can't span databases, we need to manually clean up.
+    This should be called periodically or after page deletions outside of delete_page().
+    """
+    with get_db_connection() as main_conn:
+        main_cursor = main_conn.cursor()
+
+        # Get all valid page IDs from custom pages database
+        with get_custom_pages_db_connection() as pages_conn:
+            pages_cursor = pages_conn.cursor()
+            pages_cursor.execute("SELECT id FROM pages")
+            valid_page_ids = {row[0] for row in pages_cursor.fetchall()}
+
+        # Clean up items with invalid page_id
+        if valid_page_ids:
+            placeholders = ",".join("?" * len(valid_page_ids))
+            main_cursor.execute(
+                f"UPDATE items SET page_id = NULL WHERE page_id IS NOT NULL AND page_id NOT IN ({placeholders})",
+                tuple(valid_page_ids),
+            )
+        else:
+            main_cursor.execute("UPDATE items SET page_id = NULL WHERE page_id IS NOT NULL")
+
+        items_cleaned = main_cursor.rowcount
+
+        # Clean up subscribers with invalid redirect_page_id
+        if valid_page_ids:
+            placeholders = ",".join("?" * len(valid_page_ids))
+            main_cursor.execute(
+                f"UPDATE subscribers SET redirect_page_id = NULL WHERE redirect_page_id IS NOT NULL AND redirect_page_id NOT IN ({placeholders})",
+                tuple(valid_page_ids),
+            )
+        else:
+            main_cursor.execute("UPDATE subscribers SET redirect_page_id = NULL WHERE redirect_page_id IS NOT NULL")
+
+        subscribers_cleaned = main_cursor.rowcount
+
+        main_conn.commit()
+
+        return {"items_cleaned": items_cleaned, "subscribers_cleaned": subscribers_cleaned}
 
 
 def get_special_page(page_key: str) -> Optional[Dict[str, Any]]:

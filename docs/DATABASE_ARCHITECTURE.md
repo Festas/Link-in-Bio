@@ -17,7 +17,54 @@ The application uses **three separate SQLite databases** to provide better data 
 - **Better Organization**: Related data is grouped logically
 - **Reduced Risk**: Configuration changes don't affect static content
 
-## Database Details
+## Referential Integrity
+
+Since SQLite foreign key constraints cannot span multiple database files, referential integrity between databases is maintained through application logic:
+
+### Cross-Database References
+
+**Items → Pages**: Items in `linktree.db` reference pages in `pages.db` via `page_id`
+**Subscribers → Pages**: Subscribers in `linktree.db` reference pages in `pages.db` via `redirect_page_id`
+
+### Cascade Deletes
+
+When deleting a page using `delete_page(page_id)`, the function automatically:
+1. Deletes all items with that `page_id` from `linktree.db`
+2. Sets `redirect_page_id` to NULL for subscribers referencing that page
+3. Deletes the page from `pages.db`
+
+```python
+from app.database import delete_page
+
+# This will automatically clean up related items and subscribers
+delete_page(page_id=5)
+```
+
+### Orphaned Reference Cleanup
+
+If pages are deleted directly from `pages.db` (bypassing `delete_page()`), orphaned references may exist. Run the cleanup function periodically:
+
+```python
+from app.database import cleanup_orphaned_references
+
+# Clean up items and subscribers referencing non-existent pages
+result = cleanup_orphaned_references()
+print(f"Cleaned: {result['items_cleaned']} items, {result['subscribers_cleaned']} subscribers")
+```
+
+This function:
+- Finds all items with `page_id` values that don't exist in `pages.db`
+- Sets their `page_id` to NULL
+- Finds all subscribers with invalid `redirect_page_id` values
+- Sets their `redirect_page_id` to NULL
+
+### Best Practices
+
+1. **Always use `delete_page()`** instead of direct SQL when deleting pages
+2. **Run `cleanup_orphaned_references()`** periodically (e.g., during maintenance)
+3. **Validate `page_id`** before creating items (use `get_page_by_id()` to check existence)
+
+## Database Architecture
 
 ### 1. linktree.db (Main Database)
 

@@ -14,7 +14,7 @@ build/
 *.db-journal
 *.db-wal
 *.db-shm
-linktree.db
+data/*.db
 backups/
 
 # Environment
@@ -70,6 +70,10 @@ static/uploads/*
 # Vendor files (can be downloaded)
 static/vendor/*
 !static/vendor/.gitkeep
+
+# Data directory (databases)
+data/*
+!data/.gitkeep
 
 # Temporary files
 *.tmp

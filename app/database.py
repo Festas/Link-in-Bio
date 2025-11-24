@@ -92,9 +92,9 @@ def init_main_db():
             FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
         )"""
         )
-        
+
         cursor.execute("""CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)""")
-        
+
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS subscribers (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -103,7 +103,7 @@ def init_main_db():
             redirect_page_id INTEGER
         )"""
         )
-        
+
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -168,9 +168,7 @@ def init_main_db():
         cursor.execute("PRAGMA table_info(subscribers)")
         subscriber_cols = [c[1] for c in cursor.fetchall()]
         if "redirect_page_id" not in subscriber_cols:
-            cursor.execute(
-                "ALTER TABLE subscribers ADD COLUMN redirect_page_id INTEGER DEFAULT NULL"
-            )
+            cursor.execute("ALTER TABLE subscribers ADD COLUMN redirect_page_id INTEGER DEFAULT NULL")
 
         # Initialize default settings
         default_settings = {
@@ -364,7 +362,7 @@ def init_custom_pages_db():
                 main_cursor = main_conn.cursor()
                 main_cursor.execute("SELECT key, value FROM settings")
                 settings = {row[0]: row[1] for row in main_cursor.fetchall()}
-            
+
             default_title = settings.get("title", "Mein Link-in-Bio")
             default_bio = settings.get("bio", "")
             default_image = settings.get("image_url", "")

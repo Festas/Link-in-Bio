@@ -17,20 +17,20 @@ if __name__ == "__main__":
     print("=" * 60)
     print("Initializing Link-in-Bio Databases")
     print("=" * 60)
-    
+
     # Check which databases exist
     linktree_exists = os.path.exists("linktree.db")
     special_pages_exists = os.path.exists("special_pages.db")
     pages_exists = os.path.exists("pages.db")
-    
+
     print(f"\nCurrent database status:")
     print(f"  linktree.db: {'EXISTS' if linktree_exists else 'MISSING'}")
     print(f"  special_pages.db: {'EXISTS' if special_pages_exists else 'MISSING'}")
     print(f"  pages.db: {'EXISTS' if pages_exists else 'MISSING'}")
-    
+
     print("\nInitializing databases...")
     init_db()
-    
+
     print("\n" + "=" * 60)
     print("Database initialization complete!")
     print("=" * 60)

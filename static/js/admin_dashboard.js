@@ -21,16 +21,27 @@ async function loadQuickStats() {
     try {
         const stats = await API.getAnalytics();
         
-        // Update stat cards
+        // Calculate trends from clicks by day
+        const clicksByDay = stats.clicks_by_day || [];
+        const todayIndex = clicksByDay.findIndex(d => d.date === new Date().toISOString().split('T')[0]);
+        
+        // Get yesterday and today for comparison
+        const todayClicks = todayIndex >= 0 ? clicksByDay[todayIndex]?.clicks || 0 : 0;
+        const yesterdayClicks = todayIndex > 0 ? clicksByDay[todayIndex - 1]?.clicks || 0 : 0;
+        const clicksTrend = calculateTrend(todayClicks, yesterdayClicks);
+        
+        // Calculate 7-day average
+        const last7Days = clicksByDay.slice(-7);
+        const avgLast7Days = last7Days.length > 0 
+            ? last7Days.reduce((sum, d) => sum + d.clicks, 0) / last7Days.length 
+            : 0;
+        
+        // Update stat cards with trends
         updateStatCard('total-clicks', stats.total_clicks || 0, 'Klicks gesamt');
         updateStatCard('total-items', stats.total_items || 0, 'Aktive Items');
         updateStatCard('total-subscribers', stats.total_subscribers || 0, 'Abonnenten');
         updateStatCard('total-messages', stats.total_messages || 0, 'Nachrichten');
-        
-        // Calculate today's clicks
-        const today = new Date().toISOString().split('T')[0];
-        const todayClicks = (stats.clicks_by_day || []).find(d => d.date === today);
-        updateStatCard('today-clicks', todayClicks?.clicks || 0, 'Heute');
+        updateStatCardWithTrend('today-clicks', todayClicks, 'Heute', clicksTrend);
         
         // Calculate conversion rate (example: newsletter signups per click)
         const conversionRate = stats.total_clicks > 0 
@@ -39,7 +50,10 @@ async function loadQuickStats() {
         updateStatCard('conversion-rate', `${conversionRate}%`, 'Conversion');
         
         // Update chart
-        updateClicksChart(stats.clicks_by_day || []);
+        updateClicksChart(clicksByDay);
+        
+        // Show performance insights
+        showPerformanceInsights(stats, todayClicks, avgLast7Days);
         
     } catch (error) {
         console.error('Error loading stats:', error);
@@ -53,6 +67,141 @@ function updateStatCard(id, value, label) {
         const labelEl = card.querySelector('.stat-label');
         if (valueEl) valueEl.textContent = value;
         if (labelEl) labelEl.textContent = label;
+        
+        // Remove any existing trend indicator
+        const existingTrend = card.querySelector('.trend-indicator');
+        if (existingTrend) existingTrend.remove();
+    }
+}
+
+function updateStatCardWithTrend(id, value, label, trend) {
+    const card = document.getElementById(id);
+    if (card) {
+        const valueEl = card.querySelector('.stat-value');
+        const labelEl = card.querySelector('.stat-label');
+        if (valueEl) valueEl.textContent = value;
+        if (labelEl) labelEl.textContent = label;
+        
+        // Remove existing trend indicator
+        const existingTrend = card.querySelector('.trend-indicator');
+        if (existingTrend) existingTrend.remove();
+        
+        // Add trend indicator
+        if (trend.icon) {
+            const trendEl = document.createElement('span');
+            trendEl.className = `trend-indicator text-xs ml-2 ${trend.color}`;
+            trendEl.textContent = trend.icon;
+            valueEl.appendChild(trendEl);
+        }
+    }
+}
+
+function calculateTrend(current, previous) {
+    if (previous === 0) {
+        return current > 0 
+            ? { icon: '📈', direction: 'up', color: 'text-green-400' }
+            : { icon: '', direction: 'stable', color: 'text-gray-400' };
+    }
+    
+    const change = ((current - previous) / previous) * 100;
+    
+    if (change > 10) {
+        return { icon: '📈', direction: 'up', color: 'text-green-400', change: `+${change.toFixed(0)}%` };
+    } else if (change < -10) {
+        return { icon: '📉', direction: 'down', color: 'text-red-400', change: `${change.toFixed(0)}%` };
+    } else {
+        return { icon: '➡️', direction: 'stable', color: 'text-gray-400', change: `${change > 0 ? '+' : ''}${change.toFixed(0)}%` };
+    }
+}
+
+function showPerformanceInsights(stats, todayClicks, avgLast7Days) {
+    const container = document.getElementById('performance-insights');
+    if (!container) {
+        // Create container if it doesn't exist
+        const dashboardContent = document.getElementById('tab-content-dashboard');
+        if (!dashboardContent) return;
+        
+        const insightsDiv = document.createElement('div');
+        insightsDiv.id = 'performance-insights';
+        insightsDiv.className = 'bg-gradient-to-r from-purple-900 to-blue-900 rounded-lg p-6 mb-6';
+        
+        // Insert after quick stats
+        const quickStats = dashboardContent.querySelector('.grid');
+        if (quickStats && quickStats.nextSibling) {
+            quickStats.parentNode.insertBefore(insightsDiv, quickStats.nextSibling);
+        }
+    }
+    
+    const insights = [];
+    
+    // Check if top link is performing well
+    if (stats.top_links && stats.top_links.length > 0) {
+        const topLink = stats.top_links[0];
+        const avgClicks = stats.total_clicks / (stats.total_items || 1);
+        
+        if (topLink.clicks > avgClicks * 1.5) {
+            const improvement = ((topLink.clicks / avgClicks - 1) * 100).toFixed(0);
+            insights.push({
+                icon: '🚀',
+                title: 'Top Performer!',
+                message: `Dein Link "${topLink.title}" hat ${improvement}% mehr Klicks als der Durchschnitt!`,
+                type: 'success'
+            });
+        }
+    }
+    
+    // Check today's performance
+    if (todayClicks > avgLast7Days * 1.2) {
+        insights.push({
+            icon: '⭐',
+            title: 'Starker Tag!',
+            message: `Heute läuft es super! Du hast ${Math.round((todayClicks / avgLast7Days - 1) * 100)}% mehr Klicks als üblich.`,
+            type: 'success'
+        });
+    } else if (todayClicks < avgLast7Days * 0.5 && avgLast7Days > 0) {
+        insights.push({
+            icon: '💡',
+            title: 'Tipp',
+            message: `Heute sind die Klicks niedriger. Vielleicht ist es Zeit für einen neuen Post?`,
+            type: 'info'
+        });
+    }
+    
+    // Check subscriber conversion
+    const conversionRate = stats.total_clicks > 0 
+        ? (stats.total_subscribers / stats.total_clicks) * 100 
+        : 0;
+    
+    if (conversionRate > 5) {
+        insights.push({
+            icon: '🎯',
+            title: 'Großartige Conversion!',
+            message: `${conversionRate.toFixed(1)}% deiner Besucher abonnieren deinen Newsletter!`,
+            type: 'success'
+        });
+    }
+    
+    // Render insights
+    const insightsContainer = document.getElementById('performance-insights');
+    if (insightsContainer && insights.length > 0) {
+        insightsContainer.innerHTML = `
+            <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                <span class="mr-2">📊</span> Performance Insights
+            </h3>
+            <div class="space-y-3">
+                ${insights.map(insight => `
+                    <div class="bg-black bg-opacity-30 rounded-lg p-4 flex items-start space-x-3">
+                        <span class="text-2xl">${insight.icon}</span>
+                        <div class="flex-1">
+                            <div class="font-semibold text-white mb-1">${insight.title}</div>
+                            <div class="text-sm text-gray-200">${insight.message}</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    } else if (insightsContainer) {
+        insightsContainer.style.display = 'none';
     }
 }
 

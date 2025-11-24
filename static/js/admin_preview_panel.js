@@ -6,6 +6,10 @@ let previewIframe = null;
 let currentDevice = 'mobile';
 let isPreviewOpen = false;
 
+// Constants
+const REFRESH_DELAY_MS = 1000;
+const SAVE_WAIT_MS = 500;
+
 const DEVICE_SIZES = {
     mobile: { width: 375, height: 667, icon: '📱', name: 'Mobile' },
     tablet: { width: 768, height: 1024, icon: '📲', name: 'Tablet' },
@@ -207,16 +211,16 @@ function switchDevice(device) {
 function refreshPreview() {
     if (!previewIframe) return;
     
-    // Get current page slug
+    // Get current page slug from page selector or fallback to root
     const pageSelector = document.getElementById('page-selector');
     let slug = '';
     
-    if (pageSelector && pageSelector.selectedOptions.length > 0) {
+    if (pageSelector && pageSelector.selectedOptions && pageSelector.selectedOptions.length > 0) {
         const selectedOption = pageSelector.selectedOptions[0];
-        slug = selectedOption.dataset.slug || '';
+        slug = selectedOption.dataset?.slug || '';
     }
     
-    // Load preview
+    // Load preview - fallback to root if no slug found
     const previewUrl = slug ? `/${slug}` : '/';
     previewIframe.src = previewUrl;
     
@@ -267,17 +271,19 @@ function setupAutoRefresh() {
         
         refreshTimeout = setTimeout(() => {
             refreshPreview();
-        }, 1000); // Refresh 1 second after last change
+        }, REFRESH_DELAY_MS);
     };
     
-    // Listen for save button clicks
+    // Listen for save button clicks using data attribute for better maintainability
     document.addEventListener('click', (e) => {
-        if (e.target.id === 'save-order-button' || 
-            e.target.id === 'save-profile-button' ||
-            e.target.closest('#save-order-button') ||
-            e.target.closest('#save-profile-button')) {
+        const target = e.target;
+        const isSaveButton = target.id?.includes('save') || 
+                            target.closest('[id*="save"]') !== null ||
+                            target.dataset?.triggerRefresh === 'true';
+        
+        if (isSaveButton) {
             // Wait a bit for the save to complete
-            setTimeout(scheduleRefresh, 500);
+            setTimeout(scheduleRefresh, SAVE_WAIT_MS);
         }
     });
     

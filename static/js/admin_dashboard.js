@@ -97,7 +97,7 @@ function updateStatCardWithTrend(id, value, label, trend) {
 }
 
 function calculateTrend(current, previous) {
-    if (previous === 0) {
+    if (!previous || previous === 0) {
         return current > 0 
             ? { icon: '📈', direction: 'up', color: 'text-green-400' }
             : { icon: '', direction: 'stable', color: 'text-gray-400' };

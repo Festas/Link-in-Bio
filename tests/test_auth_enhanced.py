@@ -15,7 +15,7 @@ from app.auth_unified import (
     cleanup_expired_sessions,
 )
 import pyotp
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class TestPasswordHashing:
@@ -144,7 +144,7 @@ class TestSessionManagement:
         token = create_session("testuser")
         
         # Manually expire it
-        sessions[token]["expires_at"] = datetime.utcnow() - timedelta(hours=1)
+        sessions[token]["expires_at"] = datetime.now(timezone.utc) - timedelta(hours=1)
         
         # Should be invalid
         username = validate_session(token)
@@ -228,8 +228,8 @@ class TestSessionCleanup:
         token3 = create_session("user3")
         
         # Expire some of them
-        sessions[token1]["expires_at"] = datetime.utcnow() - timedelta(hours=1)
-        sessions[token2]["expires_at"] = datetime.utcnow() - timedelta(hours=2)
+        sessions[token1]["expires_at"] = datetime.now(timezone.utc) - timedelta(hours=1)
+        sessions[token2]["expires_at"] = datetime.now(timezone.utc) - timedelta(hours=2)
         # token3 remains valid
         
         assert len(sessions) == 3

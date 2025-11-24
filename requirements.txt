@@ -15,6 +15,7 @@ playwright
 openpyxl
 # Enhanced security and performance
 passlib[bcrypt]
+bcrypt<4.2.0  # Compatible with passlib 1.7.4
 pyotp
 redis
 alembic

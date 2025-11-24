@@ -21,7 +21,7 @@ from fastapi import (
     UploadFile,
     BackgroundTasks,
 )
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from typing import List, Optional
 import qrcode
 
@@ -91,6 +91,9 @@ from .cache_unified import cache
 from .config import BASE_DIR, UPLOAD_DIR
 
 router = APIRouter()
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 # Slug validation pattern
 SLUG_PATTERN = re.compile(r'^[a-z0-9-]+$')

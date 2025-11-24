@@ -7,7 +7,8 @@ import secrets
 import base64
 import logging
 import pyotp
-from datetime import datetime, timedelta
+import hashlib
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Tuple
 from fastapi import Request, HTTPException, Depends
 from passlib.context import CryptContext
@@ -54,13 +55,25 @@ WEAK_PASSWORDS = {
 # ============================================================================
 
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt."""
+    """
+    Hash a password using bcrypt.
+    Pre-hashes with SHA256 if password > 72 bytes to work around bcrypt limitation.
+    """
+    # Bcrypt has a 72-byte limit, so we pre-hash with SHA256 for long passwords
+    if len(password.encode('utf-8')) > 72:
+        password = hashlib.sha256(password.encode('utf-8')).hexdigest()
     return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash."""
+    """
+    Verify a password against its hash.
+    Handles pre-hashed passwords for bcrypt 72-byte limit.
+    """
     try:
+        # Pre-hash if password is too long
+        if len(plain_password.encode('utf-8')) > 72:
+            plain_password = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
         return pwd_context.verify(plain_password, hashed_password)
     except Exception as e:
         logger.error(f"Password verification error: {e}")
@@ -89,7 +102,7 @@ def validate_password_strength(password: str) -> Tuple[bool, str]:
     
     # Check against common passwords
     common_passwords = {
-        "password123!", "Admin123!", "Welcome123!", "P@ssw0rd123",
+        "password123!", "Password123!", "Admin123!", "Welcome123!", "P@ssw0rd123",
         "Change.me123", "Default123!", "Super-sicheres-passwort-123"
     }
     if password in common_passwords:
@@ -149,8 +162,8 @@ def create_session(username: str, remember_me: bool = False) -> str:
     
     sessions[session_token] = {
         "username": username,
-        "created_at": datetime.utcnow(),
-        "expires_at": datetime.utcnow() + timedelta(hours=expiry_hours),
+        "created_at": datetime.now(timezone.utc),
+        "expires_at": datetime.now(timezone.utc) + timedelta(hours=expiry_hours),
         "ip": None,  # Set by caller
         "user_agent": None,  # Set by caller
     }
@@ -169,7 +182,7 @@ def validate_session(session_token: str) -> Optional[str]:
     session = sessions[session_token]
     
     # Check expiry
-    if datetime.utcnow() > session["expires_at"]:
+    if datetime.now(timezone.utc) > session["expires_at"]:
         del sessions[session_token]
         return None
     
@@ -184,7 +197,7 @@ def invalidate_session(session_token: str):
 
 def cleanup_expired_sessions():
     """Remove expired sessions from memory."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     expired = [token for token, session in sessions.items() if now > session["expires_at"]]
     for token in expired:
         del sessions[token]

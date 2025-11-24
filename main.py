@@ -52,6 +52,7 @@ from app.exceptions import custom_http_exception_handler, general_exception_hand
 
 # Import new modular routers
 from app.routers import pages, items, media, settings, analytics, subscribers, public, tools
+from app.routers import special_pages_admin
 
 
 @asynccontextmanager
@@ -90,6 +91,9 @@ app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"]
 app.include_router(subscribers.router, prefix="/api/subscribers", tags=["Subscribers"])
 app.include_router(public.router, prefix="/api", tags=["Public"])
 app.include_router(tools.router, prefix="/api", tags=["Tools"])
+
+# Include special pages admin router (new standalone admin panel)
+app.include_router(special_pages_admin.router, tags=["Special Pages Admin"])
 
 # Include legacy/remaining endpoints
 app.include_router(api_router, prefix="/api")
@@ -374,7 +378,7 @@ async def get_index_html(request: Request):
 
 @app.get("/{page_slug}", response_class=HTMLResponse, dependencies=[Depends(limiter_standard)])
 async def get_page_html(request: Request, page_slug: str):
-    # Skip special routes
+    # Skip special routes (including new admin routes)
     if page_slug in [
         "admin",
         "analytics",

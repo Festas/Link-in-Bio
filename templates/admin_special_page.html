@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_info.title }} - Admin</title>
+    
+    <script src="{{ vendor.tailwindcss }}?v={{ version }}"></script>
+    <script src="{{ vendor.sortable }}?v={{ version }}"></script>
+    
+    <link rel="stylesheet" href="/static/css/admin.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/admin-modern.css?v={{ version }}">
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    
+    <!-- Navigation Header -->
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Left: Back to main admin + Page Title -->
+                <div class="flex items-center space-x-4">
+                    <a href="/admin" class="text-gray-400 hover:text-white flex items-center space-x-2">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                        <span class="hidden md:inline">Zurück zum Admin</span>
+                    </a>
+                    <div class="h-6 w-px bg-gray-600"></div>
+                    <div class="flex items-center space-x-3">
+                        <i data-lucide="{{ page_info.icon }}" class="w-6 h-6 text-blue-400"></i>
+                        <div>
+                            <h1 class="text-lg font-semibold">{{ page_info.title }}</h1>
+                            <p class="text-xs text-gray-400">{{ page_info.description }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right: Quick Navigation to other special pages -->
+                <div class="flex items-center space-x-2">
+                    <div class="hidden md:flex items-center space-x-1 mr-4">
+                        {% for key, info in all_special_pages.items() %}
+                        <a href="/admin/{{ key }}" 
+                           class="px-3 py-2 rounded text-sm {% if key == page_key %}bg-blue-600 text-white{% else %}text-gray-400 hover:text-white hover:bg-gray-700{% endif %}"
+                           title="{{ info.description }}">
+                            <i data-lucide="{{ info.icon }}" class="w-4 h-4 inline-block mr-1"></i>
+                            <span class="hidden lg:inline">{{ info.title }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Mobile dropdown for page navigation -->
+                    <div class="md:hidden relative">
+                        <button id="mobile-nav-toggle" class="text-gray-400 hover:text-white px-3 py-2">
+                            <i data-lucide="menu" class="w-5 h-5"></i>
+                        </button>
+                        <div id="mobile-nav-menu" class="hidden absolute right-0 mt-2 w-56 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-50">
+                            {% for key, info in all_special_pages.items() %}
+                            <a href="/admin/{{ key }}" 
+                               class="block px-4 py-3 hover:bg-gray-700 {% if key == page_key %}bg-blue-600{% endif %} first:rounded-t-lg last:rounded-b-lg">
+                                <div class="flex items-center space-x-2">
+                                    <i data-lucide="{{ info.icon }}" class="w-4 h-4"></i>
+                                    <div>
+                                        <div class="font-medium">{{ info.title }}</div>
+                                        <div class="text-xs text-gray-400">{{ info.description }}</div>
+                                    </div>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- View Public Page Button -->
+                    <a href="/{{ page_key }}" target="_blank" 
+                       class="text-sm bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center space-x-2">
+                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                        <span class="hidden lg:inline">Vorschau</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Page-specific content will be loaded here -->
+        <div id="page-content" class="space-y-6">
+            
+            <!-- Status Messages -->
+            <div id="status-message" class="hidden rounded-lg p-4">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                    <span id="status-text"></span>
+                </div>
+            </div>
+            
+            <!-- Editor Container -->
+            <div class="bg-gray-800 rounded-lg shadow-lg">
+                <div class="border-b border-gray-700 p-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-semibold">Inhalt bearbeiten</h2>
+                            <p class="text-sm text-gray-400 mt-1">Bearbeite diese Seite mit dem Block-Editor</p>
+                        </div>
+                        <button id="save-page" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded flex items-center space-x-2">
+                            <i data-lucide="save" class="w-4 h-4"></i>
+                            <span>Speichern</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Blocks Container -->
+                <div class="p-6">
+                    <div id="blocks-container" class="space-y-4 mb-6">
+                        <!-- Dynamic blocks will be loaded here -->
+                    </div>
+                    
+                    <!-- Add Block Toolbar -->
+                    <div class="border-t border-gray-700 pt-6">
+                        <p class="text-sm text-gray-400 mb-3">Block hinzufügen:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="add-block-btn bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center space-x-2" data-block-type="heading">
+                                <i data-lucide="heading" class="w-4 h-4"></i>
+                                <span>Überschrift</span>
+                            </button>
+                            <button class="add-block-btn bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center space-x-2" data-block-type="text">
+                                <i data-lucide="type" class="w-4 h-4"></i>
+                                <span>Text</span>
+                            </button>
+                            <button class="add-block-btn bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center space-x-2" data-block-type="image">
+                                <i data-lucide="image" class="w-4 h-4"></i>
+                                <span>Bild</span>
+                            </button>
+                            <button class="add-block-btn bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center space-x-2" data-block-type="list">
+                                <i data-lucide="list" class="w-4 h-4"></i>
+                                <span>Liste</span>
+                            </button>
+                            <button class="add-block-btn bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center space-x-2" data-block-type="divider">
+                                <i data-lucide="minus" class="w-4 h-4"></i>
+                                <span>Trennlinie</span>
+                            </button>
+                            
+                            {% if page_key == 'mediakit' %}
+                            <!-- Media Kit specific blocks -->
+                            <button class="add-block-btn bg-cyan-700 hover:bg-cyan-600 text-white px-4 py-2 rounded flex items-center space-x-2" data-block-type="stats">
+                                <i data-lucide="bar-chart" class="w-4 h-4"></i>
+                                <span>Statistiken</span>
+                            </button>
+                            <button class="add-block-btn bg-cyan-700 hover:bg-cyan-600 text-white px-4 py-2 rounded flex items-center space-x-2" data-block-type="platforms">
+                                <i data-lucide="share-2" class="w-4 h-4"></i>
+                                <span>Plattformen</span>
+                            </button>
+                            <button class="add-block-btn bg-cyan-700 hover:bg-cyan-600 text-white px-4 py-2 rounded flex items-center space-x-2" data-block-type="rates">
+                                <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                                <span>Preise</span>
+                            </button>
+                            {% endif %}
+                            
+                            {% if page_key == 'kontakt' %}
+                            <!-- Contact page specific blocks -->
+                            <button class="add-block-btn bg-purple-700 hover:bg-purple-600 text-white px-4 py-2 rounded flex items-center space-x-2" data-block-type="contact-form">
+                                <i data-lucide="mail" class="w-4 h-4"></i>
+                                <span>Kontaktformular</span>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if page_key == 'mediakit' %}
+            <!-- Media Kit Specific Settings -->
+            <div class="bg-gray-800 rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">Media Kit Einstellungen</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Zugriffskontrolle</label>
+                        <select id="mediakit-access-control" class="w-full bg-gray-700 text-white rounded px-3 py-2">
+                            <option value="public">Öffentlich - Jeder kann ansehen</option>
+                            <option value="gated">Gated - Anfrage erforderlich</option>
+                            <option value="private">Privat - Nur mit Link</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Video Pitch URL (optional)</label>
+                        <input type="url" id="mediakit-video-pitch" class="w-full bg-gray-700 text-white rounded px-3 py-2" placeholder="https://youtube.com/watch?v=...">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Media Kit Analytics -->
+            <div class="bg-gray-800 rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">Analytics</h3>
+                <div id="mediakit-analytics" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gray-700 rounded p-4">
+                        <div class="text-sm text-gray-400">Aufrufe (gesamt)</div>
+                        <div class="text-2xl font-bold mt-1" id="stat-total-views">-</div>
+                    </div>
+                    <div class="bg-gray-700 rounded p-4">
+                        <div class="text-sm text-gray-400">Aufrufe (7 Tage)</div>
+                        <div class="text-2xl font-bold mt-1" id="stat-week-views">-</div>
+                    </div>
+                    <div class="bg-gray-700 rounded p-4">
+                        <div class="text-sm text-gray-400">Zugriffs-Anfragen</div>
+                        <div class="text-2xl font-bold mt-1" id="stat-access-requests">-</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ vendor.lucide }}?v={{ version }}"></script>
+    <script>
+        // Initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        // Mobile navigation toggle
+        const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+        const mobileNavMenu = document.getElementById('mobile-nav-menu');
+        
+        if (mobileNavToggle && mobileNavMenu) {
+            mobileNavToggle.addEventListener('click', () => {
+                mobileNavMenu.classList.toggle('hidden');
+            });
+        }
+        
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('mobile-nav-menu');
+            const toggle = document.getElementById('mobile-nav-toggle');
+            if (menu && toggle && !menu.contains(e.target) && !toggle.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+    </script>
+    
+    <!-- Page-specific JavaScript -->
+    <script>
+        const PAGE_KEY = "{{ page_key }}";
+    </script>
+    <script src="/static/js/admin_special_pages_editor.js?v={{ version }}"></script>
+    
+    {% if page_key == 'mediakit' %}
+    <script src="/static/js/admin_mediakit_enhanced.js?v={{ version }}"></script>
+    {% endif %}
+</body>
+</html>

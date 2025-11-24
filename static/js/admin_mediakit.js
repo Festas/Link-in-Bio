@@ -16,6 +16,7 @@ export function initMediaKit() {
     loadMediaKitData();
     loadMediaKitSettings();
     loadViewStats();
+    loadSocialAnalytics(); // Load social media analytics on init
     
     // Save button
     saveBtn.addEventListener('click', async () => {
@@ -119,7 +120,7 @@ async function refreshInstagramAPI() {
         // Disable button and show loading
         if (refreshBtn) {
             refreshBtn.disabled = true;
-            refreshBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 inline-block mr-2 animate-spin"></i>Aktualisiere...';
+            refreshBtn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 inline-block mr-2 animate-spin"></i><span class="font-medium">Aktualisiere...</span>';
         }
         
         showStatus('mediakit-status', 'Hole Instagram Daten über Meta Graph API...', 'info');
@@ -151,7 +152,8 @@ async function refreshInstagramAPI() {
             );
         }
         
-        // Reload data to show updated values
+        // Reload analytics and data to show updated values
+        await loadSocialAnalytics();
         await loadMediaKitData();
         
         // Re-initialize lucide icons for the refresh button
@@ -166,11 +168,273 @@ async function refreshInstagramAPI() {
         // Re-enable button
         if (refreshBtn) {
             refreshBtn.disabled = false;
-            refreshBtn.innerHTML = '<i data-lucide="instagram" class="w-4 h-4 inline-block mr-2"></i>Instagram API aktualisieren';
+            refreshBtn.innerHTML = '<i data-lucide="instagram" class="w-5 h-5 inline-block mr-2"></i><span class="font-medium">Instagram API aktualisieren</span>';
             if (window.lucide) {
                 window.lucide.createIcons();
             }
         }
+    }
+}
+
+async function refreshTikTokAPI() {
+    const statusEl = document.getElementById('mediakit-status');
+    const refreshBtn = document.getElementById('refresh-tiktok-api-btn');
+    
+    try {
+        // Disable button and show loading
+        if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 inline-block mr-2 animate-spin"></i><span class="font-medium">Aktualisiere...</span>';
+        }
+        
+        showStatus('mediakit-status', 'Hole TikTok Daten über TikTok Official API...', 'info');
+        
+        const response = await fetch('/api/mediakit/refresh-tiktok-api', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+            }
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Fehler beim Aktualisieren');
+        }
+        
+        const result = await response.json();
+        
+        // Check if token was refreshed
+        if (result.token_refreshed) {
+            showStatus('mediakit-status', 
+                `✓ Erfolg! ${result.data.followers_formatted} Follower. ⚠️ TOKEN ERNEUERT - Bitte GitHub Secret aktualisieren!`, 
+                'warning'
+            );
+        } else {
+            showStatus('mediakit-status', 
+                `✓ Erfolgreich! ${result.data.followers_formatted} Follower via TikTok API`, 
+                'success'
+            );
+        }
+        
+        // Reload analytics and data to show updated values
+        await loadSocialAnalytics();
+        await loadMediaKitData();
+        
+        // Re-initialize lucide icons for the refresh button
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+        
+    } catch (error) {
+        console.error('Error refreshing TikTok API stats:', error);
+        showStatus('mediakit-status', `✗ ${error.message}`, 'error');
+    } finally {
+        // Re-enable button
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '<i data-lucide="video" class="w-5 h-5 inline-block mr-2"></i><span class="font-medium">TikTok API aktualisieren</span>';
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+        }
+    }
+}
+
+async function loadSocialAnalytics() {
+    const container = document.getElementById('analytics-container');
+    if (!container) return;
+    
+    try {
+        // Show loading state
+        container.innerHTML = `
+            <div class="col-span-full text-center py-8 text-gray-400">
+                <i data-lucide="loader-2" class="w-8 h-8 mx-auto mb-3 animate-spin"></i>
+                <p>Lade Analytics...</p>
+            </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        
+        // Fetch cached social stats
+        const response = await fetch('/api/mediakit/social-stats-cache');
+        
+        if (!response.ok) {
+            throw new Error('Fehler beim Laden der Analytics');
+        }
+        
+        const { data } = await response.json();
+        
+        // Check if we have any data
+        if (!data || Object.keys(data).length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12 text-gray-400">
+                    <i data-lucide="inbox" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
+                    <p class="text-lg mb-2">Noch keine Analytics-Daten vorhanden</p>
+                    <p class="text-sm">Nutze die Buttons unten, um Instagram und TikTok Daten abzurufen.</p>
+                </div>
+            `;
+            if (window.lucide) window.lucide.createIcons();
+            return;
+        }
+        
+        // Build analytics cards
+        let html = '';
+        
+        // Instagram Analytics
+        if (data.instagram) {
+            const igData = data.instagram;
+            const stats = igData.data || {};
+            const statsData = stats.stats || {};
+            const profileData = stats.profile || {};
+            
+            html += `
+                <div class="bg-gradient-to-br from-purple-900/20 to-pink-900/20 border-2 border-purple-500/30 rounded-lg p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                                <i data-lucide="instagram" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-white">Instagram</h4>
+                                <p class="text-sm text-gray-400">@${profileData.username || igData.username || '---'}</p>
+                            </div>
+                        </div>
+                        ${stats.meta?.source === 'api' ? '<span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded">API</span>' : ''}
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400 text-sm">Follower</span>
+                            <span class="text-xl font-bold text-purple-400">${formatNumber(statsData.followers || 0)}</span>
+                        </div>
+                        ${statsData.posts !== undefined ? `
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400 text-sm">Posts</span>
+                            <span class="text-lg font-semibold text-purple-300">${formatNumber(statsData.posts)}</span>
+                        </div>` : ''}
+                        ${statsData.reach_daily !== undefined ? `
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400 text-sm">Tagesreichweite</span>
+                            <span class="text-lg font-semibold text-purple-300">${formatNumber(statsData.reach_daily)}</span>
+                        </div>` : ''}
+                        ${statsData.impressions_daily !== undefined ? `
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400 text-sm">Tages-Impressionen</span>
+                            <span class="text-lg font-semibold text-purple-300">${formatNumber(statsData.impressions_daily)}</span>
+                        </div>` : ''}
+                        ${statsData.profile_views !== undefined ? `
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400 text-sm">Profil-Aufrufe</span>
+                            <span class="text-lg font-semibold text-purple-300">${formatNumber(statsData.profile_views)}</span>
+                        </div>` : ''}
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-purple-500/20 text-xs text-gray-500">
+                        Aktualisiert: ${formatDate(igData.fetched_at)}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // TikTok Analytics
+        if (data.tiktok) {
+            const ttData = data.tiktok;
+            const stats = ttData.data || {};
+            const statsData = stats.stats || {};
+            const profileData = stats.profile || {};
+            
+            html += `
+                <div class="bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border-2 border-cyan-500/30 rounded-lg p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
+                                <i data-lucide="video" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-white">TikTok</h4>
+                                <p class="text-sm text-gray-400">@${profileData.username || ttData.username || '---'}</p>
+                            </div>
+                        </div>
+                        ${stats.meta?.source === 'api' ? '<span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded">API</span>' : ''}
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400 text-sm">Follower</span>
+                            <span class="text-xl font-bold text-cyan-400">${formatNumber(statsData.followers || 0)}</span>
+                        </div>
+                        ${statsData.likes !== undefined ? `
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400 text-sm">Likes</span>
+                            <span class="text-lg font-semibold text-cyan-300">${formatNumber(statsData.likes)}</span>
+                        </div>` : ''}
+                        ${statsData.videos !== undefined ? `
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400 text-sm">Videos</span>
+                            <span class="text-lg font-semibold text-cyan-300">${formatNumber(statsData.videos)}</span>
+                        </div>` : ''}
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-cyan-500/20 text-xs text-gray-500">
+                        Aktualisiert: ${formatDate(ttData.fetched_at)}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // If we still have no HTML, show empty state
+        if (!html) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12 text-gray-400">
+                    <i data-lucide="inbox" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
+                    <p class="text-lg mb-2">Noch keine Analytics-Daten vorhanden</p>
+                    <p class="text-sm">Nutze die Buttons unten, um Instagram und TikTok Daten abzurufen.</p>
+                </div>
+            `;
+        } else {
+            container.innerHTML = html;
+        }
+        
+        // Re-initialize icons
+        if (window.lucide) window.lucide.createIcons();
+        
+    } catch (error) {
+        console.error('Error loading social analytics:', error);
+        container.innerHTML = `
+            <div class="col-span-full text-center py-8 text-red-400">
+                <i data-lucide="alert-circle" class="w-8 h-8 mx-auto mb-3"></i>
+                <p>Fehler beim Laden der Analytics: ${error.message}</p>
+            </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+    }
+}
+
+// Helper function to format numbers with K/M suffix
+function formatNumber(num) {
+    if (num === undefined || num === null) return '---';
+    
+    const n = parseInt(num, 10);
+    if (isNaN(n)) return '---';
+    
+    if (n >= 1000000) {
+        return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    } else if (n >= 1000) {
+        return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    }
+    return n.toString();
+}
+
+// Helper function to format date
+function formatDate(dateString) {
+    if (!dateString) return '---';
+    
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleString('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return dateString;
     }
 }
 
@@ -505,4 +769,6 @@ function showStatus(elementId, message, type) {
 
 // Export for global access
 window.refreshInstagramAPI = refreshInstagramAPI;
+window.refreshTikTokAPI = refreshTikTokAPI;
+window.loadSocialAnalytics = loadSocialAnalytics;
 

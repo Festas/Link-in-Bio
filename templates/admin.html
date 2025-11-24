@@ -568,20 +568,47 @@
                 <!-- Blocks Container -->
                 <div id="mediakit-blocks-container" class="mb-6"></div>
                 
-                <!-- Action Buttons -->
+                <!-- Social Media Analytics Display -->
+                <div class="mb-6 p-6 bg-gray-700/30 border border-cyan-500/30 rounded-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-cyan-300">📊 Social Media Analytics</h3>
+                        <button 
+                            id="reload-analytics-btn" 
+                            onclick="loadSocialAnalytics()"
+                            class="text-gray-400 hover:text-cyan-400 transition-colors"
+                            title="Analytics neu laden">
+                            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    
+                    <div id="analytics-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Analytics will be loaded here via JavaScript -->
+                        <div class="col-span-full text-center py-8 text-gray-400">
+                            <i data-lucide="loader-2" class="w-8 h-8 mx-auto mb-3 animate-spin"></i>
+                            <p>Lade Analytics...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- API Action Buttons -->
                 <div class="mb-6 p-4 bg-gray-700/30 border border-gray-600 rounded">
-                    <h3 class="text-sm font-semibold mb-3 text-gray-300">Social Media Integration</h3>
-                    <div class="flex flex-wrap gap-3">
+                    <h3 class="text-sm font-semibold mb-3 text-gray-300">🔄 API Aktualisierung</h3>
+                    <p class="text-xs text-gray-400 mb-4">Nutze diese Buttons um die Social Media APIs manuell abzurufen und zu testen. Die Daten werden täglich automatisch via GitHub Actions aktualisiert.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <button 
                             id="refresh-instagram-api-btn" 
                             onclick="refreshInstagramAPI()"
-                            class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2 rounded inline-flex items-center">
-                            <i data-lucide="instagram" class="w-4 h-4 mr-2"></i>
-                            Instagram API aktualisieren
+                            class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-3 rounded inline-flex items-center justify-center transition-all">
+                            <i data-lucide="instagram" class="w-5 h-5 mr-2"></i>
+                            <span class="font-medium">Instagram API aktualisieren</span>
                         </button>
-                        <div class="text-xs text-gray-400 self-center">
-                            Nutzt Meta Graph API für präzise Statistiken (täglich automatisch via GitHub Actions)
-                        </div>
+                        <button 
+                            id="refresh-tiktok-api-btn" 
+                            onclick="refreshTikTokAPI()"
+                            class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white px-4 py-3 rounded inline-flex items-center justify-center transition-all">
+                            <i data-lucide="video" class="w-5 h-5 mr-2"></i>
+                            <span class="font-medium">TikTok API aktualisieren</span>
+                        </button>
                     </div>
                 </div>
                 

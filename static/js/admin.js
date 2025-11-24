@@ -12,6 +12,7 @@ import { initDashboard } from './admin_dashboard.js';
 import { initKeyboardShortcuts, recordAction } from './admin_keyboard.js';
 import { initSmartFeatures } from './admin_smart_features.js';
 import { initScheduling, showScheduleCalendar } from './admin_scheduling.js';
+import { initPreviewPanel, togglePreview } from './admin_preview_panel.js';
 
 // Helper für Fallback-Script-Loading
 function loadScript(src) {
@@ -415,6 +416,7 @@ async function initAdmin() {
         initDashboard();
         initSmartFeatures();
         initScheduling();
+        initPreviewPanel();
         
         // Initialize keyboard shortcuts with callbacks
         initKeyboardShortcuts({
@@ -425,8 +427,7 @@ async function initAdmin() {
                 }
             },
             onPreview: () => {
-                const previewBtn = document.getElementById('preview-button');
-                if (previewBtn) previewBtn.click();
+                togglePreview();
             },
             onSwitchTab: (tab) => {
                 const tabBtn = document.querySelector(`[data-tab="${tab}"]`);

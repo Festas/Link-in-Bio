@@ -28,12 +28,11 @@ async def background_scrape_and_update(item_id: int, url: str):
     logger = logging.getLogger(__name__)
     try:
         details = await scrape_link_details(url)
-        image_url = None
-        if details.get("image"):
-            image_url = await save_optimized_image(details["image"])
-        update_data = {"title": details["title"], "image_url": image_url}
-        update_item_in_db(item_id, update_data)
-        cache.invalidate("items")
+        update_data = {"title": details.get("title", "?"), "image_url": details.get("image_url")}
+        # Only update if we got meaningful data
+        if update_data["title"] != "?":
+            update_item_in_db(item_id, update_data)
+            cache.invalidate("items")
     except Exception as e:
         logger.error(f"Failed to scrape link details: {e}")
 

@@ -15,7 +15,7 @@ from fastapi.responses import StreamingResponse
 from ..models import Settings
 from ..database import get_settings_from_db, get_db_connection
 from ..auth_unified import require_auth
-from ..settings_service import update_settings as update_settings_service
+from ..settings_service import SettingsService
 from ..config import BASE_DIR
 
 router = APIRouter()
@@ -31,7 +31,7 @@ async def get_settings():
 @router.put("", response_model=Settings)
 async def update_settings(settings: Settings, user=Depends(require_auth)):
     """Update application settings."""
-    update_settings_service(settings.model_dump())
+    SettingsService.update_settings(settings.model_dump())
     return Settings(**get_settings_from_db())
 
 

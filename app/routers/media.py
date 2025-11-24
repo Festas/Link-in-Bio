@@ -20,7 +20,7 @@ async def upload_image(file: UploadFile = File(...), user=Depends(require_auth))
     """Upload and optimize an image."""
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(400, "Nur Bilddateien erlaubt")
-    url = await save_optimized_image(file)
+    url = save_optimized_image(file, UPLOAD_DIR)
     return ImageUploadResponse(url=url)
 
 

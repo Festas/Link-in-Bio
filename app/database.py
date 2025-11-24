@@ -8,10 +8,13 @@ from datetime import datetime
 
 load_dotenv()
 DATABASE_FILE = os.getenv("DATABASE_FILE", "linktree.db")
+SPECIAL_PAGES_DB = os.getenv("SPECIAL_PAGES_DB", "special_pages.db")
+CUSTOM_PAGES_DB = os.getenv("CUSTOM_PAGES_DB", "pages.db")
 
 
 @contextmanager
 def get_db_connection():
+    """Main database connection for items, clicks, settings, subscribers, messages, social_stats_cache"""
     conn = sqlite3.connect(DATABASE_FILE)
     conn.row_factory = sqlite3.Row
     try:
@@ -20,27 +23,43 @@ def get_db_connection():
         conn.close()
 
 
+@contextmanager
+def get_special_pages_db_connection():
+    """Special pages database connection for special_pages, mediakit tables"""
+    conn = sqlite3.connect(SPECIAL_PAGES_DB)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+@contextmanager
+def get_custom_pages_db_connection():
+    """Custom pages database connection for pages table"""
+    conn = sqlite3.connect(CUSTOM_PAGES_DB)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
 def init_db():
-    print("Initialisiere Datenbank...")
+    print("Initialisiere Datenbanken...")
+    init_main_db()
+    init_special_pages_db()
+    init_custom_pages_db()
+    print("✓ Alle Datenbanken initialisiert")
+
+
+def init_main_db():
+    """Initialize main database (linktree.db) for items, clicks, settings, subscribers, messages, social_stats_cache"""
+    print("Initialisiere Hauptdatenbank (linktree.db)...")
     with get_db_connection() as conn:
         cursor = conn.cursor()
 
-        # Create pages table
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS pages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            slug TEXT NOT NULL UNIQUE,
-            title TEXT NOT NULL,
-            bio TEXT,
-            image_url TEXT,
-            bg_image_url TEXT,
-            is_active BOOLEAN DEFAULT 1,
-            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
-            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
-        )"""
-        )
-
-        # Create Table (Updated)
+        # Create items table
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS items (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -59,21 +78,126 @@ def init_db():
             price TEXT, 
             grid_columns INTEGER DEFAULT 2,
             page_id INTEGER,
-            FOREIGN KEY (parent_id) REFERENCES items(id) ON DELETE SET NULL,
-            FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
+            FOREIGN KEY (parent_id) REFERENCES items(id) ON DELETE SET NULL
         )"""
         )
 
         cursor.execute(
-            """CREATE TABLE IF NOT EXISTS clicks (id INTEGER PRIMARY KEY AUTOINCREMENT, item_id INTEGER NOT NULL, timestamp DATETIME DEFAULT (datetime('now', 'localtime')), referer TEXT, country_code TEXT, FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE)"""
+            """CREATE TABLE IF NOT EXISTS clicks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            item_id INTEGER NOT NULL, 
+            timestamp DATETIME DEFAULT (datetime('now', 'localtime')), 
+            referer TEXT, 
+            country_code TEXT, 
+            FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+        )"""
         )
+
         cursor.execute("""CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)""")
+
         cursor.execute(
-            """CREATE TABLE IF NOT EXISTS subscribers (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE, subscribed_at DATETIME DEFAULT (datetime('now', 'localtime')), redirect_page_id INTEGER, FOREIGN KEY (redirect_page_id) REFERENCES pages(id) ON DELETE SET NULL)"""
+            """CREATE TABLE IF NOT EXISTS subscribers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            email TEXT NOT NULL UNIQUE, 
+            subscribed_at DATETIME DEFAULT (datetime('now', 'localtime')), 
+            redirect_page_id INTEGER
+        )"""
         )
+
         cursor.execute(
-            """CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, message TEXT NOT NULL, sent_at DATETIME DEFAULT (datetime('now', 'localtime')))"""
+            """CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            name TEXT NOT NULL, 
+            email TEXT NOT NULL, 
+            message TEXT NOT NULL, 
+            sent_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
         )
+
+        # Social media stats cache table
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS social_stats_cache (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            platform TEXT NOT NULL,
+            username TEXT NOT NULL,
+            stats_data TEXT NOT NULL,
+            fetched_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            UNIQUE(platform, username)
+        )"""
+        )
+
+        # Create indexes for main database
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_display_order ON items(display_order)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_item_id ON clicks(item_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_page_id ON items(page_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_active ON items(is_active)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_parent ON items(parent_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_timestamp ON clicks(timestamp)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_subscribers_email ON subscribers(email)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_social_stats_platform ON social_stats_cache(platform)")
+
+        # Migrationen (Fix für grid_columns)
+        cursor.execute("PRAGMA table_info(items)")
+        columns_items = [col[1] for col in cursor.fetchall()]
+
+        migrations = {
+            "price": "ALTER TABLE items ADD COLUMN price TEXT DEFAULT NULL",
+            "grid_columns": "ALTER TABLE items ADD COLUMN grid_columns INTEGER DEFAULT 2",
+            "publish_on": "ALTER TABLE items ADD COLUMN publish_on TEXT DEFAULT NULL",
+            "expires_on": "ALTER TABLE items ADD COLUMN expires_on TEXT DEFAULT NULL",
+            "is_featured": "ALTER TABLE items ADD COLUMN is_featured BOOLEAN DEFAULT 0",
+            "is_affiliate": "ALTER TABLE items ADD COLUMN is_affiliate BOOLEAN DEFAULT 0",
+            "parent_id": "ALTER TABLE items ADD COLUMN parent_id INTEGER DEFAULT NULL REFERENCES items(id) ON DELETE SET NULL",
+            "page_id": "ALTER TABLE items ADD COLUMN page_id INTEGER DEFAULT NULL",
+        }
+
+        for col, sql in migrations.items():
+            if col not in columns_items:
+                try:
+                    cursor.execute(sql)
+                except:
+                    pass
+
+        # Clicks Migration
+        cursor.execute("PRAGMA table_info(clicks)")
+        click_cols = [c[1] for c in cursor.fetchall()]
+        if "country_code" not in click_cols:
+            cursor.execute("ALTER TABLE clicks ADD COLUMN country_code TEXT DEFAULT NULL")
+
+        # Subscribers Migration
+        cursor.execute("PRAGMA table_info(subscribers)")
+        subscriber_cols = [c[1] for c in cursor.fetchall()]
+        if "redirect_page_id" not in subscriber_cols:
+            cursor.execute("ALTER TABLE subscribers ADD COLUMN redirect_page_id INTEGER DEFAULT NULL")
+
+        # Initialize default settings
+        default_settings = {
+            "title": os.getenv("DEFAULT_PROFILE_NAME", "Eric | Tech & Gaming"),
+            "bio": os.getenv(
+                "DEFAULT_PROFILE_BIO",
+                "Tech & Gaming Influencer aus Hamburg 🎮⚡ | Ingenieur & Content Creator | Ästhetik trifft Innovation",
+            ),
+            "theme": "theme-dark",
+            "button_style": "style-rounded",
+            "social_youtube": "",
+            "social_instagram": "",
+            "social_tiktok": "",
+            "social_twitch": "",
+            "social_x": "",
+            "social_discord": "",
+        }
+        for key, value in default_settings.items():
+            cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (key, value))
+
+        conn.commit()
+        print("✓ Hauptdatenbank initialisiert")
+
+
+def init_special_pages_db():
+    """Initialize special pages database for special_pages, mediakit tables"""
+    print("Initialisiere Special-Pages-Datenbank (special_pages.db)...")
+    with get_special_pages_db_connection() as conn:
+        cursor = conn.cursor()
 
         # Special pages content table
         cursor.execute(
@@ -113,18 +237,6 @@ def init_db():
             display_order INTEGER DEFAULT 0,
             updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
             UNIQUE(section, key)
-        )"""
-        )
-
-        # Social media stats cache table
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS social_stats_cache (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            platform TEXT NOT NULL,
-            username TEXT NOT NULL,
-            stats_data TEXT NOT NULL,
-            fetched_at DATETIME DEFAULT (datetime('now', 'localtime')),
-            UNIQUE(platform, username)
         )"""
         )
 
@@ -180,90 +292,9 @@ def init_db():
         )"""
         )
 
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_display_order ON items(display_order)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_item_id ON clicks(item_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_page_id ON items(page_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_active ON items(is_active)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_parent ON items(parent_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_timestamp ON clicks(timestamp)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pages_slug ON pages(slug)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pages_active ON pages(is_active)")
+        # Create indexes for special pages database
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_special_pages_key ON special_pages(page_key)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_section ON mediakit_data(section)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_subscribers_email ON subscribers(email)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_social_stats_platform ON social_stats_cache(platform)")
-        print("✓ Database indexes created")
-
-        # Migrationen (Fix für grid_columns)
-        cursor.execute("PRAGMA table_info(items)")
-        columns_items = [col[1] for col in cursor.fetchall()]
-
-        migrations = {
-            "price": "ALTER TABLE items ADD COLUMN price TEXT DEFAULT NULL",
-            "grid_columns": "ALTER TABLE items ADD COLUMN grid_columns INTEGER DEFAULT 2",
-            "publish_on": "ALTER TABLE items ADD COLUMN publish_on TEXT DEFAULT NULL",
-            "expires_on": "ALTER TABLE items ADD COLUMN expires_on TEXT DEFAULT NULL",
-            "is_featured": "ALTER TABLE items ADD COLUMN is_featured BOOLEAN DEFAULT 0",
-            "is_affiliate": "ALTER TABLE items ADD COLUMN is_affiliate BOOLEAN DEFAULT 0",
-            "parent_id": "ALTER TABLE items ADD COLUMN parent_id INTEGER DEFAULT NULL REFERENCES items(id) ON DELETE SET NULL",
-            "page_id": "ALTER TABLE items ADD COLUMN page_id INTEGER DEFAULT NULL REFERENCES pages(id) ON DELETE CASCADE",
-        }
-
-        for col, sql in migrations.items():
-            if col not in columns_items:
-                try:
-                    cursor.execute(sql)
-                except:
-                    pass
-
-        # Clicks Migration
-        cursor.execute("PRAGMA table_info(clicks)")
-        click_cols = [c[1] for c in cursor.fetchall()]
-        if "country_code" not in click_cols:
-            cursor.execute("ALTER TABLE clicks ADD COLUMN country_code TEXT DEFAULT NULL")
-
-        # Subscribers Migration
-        cursor.execute("PRAGMA table_info(subscribers)")
-        subscriber_cols = [c[1] for c in cursor.fetchall()]
-        if "redirect_page_id" not in subscriber_cols:
-            cursor.execute(
-                "ALTER TABLE subscribers ADD COLUMN redirect_page_id INTEGER DEFAULT NULL REFERENCES pages(id) ON DELETE SET NULL"
-            )
-
-        # Create default page if none exists (for backward compatibility)
-        cursor.execute("SELECT COUNT(*) FROM pages")
-        if cursor.fetchone()[0] == 0:
-            settings = get_settings_from_db()
-            default_title = settings.get("title", "Mein Link-in-Bio")
-            default_bio = settings.get("bio", "")
-            default_image = settings.get("image_url", "")
-            default_bg = settings.get("bg_image_url", "")
-            cursor.execute(
-                """INSERT INTO pages (slug, title, bio, image_url, bg_image_url, is_active) 
-                   VALUES ('', ?, ?, ?, ?, 1)""",
-                (default_title, default_bio, default_image, default_bg),
-            )
-            default_page_id = cursor.lastrowid
-            # Migrate existing items to default page
-            cursor.execute("UPDATE items SET page_id = ? WHERE page_id IS NULL", (default_page_id,))
-
-        default_settings = {
-            "title": os.getenv("DEFAULT_PROFILE_NAME", "Eric | Tech & Gaming"),
-            "bio": os.getenv(
-                "DEFAULT_PROFILE_BIO",
-                "Tech & Gaming Influencer aus Hamburg 🎮⚡ | Ingenieur & Content Creator | Ästhetik trifft Innovation",
-            ),
-            "theme": "theme-dark",
-            "button_style": "style-rounded",
-            "social_youtube": "",
-            "social_instagram": "",
-            "social_tiktok": "",
-            "social_twitch": "",
-            "social_x": "",
-            "social_discord": "",
-        }
-        for key, value in default_settings.items():
-            cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (key, value))
 
         # Initialize special pages with default content if not exists
         cursor.execute("SELECT COUNT(*) FROM special_pages")
@@ -295,6 +326,72 @@ def init_db():
                 )
 
         conn.commit()
+        print("✓ Special-Pages-Datenbank initialisiert")
+
+
+def init_custom_pages_db():
+    """Initialize custom pages database for pages table"""
+    print("Initialisiere Custom-Pages-Datenbank (pages.db)...")
+    with get_custom_pages_db_connection() as conn:
+        cursor = conn.cursor()
+
+        # Create pages table
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS pages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            slug TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            bio TEXT,
+            image_url TEXT,
+            bg_image_url TEXT,
+            is_active BOOLEAN DEFAULT 1,
+            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
+
+        # Create indexes for custom pages database
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pages_slug ON pages(slug)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pages_active ON pages(is_active)")
+
+        # Create default page if none exists (for backward compatibility)
+        cursor.execute("SELECT COUNT(*) FROM pages")
+        if cursor.fetchone()[0] == 0:
+            # Try to get default values from main database settings if it exists
+            # Otherwise use environment variables or hardcoded defaults
+            default_title = os.getenv("DEFAULT_PROFILE_NAME", "Eric | Tech & Gaming")
+            default_bio = os.getenv(
+                "DEFAULT_PROFILE_BIO",
+                "Tech & Gaming Influencer aus Hamburg 🎮⚡ | Ingenieur & Content Creator | Ästhetik trifft Innovation",
+            )
+            default_image = ""
+            default_bg = ""
+
+            # Try to get settings from main database if it already exists
+            if os.path.exists(DATABASE_FILE):
+                try:
+                    with get_db_connection() as main_conn:
+                        main_cursor = main_conn.cursor()
+                        main_cursor.execute(
+                            "SELECT key, value FROM settings WHERE key IN ('title', 'bio', 'image_url', 'bg_image_url')"
+                        )
+                        settings = {row[0]: row[1] for row in main_cursor.fetchall()}
+                        default_title = settings.get("title", default_title)
+                        default_bio = settings.get("bio", default_bio)
+                        default_image = settings.get("image_url", default_image)
+                        default_bg = settings.get("bg_image_url", default_bg)
+                except sqlite3.Error:
+                    # If main database doesn't have settings table yet or other DB error, use defaults
+                    pass
+
+            cursor.execute(
+                """INSERT INTO pages (slug, title, bio, image_url, bg_image_url, is_active) 
+                   VALUES ('', ?, ?, ?, ?, 1)""",
+                (default_title, default_bio, default_image, default_bg),
+            )
+
+        conn.commit()
+        print("✓ Custom-Pages-Datenbank initialisiert")
 
 
 def get_next_display_order(page_id: Optional[int] = None) -> int:
@@ -354,7 +451,7 @@ def delete_item_from_db(item_id: int):
 
 def get_page_by_slug(slug: str) -> Optional[Dict[str, Any]]:
     """Get a page by its slug."""
-    with get_db_connection() as conn:
+    with get_custom_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM pages WHERE slug = ?", (slug,))
         row = cursor.fetchone()
@@ -363,7 +460,7 @@ def get_page_by_slug(slug: str) -> Optional[Dict[str, Any]]:
 
 def get_page_by_id(page_id: int) -> Optional[Dict[str, Any]]:
     """Get a page by its ID."""
-    with get_db_connection() as conn:
+    with get_custom_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM pages WHERE id = ?", (page_id,))
         row = cursor.fetchone()
@@ -372,7 +469,7 @@ def get_page_by_id(page_id: int) -> Optional[Dict[str, Any]]:
 
 def get_all_pages() -> list:
     """Get all pages."""
-    with get_db_connection() as conn:
+    with get_custom_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM pages ORDER BY created_at ASC")
         return [dict(row) for row in cursor.fetchall()]
@@ -380,7 +477,7 @@ def get_all_pages() -> list:
 
 def create_page(slug: str, title: str, bio: str = "", image_url: str = "", bg_image_url: str = "") -> dict:
     """Create a new page."""
-    with get_db_connection() as conn:
+    with get_custom_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO pages (slug, title, bio, image_url, bg_image_url, is_active) 
@@ -399,7 +496,7 @@ def update_page(page_id: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     data["updated_at"] = datetime.now().isoformat()
     set_clauses = [f"{key} = ?" for key in data.keys()]
     query = f"UPDATE pages SET {', '.join(set_clauses)} WHERE id = ?"
-    with get_db_connection() as conn:
+    with get_custom_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(query, list(data.values()) + [page_id])
         conn.commit()
@@ -409,15 +506,84 @@ def update_page(page_id: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 
 
 def delete_page(page_id: int):
-    """Delete a page and all its items."""
-    with get_db_connection() as conn:
+    """Delete a page and all its items. Also handles cleanup of related records in main database."""
+    # First, delete related items from the main database
+    with get_db_connection() as main_conn:
+        main_cursor = main_conn.cursor()
+        # Delete items associated with this page
+        main_cursor.execute("DELETE FROM items WHERE page_id = ?", (page_id,))
+        # Set redirect_page_id to NULL for subscribers referencing this page
+        main_cursor.execute("UPDATE subscribers SET redirect_page_id = NULL WHERE redirect_page_id = ?", (page_id,))
+        main_conn.commit()
+
+    # Then delete the page from the custom pages database
+    with get_custom_pages_db_connection() as conn:
         conn.execute("DELETE FROM pages WHERE id = ?", (page_id,))
         conn.commit()
 
 
+def cleanup_orphaned_references():
+    """
+    Clean up orphaned references in main database.
+    Since foreign key constraints can't span databases, we need to manually clean up.
+    This should be called periodically or after page deletions outside of delete_page().
+    """
+    with get_db_connection() as main_conn:
+        main_cursor = main_conn.cursor()
+
+        # Get all valid page IDs from custom pages database
+        with get_custom_pages_db_connection() as pages_conn:
+            pages_cursor = pages_conn.cursor()
+            pages_cursor.execute("SELECT id FROM pages")
+            # Ensure all IDs are integers for safety, skip any invalid entries
+            valid_page_ids = []
+            for row in pages_cursor.fetchall():
+                try:
+                    valid_page_ids.append(int(row[0]))
+                except (ValueError, TypeError):
+                    # Skip corrupted entries
+                    continue
+            valid_page_ids = tuple(valid_page_ids)
+
+        # Clean up items with invalid page_id
+        if valid_page_ids:
+            # Build safe parameterized query
+            # Note: placeholders is just "?" repeated (not user input), so this is safe
+            # Add sanity check to prevent excessive parameter counts
+            if len(valid_page_ids) > 10000:
+                # If there are too many pages, process in batches
+                # This shouldn't happen in practice, but prevents potential issues
+                valid_page_ids = valid_page_ids[:10000]
+
+            placeholders = ",".join("?" * len(valid_page_ids))
+            query = f"UPDATE items SET page_id = NULL WHERE page_id IS NOT NULL AND page_id NOT IN ({placeholders})"
+            main_cursor.execute(query, valid_page_ids)
+        else:
+            main_cursor.execute("UPDATE items SET page_id = NULL WHERE page_id IS NOT NULL")
+
+        items_cleaned = main_cursor.rowcount
+
+        # Clean up subscribers with invalid redirect_page_id
+        if valid_page_ids:
+            # Build safe parameterized query
+            # Note: placeholders is just "?" repeated (not user input), so this is safe
+            # Using the same validated page IDs from above
+            placeholders = ",".join("?" * len(valid_page_ids))
+            query = f"UPDATE subscribers SET redirect_page_id = NULL WHERE redirect_page_id IS NOT NULL AND redirect_page_id NOT IN ({placeholders})"
+            main_cursor.execute(query, valid_page_ids)
+        else:
+            main_cursor.execute("UPDATE subscribers SET redirect_page_id = NULL WHERE redirect_page_id IS NOT NULL")
+
+        subscribers_cleaned = main_cursor.rowcount
+
+        main_conn.commit()
+
+        return {"items_cleaned": items_cleaned, "subscribers_cleaned": subscribers_cleaned}
+
+
 def get_special_page(page_key: str) -> Optional[Dict[str, Any]]:
     """Get special page content by key (ueber-mich, impressum, datenschutz)."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM special_pages WHERE page_key = ?", (page_key,))
         row = cursor.fetchone()
@@ -426,7 +592,7 @@ def get_special_page(page_key: str) -> Optional[Dict[str, Any]]:
 
 def get_all_special_pages() -> list:
     """Get all special pages."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM special_pages ORDER BY page_key")
         return [dict(row) for row in cursor.fetchall()]
@@ -434,7 +600,7 @@ def get_all_special_pages() -> list:
 
 def update_special_page(page_key: str, title: str, subtitle: str, content: str):
     """Update special page content."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """UPDATE special_pages 
@@ -448,7 +614,7 @@ def update_special_page(page_key: str, title: str, subtitle: str, content: str):
 # Special Page Blocks functions
 def get_special_page_blocks(page_key: str) -> list:
     """Get all blocks for a special page ordered by position."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """SELECT id, page_key, block_type, content, settings, position, created_at, updated_at
@@ -462,7 +628,7 @@ def get_special_page_blocks(page_key: str) -> list:
 
 def save_special_page_blocks(page_key: str, blocks: list):
     """Save blocks for a special page. Replaces all existing blocks."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         # Delete existing blocks
         cursor.execute("DELETE FROM special_page_blocks WHERE page_key = ?", (page_key,))
@@ -485,7 +651,7 @@ def save_special_page_blocks(page_key: str, blocks: list):
 
 def update_special_page_block(block_id: int, content: str, settings: dict = None):
     """Update a specific block."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """UPDATE special_page_blocks 
@@ -498,7 +664,7 @@ def update_special_page_block(block_id: int, content: str, settings: dict = None
 
 def delete_special_page_block(block_id: int):
     """Delete a specific block."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM special_page_blocks WHERE id = ?", (block_id,))
         conn.commit()
@@ -506,7 +672,7 @@ def delete_special_page_block(block_id: int):
 
 def get_mediakit_data() -> Dict[str, Dict[str, str]]:
     """Get all media kit data organized by section."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT section, key, value FROM mediakit_data ORDER BY section, display_order")
         rows = cursor.fetchall()
@@ -524,7 +690,7 @@ def get_mediakit_data() -> Dict[str, Dict[str, str]]:
 
 def update_mediakit_data(section: str, key: str, value: str, display_order: int = 0):
     """Update or insert media kit data."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO mediakit_data (section, key, value, display_order, updated_at)
@@ -538,7 +704,7 @@ def update_mediakit_data(section: str, key: str, value: str, display_order: int 
 
 def delete_mediakit_entry(section: str, key: str):
     """Delete a media kit entry."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM mediakit_data WHERE section = ? AND key = ?", (section, key))
         conn.commit()
@@ -588,7 +754,7 @@ def clear_social_stats_cache():
 # Media Kit Settings Functions
 def get_mediakit_setting(key: str) -> Optional[str]:
     """Get a media kit setting value."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT setting_value FROM mediakit_settings WHERE setting_key = ?", (key,))
         row = cursor.fetchone()
@@ -597,7 +763,7 @@ def get_mediakit_setting(key: str) -> Optional[str]:
 
 def update_mediakit_setting(key: str, value: str):
     """Update or insert a media kit setting."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO mediakit_settings (setting_key, setting_value, updated_at)
@@ -612,7 +778,7 @@ def update_mediakit_setting(key: str, value: str):
 
 def get_all_mediakit_settings() -> Dict[str, str]:
     """Get all media kit settings."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT setting_key, setting_value FROM mediakit_settings")
         return {row[0]: row[1] for row in cursor.fetchall()}
@@ -626,7 +792,7 @@ def track_mediakit_view(
     user_agent: Optional[str] = None,
 ):
     """Track a media kit view."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO mediakit_views (viewer_email, viewer_ip, viewer_country, user_agent, viewed_at)
@@ -638,7 +804,7 @@ def track_mediakit_view(
 
 def get_mediakit_views(limit: int = 100) -> list:
     """Get recent media kit views."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """SELECT id, viewer_email, viewer_ip, viewer_country, user_agent, viewed_at 
@@ -652,7 +818,7 @@ def get_mediakit_views(limit: int = 100) -> list:
 
 def get_mediakit_views_stats() -> Dict[str, Any]:
     """Get media kit views statistics."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
 
         # Total views
@@ -701,7 +867,7 @@ def create_access_request(
     ip_address: Optional[str] = None,
 ) -> int:
     """Create a new access request."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO mediakit_access_requests 
@@ -715,7 +881,7 @@ def create_access_request(
 
 def get_access_requests(status: Optional[str] = None) -> list:
     """Get access requests, optionally filtered by status."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         if status:
             cursor.execute(
@@ -738,7 +904,7 @@ def get_access_requests(status: Optional[str] = None) -> list:
 
 def update_access_request_status(request_id: int, status: str):
     """Update access request status."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         if status == "approved":
             cursor.execute(
@@ -759,7 +925,7 @@ def update_access_request_status(request_id: int, status: str):
 
 def check_access_approved(email: str) -> bool:
     """Check if an email has approved access."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """SELECT COUNT(*) FROM mediakit_access_requests 
@@ -772,7 +938,7 @@ def check_access_approved(email: str) -> bool:
 # Media Kit Blocks Functions (New Block-Based System)
 def get_mediakit_blocks() -> list:
     """Get all media kit blocks ordered by position."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """SELECT id, block_type, title, content, settings, position, is_visible 
@@ -798,7 +964,7 @@ def get_mediakit_blocks() -> list:
 
 def get_visible_mediakit_blocks() -> list:
     """Get only visible media kit blocks ordered by position."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """SELECT id, block_type, title, content, settings, position 
@@ -826,7 +992,7 @@ def create_mediakit_block(
     block_type: str, title: str = None, content: str = None, settings: dict = None, position: int = None
 ) -> int:
     """Create a new media kit block."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
 
         # If position not provided, add at the end
@@ -850,7 +1016,7 @@ def update_mediakit_block(
     block_id: int, title: str = None, content: str = None, settings: dict = None, is_visible: bool = None
 ):
     """Update a media kit block."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
 
         updates = []
@@ -883,7 +1049,7 @@ def update_mediakit_block(
 
 def delete_mediakit_block(block_id: int):
     """Delete a media kit block."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM mediakit_blocks WHERE id = ?", (block_id,))
         conn.commit()
@@ -891,7 +1057,7 @@ def delete_mediakit_block(block_id: int):
 
 def reorder_mediakit_blocks(block_positions: list):
     """Reorder media kit blocks. Expects list of {'id': int, 'position': int}."""
-    with get_db_connection() as conn:
+    with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
         for item in block_positions:
             cursor.execute(

@@ -33,7 +33,7 @@ logger = get_logger(__name__)
 
 from app.database import init_db, get_settings_from_db, get_page_by_slug, get_all_pages, get_special_page, get_mediakit_data, get_special_page_blocks, get_visible_mediakit_blocks
 from app.block_system import render_blocks_to_html as render_blocks_enhanced
-from app.endpoints import router as api_router  # Original endpoints (will be replaced with modular routers)
+from app.endpoints import router as api_router  # Legacy endpoints (special pages, mediakit)
 from app.endpoints_enhanced import router as api_router_enhanced
 from app.services import APP_DOMAIN
 from app.rate_limit import limiter_standard

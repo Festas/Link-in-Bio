@@ -102,8 +102,9 @@ async def get_advanced_analytics(
         
         where_clause = " AND ".join(where_clauses) if where_clauses else "1=1"
         
-        # Total clicks with filters
-        cur.execute(f"SELECT COUNT(id) FROM clicks WHERE {where_clause}", params)
+        # Total clicks with filters - using parameterized query
+        query_total = "SELECT COUNT(id) FROM clicks WHERE " + where_clause
+        cur.execute(query_total, params)
         total_clicks = cur.fetchone()[0] or 0
         
         # Clicks per day (last 30 days by default, or filtered range)
@@ -117,46 +118,57 @@ async def get_advanced_analytics(
             except (ValueError, TypeError):
                 date_range_days = 30
         
-        cur.execute(
-            f"SELECT date(timestamp) as day, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY day ORDER BY day DESC LIMIT ?",
-            params + [min(date_range_days, 365)]
+        query_days = (
+            "SELECT date(timestamp) as day, COUNT(id) as clicks FROM clicks "
+            "WHERE " + where_clause + " GROUP BY day ORDER BY day DESC LIMIT ?"
         )
+        cur.execute(query_days, params + [min(date_range_days, 365)])
         clicks_per_day = [dict(r) for r in cur.fetchall()]
         clicks_per_day.reverse()  # Show chronologically
         
         # Top links with filters
-        cur.execute(
-            f"SELECT i.id, i.title, COUNT(c.id) as clicks FROM clicks c JOIN items i ON c.item_id = i.id WHERE {where_clause} GROUP BY i.id, i.title ORDER BY clicks DESC LIMIT 20",
-            params
+        query_links = (
+            "SELECT i.id, i.title, COUNT(c.id) as clicks FROM clicks c "
+            "JOIN items i ON c.item_id = i.id WHERE " + where_clause +
+            " GROUP BY i.id, i.title ORDER BY clicks DESC LIMIT 20"
         )
+        cur.execute(query_links, params)
         top_links = [dict(r) for r in cur.fetchall()]
         
         # Top referrers with filters
-        cur.execute(
-            f"SELECT CASE WHEN referer IS NULL OR referer = '' THEN '(Direkt)' ELSE referer END as referer_domain, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY referer_domain ORDER BY clicks DESC LIMIT 20",
-            params
+        query_referers = (
+            "SELECT CASE WHEN referer IS NULL OR referer = '' THEN '(Direkt)' ELSE referer END as referer_domain, "
+            "COUNT(id) as clicks FROM clicks WHERE " + where_clause +
+            " GROUP BY referer_domain ORDER BY clicks DESC LIMIT 20"
         )
+        cur.execute(query_referers, params)
         top_referers = [dict(r) for r in cur.fetchall()]
         
         # Top countries with filters
-        cur.execute(
-            f"SELECT CASE WHEN country_code IS NULL THEN 'Unbekannt' ELSE country_code END as country, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY country ORDER BY clicks DESC LIMIT 20",
-            params
+        query_countries = (
+            "SELECT CASE WHEN country_code IS NULL THEN 'Unbekannt' ELSE country_code END as country, "
+            "COUNT(id) as clicks FROM clicks WHERE " + where_clause +
+            " GROUP BY country ORDER BY clicks DESC LIMIT 20"
         )
+        cur.execute(query_countries, params)
         top_countries = [dict(r) for r in cur.fetchall()]
         
         # Hourly distribution
-        cur.execute(
-            f"SELECT CAST(strftime('%H', timestamp) AS INTEGER) as hour, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY hour ORDER BY hour ASC",
-            params
+        query_hourly = (
+            "SELECT CAST(strftime('%H', timestamp) AS INTEGER) as hour, "
+            "COUNT(id) as clicks FROM clicks WHERE " + where_clause +
+            " GROUP BY hour ORDER BY hour ASC"
         )
+        cur.execute(query_hourly, params)
         clicks_per_hour = [dict(r) for r in cur.fetchall()]
         
         # Clicks by day of week
-        cur.execute(
-            f"SELECT CAST(strftime('%w', timestamp) AS INTEGER) as day_of_week, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY day_of_week ORDER BY day_of_week ASC",
-            params
+        query_weekday = (
+            "SELECT CAST(strftime('%w', timestamp) AS INTEGER) as day_of_week, "
+            "COUNT(id) as clicks FROM clicks WHERE " + where_clause +
+            " GROUP BY day_of_week ORDER BY day_of_week ASC"
         )
+        cur.execute(query_weekday, params)
         clicks_per_weekday = [dict(r) for r in cur.fetchall()]
         
         return {

@@ -1,0 +1,113 @@
+# Git
+.git
+.gitignore
+.github
+
+# Documentation (not needed in production)
+*.md
+!README.md
+docs/
+GIT_COMMITS.txt
+ZUSAMMENFASSUNG_ANALYTICS.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Test coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Database (will be volume mounted)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+backups/
+
+# Environment files (will be injected)
+.env
+.env.*
+
+# Test files
+tests/
+test_*.py
+*_test.py
+
+# Development files
+Makefile
+pyproject.toml
+.flake8
+
+# Setup scripts (only needed for initial setup, not runtime)
+setup_enhanced.py
+setup_social_media.py
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Media Kit generated files (regenerated on demand)
+mediakit/generated/
+mediakit/Instagram/
+
+# Alembic (only migrations folder needed)
+alembic/versions/__pycache__/

@@ -10,7 +10,7 @@ export function socialIconSVG(name, classes = '') {
             `.trim();
             
         case 'instagram': {
-            const gradientId = `ig-gradient-${Math.random().toString(36).substr(2, 9)}`;
+            const gradientId = `ig-gradient-${Math.random().toString(36).substring(2, 11)}`;
             return `
                 <svg ${cls} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <defs>

@@ -74,7 +74,7 @@ def init_db():
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL, message TEXT NOT NULL, sent_at DATETIME DEFAULT (datetime('now', 'localtime')))"""
         )
-        
+
         # Special pages content table
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS special_pages (
@@ -87,8 +87,8 @@ def init_db():
             updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
         )"""
         )
-        
-        # Special page blocks table  
+
+        # Special page blocks table
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS special_page_blocks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,7 +102,7 @@ def init_db():
             FOREIGN KEY (page_key) REFERENCES special_pages(page_key) ON DELETE CASCADE
         )"""
         )
-        
+
         # Media kit data table
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS mediakit_data (
@@ -115,7 +115,7 @@ def init_db():
             UNIQUE(section, key)
         )"""
         )
-        
+
         # Social media stats cache table
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS social_stats_cache (
@@ -127,7 +127,7 @@ def init_db():
             UNIQUE(platform, username)
         )"""
         )
-        
+
         # Media kit settings table (for access control, video pitch, etc.)
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS mediakit_settings (
@@ -137,7 +137,7 @@ def init_db():
             updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
         )"""
         )
-        
+
         # Media kit views tracking table
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS mediakit_views (
@@ -149,7 +149,7 @@ def init_db():
             viewed_at DATETIME DEFAULT (datetime('now', 'localtime'))
         )"""
         )
-        
+
         # Media kit access requests table (for gated access)
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS mediakit_access_requests (
@@ -164,7 +164,7 @@ def init_db():
             approved_at DATETIME
         )"""
         )
-        
+
         # Media kit blocks table (new flexible block-based system)
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS mediakit_blocks (
@@ -226,7 +226,9 @@ def init_db():
         cursor.execute("PRAGMA table_info(subscribers)")
         subscriber_cols = [c[1] for c in cursor.fetchall()]
         if "redirect_page_id" not in subscriber_cols:
-            cursor.execute("ALTER TABLE subscribers ADD COLUMN redirect_page_id INTEGER DEFAULT NULL REFERENCES pages(id) ON DELETE SET NULL")
+            cursor.execute(
+                "ALTER TABLE subscribers ADD COLUMN redirect_page_id INTEGER DEFAULT NULL REFERENCES pages(id) ON DELETE SET NULL"
+            )
 
         # Create default page if none exists (for backward compatibility)
         cursor.execute("SELECT COUNT(*) FROM pages")
@@ -247,7 +249,10 @@ def init_db():
 
         default_settings = {
             "title": os.getenv("DEFAULT_PROFILE_NAME", "Eric | Tech & Gaming"),
-            "bio": os.getenv("DEFAULT_PROFILE_BIO", "Tech & Gaming Influencer aus Hamburg 🎮⚡ | Ingenieur & Content Creator | Ästhetik trifft Innovation"),
+            "bio": os.getenv(
+                "DEFAULT_PROFILE_BIO",
+                "Tech & Gaming Influencer aus Hamburg 🎮⚡ | Ingenieur & Content Creator | Ästhetik trifft Innovation",
+            ),
             "theme": "theme-dark",
             "button_style": "style-rounded",
             "social_youtube": "",
@@ -259,24 +264,36 @@ def init_db():
         }
         for key, value in default_settings.items():
             cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (key, value))
-        
+
         # Initialize special pages with default content if not exists
         cursor.execute("SELECT COUNT(*) FROM special_pages")
         if cursor.fetchone()[0] == 0:
             default_special_pages = [
-                ("ueber-mich", "Über mich", "Tech & Gaming Enthusiast aus Hamburg", 
-                 """<section><h2>Hallo! 👋</h2><p>Willkommen auf meiner Seite! Ich bin Eric, Tech- und Gaming-Enthusiast aus der schönen Hansestadt Hamburg. Hier vereinen sich meine Leidenschaften für innovative Technologien, Gaming und ästhetisches Design.</p></section><section><h2>Was ich mache 🎮⚡</h2><p>Als Ingenieur und Content Creator verbinde ich technisches Know-how mit kreativer Leidenschaft. Mein Fokus liegt auf:</p><ul><li><strong>Gaming Content:</strong> Reviews, Streams und Gameplay-Highlights aus der Welt des Gaming</li><li><strong>Tech & Innovation:</strong> Neueste Technologietrends, Hardware-Tests und Software-Entwicklung</li><li><strong>Engineering:</strong> Einblicke in die Welt der Technik und innovative Lösungsansätze</li><li><strong>Design & Ästhetik:</strong> Wo Funktionalität auf visuelles Design trifft</li></ul></section>"""),
-                ("impressum", "Impressum", "Angaben gemäß § 5 TMG",
-                 """<section><h2>Angaben gemäß § 5 TMG</h2><p>Eric [Nachname]<br>[Straße und Hausnummer]<br>[PLZ] Hamburg<br>Deutschland</p></section><section><h2>Kontakt</h2><p><strong>E-Mail:</strong> kontakt@example.com</p></section>"""),
-                ("datenschutz", "Datenschutzerklärung", "Ihre Privatsphäre ist uns wichtig",
-                 """<section><h2>1. Datenschutz auf einen Blick</h2><p>Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen.</p></section>""")
+                (
+                    "ueber-mich",
+                    "Über mich",
+                    "Tech & Gaming Enthusiast aus Hamburg",
+                    """<section><h2>Hallo! 👋</h2><p>Willkommen auf meiner Seite! Ich bin Eric, Tech- und Gaming-Enthusiast aus der schönen Hansestadt Hamburg. Hier vereinen sich meine Leidenschaften für innovative Technologien, Gaming und ästhetisches Design.</p></section><section><h2>Was ich mache 🎮⚡</h2><p>Als Ingenieur und Content Creator verbinde ich technisches Know-how mit kreativer Leidenschaft. Mein Fokus liegt auf:</p><ul><li><strong>Gaming Content:</strong> Reviews, Streams und Gameplay-Highlights aus der Welt des Gaming</li><li><strong>Tech & Innovation:</strong> Neueste Technologietrends, Hardware-Tests und Software-Entwicklung</li><li><strong>Engineering:</strong> Einblicke in die Welt der Technik und innovative Lösungsansätze</li><li><strong>Design & Ästhetik:</strong> Wo Funktionalität auf visuelles Design trifft</li></ul></section>""",
+                ),
+                (
+                    "impressum",
+                    "Impressum",
+                    "Angaben gemäß § 5 TMG",
+                    """<section><h2>Angaben gemäß § 5 TMG</h2><p>Eric [Nachname]<br>[Straße und Hausnummer]<br>[PLZ] Hamburg<br>Deutschland</p></section><section><h2>Kontakt</h2><p><strong>E-Mail:</strong> kontakt@example.com</p></section>""",
+                ),
+                (
+                    "datenschutz",
+                    "Datenschutzerklärung",
+                    "Ihre Privatsphäre ist uns wichtig",
+                    """<section><h2>1. Datenschutz auf einen Blick</h2><p>Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen.</p></section>""",
+                ),
             ]
             for page_key, title, subtitle, content in default_special_pages:
                 cursor.execute(
                     "INSERT INTO special_pages (page_key, title, subtitle, content) VALUES (?, ?, ?, ?)",
-                    (page_key, title, subtitle, content)
+                    (page_key, title, subtitle, content),
                 )
-        
+
         conn.commit()
 
 
@@ -423,7 +440,7 @@ def update_special_page(page_key: str, title: str, subtitle: str, content: str):
             """UPDATE special_pages 
                SET title = ?, subtitle = ?, content = ?, updated_at = datetime('now', 'localtime')
                WHERE page_key = ?""",
-            (title, subtitle, content, page_key)
+            (title, subtitle, content, page_key),
         )
         conn.commit()
 
@@ -438,7 +455,7 @@ def get_special_page_blocks(page_key: str) -> list:
                FROM special_page_blocks 
                WHERE page_key = ? 
                ORDER BY position""",
-            (page_key,)
+            (page_key,),
         )
         return [dict(row) for row in cursor.fetchall()]
 
@@ -449,7 +466,7 @@ def save_special_page_blocks(page_key: str, blocks: list):
         cursor = conn.cursor()
         # Delete existing blocks
         cursor.execute("DELETE FROM special_page_blocks WHERE page_key = ?", (page_key,))
-        
+
         # Insert new blocks
         for i, block in enumerate(blocks):
             cursor.execute(
@@ -457,11 +474,11 @@ def save_special_page_blocks(page_key: str, blocks: list):
                    VALUES (?, ?, ?, ?, ?)""",
                 (
                     page_key,
-                    block.get('block_type', 'text'),
-                    block.get('content', ''),
-                    json.dumps(block.get('settings', {})) if block.get('settings') else None,
-                    i
-                )
+                    block.get("block_type", "text"),
+                    block.get("content", ""),
+                    json.dumps(block.get("settings", {})) if block.get("settings") else None,
+                    i,
+                ),
             )
         conn.commit()
 
@@ -474,7 +491,7 @@ def update_special_page_block(block_id: int, content: str, settings: dict = None
             """UPDATE special_page_blocks 
                SET content = ?, settings = ?, updated_at = datetime('now', 'localtime')
                WHERE id = ?""",
-            (content, json.dumps(settings) if settings else None, block_id)
+            (content, json.dumps(settings) if settings else None, block_id),
         )
         conn.commit()
 
@@ -493,7 +510,7 @@ def get_mediakit_data() -> Dict[str, Dict[str, str]]:
         cursor = conn.cursor()
         cursor.execute("SELECT section, key, value FROM mediakit_data ORDER BY section, display_order")
         rows = cursor.fetchall()
-        
+
         data = {}
         for row in rows:
             section = row[0]
@@ -514,7 +531,7 @@ def update_mediakit_data(section: str, key: str, value: str, display_order: int 
                VALUES (?, ?, ?, ?, datetime('now', 'localtime'))
                ON CONFLICT(section, key) 
                DO UPDATE SET value = ?, display_order = ?, updated_at = datetime('now', 'localtime')""",
-            (section, key, value, display_order, value, display_order)
+            (section, key, value, display_order, value, display_order),
         )
         conn.commit()
 
@@ -536,7 +553,7 @@ def save_social_stats_cache(platform: str, username: str, stats_data: str):
                VALUES (?, ?, ?, datetime('now', 'localtime'))
                ON CONFLICT(platform, username)
                DO UPDATE SET stats_data = ?, fetched_at = datetime('now', 'localtime')""",
-            (platform, username, stats_data, stats_data)
+            (platform, username, stats_data, stats_data),
         )
         conn.commit()
 
@@ -548,19 +565,15 @@ def get_social_stats_cache(platform: Optional[str] = None) -> Dict[str, Any]:
         if platform:
             cursor.execute(
                 "SELECT platform, username, stats_data, fetched_at FROM social_stats_cache WHERE platform = ?",
-                (platform,)
+                (platform,),
             )
         else:
             cursor.execute("SELECT platform, username, stats_data, fetched_at FROM social_stats_cache")
-        
+
         rows = cursor.fetchall()
         result = {}
         for row in rows:
-            result[row[0]] = {
-                'username': row[1],
-                'data': json.loads(row[2]),
-                'fetched_at': row[3]
-            }
+            result[row[0]] = {"username": row[1], "data": json.loads(row[2]), "fetched_at": row[3]}
         return result
 
 
@@ -592,7 +605,7 @@ def update_mediakit_setting(key: str, value: str):
                ON CONFLICT(setting_key) DO UPDATE SET 
                setting_value = excluded.setting_value,
                updated_at = excluded.updated_at""",
-            (key, value)
+            (key, value),
         )
         conn.commit()
 
@@ -606,15 +619,19 @@ def get_all_mediakit_settings() -> Dict[str, str]:
 
 
 # Media Kit Views Tracking Functions
-def track_mediakit_view(viewer_email: Optional[str] = None, viewer_ip: Optional[str] = None, 
-                       viewer_country: Optional[str] = None, user_agent: Optional[str] = None):
+def track_mediakit_view(
+    viewer_email: Optional[str] = None,
+    viewer_ip: Optional[str] = None,
+    viewer_country: Optional[str] = None,
+    user_agent: Optional[str] = None,
+):
     """Track a media kit view."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO mediakit_views (viewer_email, viewer_ip, viewer_country, user_agent, viewed_at)
                VALUES (?, ?, ?, ?, datetime('now', 'localtime'))""",
-            (viewer_email, viewer_ip, viewer_country, user_agent)
+            (viewer_email, viewer_ip, viewer_country, user_agent),
         )
         conn.commit()
 
@@ -628,7 +645,7 @@ def get_mediakit_views(limit: int = 100) -> list:
                FROM mediakit_views 
                ORDER BY viewed_at DESC 
                LIMIT ?""",
-            (limit,)
+            (limit,),
         )
         return [dict(row) for row in cursor.fetchall()]
 
@@ -637,25 +654,25 @@ def get_mediakit_views_stats() -> Dict[str, Any]:
     """Get media kit views statistics."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        
+
         # Total views
         cursor.execute("SELECT COUNT(*) FROM mediakit_views")
         total_views = cursor.fetchone()[0]
-        
+
         # Views this month
         cursor.execute(
             """SELECT COUNT(*) FROM mediakit_views 
                WHERE viewed_at >= date('now', 'start of month')"""
         )
         views_this_month = cursor.fetchone()[0]
-        
+
         # Unique viewers (by email)
         cursor.execute(
             """SELECT COUNT(DISTINCT viewer_email) FROM mediakit_views 
                WHERE viewer_email IS NOT NULL"""
         )
         unique_viewers = cursor.fetchone()[0]
-        
+
         # Top countries
         cursor.execute(
             """SELECT viewer_country, COUNT(*) as count 
@@ -666,19 +683,23 @@ def get_mediakit_views_stats() -> Dict[str, Any]:
                LIMIT 5"""
         )
         top_countries = [{"country": row[0], "count": row[1]} for row in cursor.fetchall()]
-        
+
         return {
             "total_views": total_views,
             "views_this_month": views_this_month,
             "unique_viewers": unique_viewers,
-            "top_countries": top_countries
+            "top_countries": top_countries,
         }
 
 
 # Media Kit Access Requests Functions
-def create_access_request(email: str, name: Optional[str] = None, 
-                         company: Optional[str] = None, message: Optional[str] = None,
-                         ip_address: Optional[str] = None) -> int:
+def create_access_request(
+    email: str,
+    name: Optional[str] = None,
+    company: Optional[str] = None,
+    message: Optional[str] = None,
+    ip_address: Optional[str] = None,
+) -> int:
     """Create a new access request."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -686,7 +707,7 @@ def create_access_request(email: str, name: Optional[str] = None,
             """INSERT INTO mediakit_access_requests 
                (email, name, company, message, status, ip_address, requested_at)
                VALUES (?, ?, ?, ?, 'pending', ?, datetime('now', 'localtime'))""",
-            (email, name, company, message, ip_address)
+            (email, name, company, message, ip_address),
         )
         conn.commit()
         return cursor.lastrowid
@@ -703,7 +724,7 @@ def get_access_requests(status: Optional[str] = None) -> list:
                    FROM mediakit_access_requests 
                    WHERE status = ?
                    ORDER BY requested_at DESC""",
-                (status,)
+                (status,),
             )
         else:
             cursor.execute(
@@ -719,19 +740,19 @@ def update_access_request_status(request_id: int, status: str):
     """Update access request status."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        if status == 'approved':
+        if status == "approved":
             cursor.execute(
                 """UPDATE mediakit_access_requests 
                    SET status = ?, approved_at = datetime('now', 'localtime')
                    WHERE id = ?""",
-                (status, request_id)
+                (status, request_id),
             )
         else:
             cursor.execute(
                 """UPDATE mediakit_access_requests 
                    SET status = ?, approved_at = NULL
                    WHERE id = ?""",
-                (status, request_id)
+                (status, request_id),
             )
         conn.commit()
 
@@ -743,7 +764,7 @@ def check_access_approved(email: str) -> bool:
         cursor.execute(
             """SELECT COUNT(*) FROM mediakit_access_requests 
                WHERE email = ? AND status = 'approved'""",
-            (email,)
+            (email,),
         )
         return cursor.fetchone()[0] > 0
 
@@ -761,15 +782,17 @@ def get_mediakit_blocks() -> list:
         rows = cursor.fetchall()
         blocks = []
         for row in rows:
-            blocks.append({
-                'id': row[0],
-                'block_type': row[1],
-                'title': row[2],
-                'content': row[3],
-                'settings': json.loads(row[4]) if row[4] else {},
-                'position': row[5],
-                'is_visible': bool(row[6])
-            })
+            blocks.append(
+                {
+                    "id": row[0],
+                    "block_type": row[1],
+                    "title": row[2],
+                    "content": row[3],
+                    "settings": json.loads(row[4]) if row[4] else {},
+                    "position": row[5],
+                    "is_visible": bool(row[6]),
+                }
+            )
         return blocks
 
 
@@ -786,69 +809,73 @@ def get_visible_mediakit_blocks() -> list:
         rows = cursor.fetchall()
         blocks = []
         for row in rows:
-            blocks.append({
-                'id': row[0],
-                'block_type': row[1],
-                'title': row[2],
-                'content': row[3],
-                'settings': json.loads(row[4]) if row[4] else {},
-                'position': row[5]
-            })
+            blocks.append(
+                {
+                    "id": row[0],
+                    "block_type": row[1],
+                    "title": row[2],
+                    "content": row[3],
+                    "settings": json.loads(row[4]) if row[4] else {},
+                    "position": row[5],
+                }
+            )
         return blocks
 
 
-def create_mediakit_block(block_type: str, title: str = None, content: str = None, 
-                          settings: dict = None, position: int = None) -> int:
+def create_mediakit_block(
+    block_type: str, title: str = None, content: str = None, settings: dict = None, position: int = None
+) -> int:
     """Create a new media kit block."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        
+
         # If position not provided, add at the end
         if position is None:
             cursor.execute("SELECT MAX(position) FROM mediakit_blocks")
             max_pos = cursor.fetchone()[0]
             position = (max_pos + 1) if max_pos is not None else 0
-        
+
         settings_json = json.dumps(settings) if settings else None
-        
+
         cursor.execute(
             """INSERT INTO mediakit_blocks (block_type, title, content, settings, position, is_visible, created_at, updated_at)
                VALUES (?, ?, ?, ?, ?, 1, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
-            (block_type, title, content, settings_json, position)
+            (block_type, title, content, settings_json, position),
         )
         conn.commit()
         return cursor.lastrowid
 
 
-def update_mediakit_block(block_id: int, title: str = None, content: str = None, 
-                          settings: dict = None, is_visible: bool = None):
+def update_mediakit_block(
+    block_id: int, title: str = None, content: str = None, settings: dict = None, is_visible: bool = None
+):
     """Update a media kit block."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        
+
         updates = []
         params = []
-        
+
         if title is not None:
             updates.append("title = ?")
             params.append(title)
-        
+
         if content is not None:
             updates.append("content = ?")
             params.append(content)
-        
+
         if settings is not None:
             updates.append("settings = ?")
             params.append(json.dumps(settings))
-        
+
         if is_visible is not None:
             updates.append("is_visible = ?")
             params.append(1 if is_visible else 0)
-        
+
         if updates:
             updates.append("updated_at = datetime('now', 'localtime')")
             params.append(block_id)
-            
+
             sql = f"UPDATE mediakit_blocks SET {', '.join(updates)} WHERE id = ?"
             cursor.execute(sql, params)
             conn.commit()
@@ -869,6 +896,6 @@ def reorder_mediakit_blocks(block_positions: list):
         for item in block_positions:
             cursor.execute(
                 "UPDATE mediakit_blocks SET position = ?, updated_at = datetime('now', 'localtime') WHERE id = ?",
-                (item['position'], item['id'])
+                (item["position"], item["id"]),
             )
         conn.commit()

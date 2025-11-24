@@ -2,6 +2,7 @@
 Public API Router
 Handles public-facing endpoints (items, clicks, subscriptions, contact).
 """
+
 import sqlite3
 from urllib.parse import urlparse
 from typing import Optional, List
@@ -22,9 +23,7 @@ router = APIRouter()
 async def get_public_pages():
     """Get list of active pages for public use (e.g., newsletter redirect dropdown)."""
     with get_db_connection() as conn:
-        pages = conn.execute(
-            "SELECT id, slug, title FROM pages WHERE is_active = 1 ORDER BY created_at ASC"
-        ).fetchall()
+        pages = conn.execute("SELECT id, slug, title FROM pages WHERE is_active = 1 ORDER BY created_at ASC").fetchall()
         return [{"id": p[0], "slug": p[1], "title": p[2]} for p in pages]
 
 
@@ -40,16 +39,16 @@ async def get_public_items(request: Request, page_id: Optional[int] = None):
     query = "SELECT * FROM items"
     params = []
     conditions = []
-    
+
     if page_id is not None:
         conditions.append("page_id = ?")
         params.append(page_id)
-    
+
     if user is None:
         conditions.append("is_active = 1")
         conditions.append("(publish_on IS NULL OR publish_on <= datetime('now', 'localtime'))")
         conditions.append("(expires_on IS NULL OR expires_on >= datetime('now', 'localtime'))")
-    
+
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     query += " ORDER BY display_order ASC"
@@ -106,17 +105,21 @@ async def subscribe(req: SubscribeRequest):
         with get_db_connection() as conn:
             # Validate redirect_page_id if provided
             if req.redirect_page_id:
-                page = conn.execute("SELECT slug FROM pages WHERE id = ? AND is_active = 1", (req.redirect_page_id,)).fetchone()
+                page = conn.execute(
+                    "SELECT slug FROM pages WHERE id = ? AND is_active = 1", (req.redirect_page_id,)
+                ).fetchone()
                 if not page:
                     # Invalid or inactive page, ignore redirect
                     req.redirect_page_id = None
                 else:
                     slug = page[0]
                     redirect_url = f"/{slug}" if slug else "/"
-            
-            conn.execute("INSERT INTO subscribers (email, redirect_page_id) VALUES (?, ?)", (req.email, req.redirect_page_id))
+
+            conn.execute(
+                "INSERT INTO subscribers (email, redirect_page_id) VALUES (?, ?)", (req.email, req.redirect_page_id)
+            )
             conn.commit()
-            
+
         return {"message": "Abonniert!", "redirect_url": redirect_url}
     except sqlite3.IntegrityError:
         return {"message": "Bereits registriert.", "redirect_url": None}

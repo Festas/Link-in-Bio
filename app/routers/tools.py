@@ -1,7 +1,8 @@
 """
-Tools Router  
+Tools Router
 Handles utility endpoints (social card, QR code, vCard).
 """
+
 import io
 from fastapi import APIRouter, HTTPException, Depends, Response
 from fastapi.responses import StreamingResponse

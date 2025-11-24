@@ -63,10 +63,10 @@ class SmartScraper:
         # Simple in-memory cache for scrape results
         self._cache = {}
         self._cache_ttl = int(os.getenv("SCRAPER_CACHE_TTL", "3600"))  # 1 hour default
-        
+
         # Browser scraping configuration
         self.use_browser_fallback = os.getenv("SCRAPER_BROWSER_FALLBACK", "true").lower() in ("1", "true", "yes")
-        
+
         # Initialize modular components
         self.extractor_chain = ExtractorChain()
         self.url_normalizer = URLNormalizer()
@@ -156,16 +156,16 @@ class SmartScraper:
         """Check if image URL is valid and accessible."""
         if not url:
             return False
-        
+
         # Skip validation for known-good image services
         if self.image_validator.is_trusted_domain(url):
             logger.debug(f"Skipping validation for trusted domain: {urlparse(url).netloc}")
             return True
-        
+
         # Skip bad patterns
         if self.image_validator.should_skip(url):
             return False
-        
+
         try:
             # Quick HEAD request to check if image exists
             async with httpx.AsyncClient(timeout=5.0, follow_redirects=True, verify=self.verify_tls) as client:
@@ -187,22 +187,18 @@ class SmartScraper:
     async def scrape(self, raw_url: str) -> dict:
         """Main scraping method with comprehensive fallbacks and error handling."""
         url = self.clean_url(raw_url)
-        
+
         # Validate URL
         if not self.url_normalizer.is_valid(url):
             logger.warning(f"Invalid URL: {url}")
             domain = self.url_normalizer.get_domain(url)
-            return {
-                "title": domain,
-                "image_url": self.image_validator.get_fallback_image(url),
-                "url": url
-            }
-        
+            return {"title": domain, "image_url": self.image_validator.get_fallback_image(url), "url": url}
+
         # Check cache first
         cached = self._get_from_cache(url)
         if cached:
             return cached
-        
+
         parsed = urlparse(url)
         domain = self.url_normalizer.get_domain(url)
         data = {"title": domain, "image_url": None, "url": url}
@@ -212,7 +208,7 @@ class SmartScraper:
         if special_data:
             data.update(special_data)
             # Still try to scrape for better data, but we have fallback
-        
+
         # Try to fetch and parse the page
         try:
             # Entscheidung: High-End oder Standard?
@@ -228,28 +224,28 @@ class SmartScraper:
                 await self._scrape_fallback(url, data, domain)
         except Exception as e:
             logger.error(f"Scraping failed for {url}: {e}", exc_info=True)
-        
+
         # If standard scraping failed or returned poor results, try browser scraping
         if self.use_browser_fallback and self._should_try_browser_scraping(data, domain):
             logger.info(f"Attempting browser scraping for {url}")
             browser_data = await self._scrape_with_browser(url)
             if browser_data:
                 # Merge browser data with existing data (browser data takes precedence)
-                if browser_data.get('title') and browser_data['title'] != domain:
-                    data['title'] = browser_data['title']
-                if browser_data.get('image_url'):
-                    data['image_url'] = browser_data['image_url']
-                if browser_data.get('description'):
-                    data['description'] = browser_data['description']
-                if browser_data.get('final_url'):
-                    data['url'] = browser_data['final_url']
+                if browser_data.get("title") and browser_data["title"] != domain:
+                    data["title"] = browser_data["title"]
+                if browser_data.get("image_url"):
+                    data["image_url"] = browser_data["image_url"]
+                if browser_data.get("description"):
+                    data["description"] = browser_data["description"]
+                if browser_data.get("final_url"):
+                    data["url"] = browser_data["final_url"]
 
         # Apply intelligent fallbacks
         await self._apply_fallbacks(data, domain)
-        
+
         # Cache the result
         self._save_to_cache(url, data)
-        
+
         return data
 
     def _handle_special_domains(self, url: str, parsed, domain: str) -> dict:
@@ -375,10 +371,10 @@ class SmartScraper:
         html = r.text
 
         soup = BeautifulSoup(html, "html.parser")
-        
+
         # Use the comprehensive extractor chain
         metadata = self.extract_metadata(soup, data["url"])
-        
+
         # Update data with extracted metadata (prioritize scraped data over fallbacks)
         if metadata.get("title"):
             data["title"] = metadata["title"]
@@ -386,7 +382,7 @@ class SmartScraper:
             data["image_url"] = metadata["image_url"]
         if metadata.get("description"):
             data["description"] = metadata["description"]
-        
+
         # Amazon-specific handling: try to extract additional metadata from HTML
         # if the extractor chain didn't get good results
         if "amazon" in data["url"].lower() or "amzn" in data["url"].lower():
@@ -397,7 +393,7 @@ class SmartScraper:
         # Clean the title using TitleCleaner
         if data.get("title"):
             data["title"] = self.title_cleaner.clean(data["title"])
-        
+
         # Check if title is bad and needs fallback
         if self.title_cleaner.is_bad_title(data.get("title", ""), domain):
             # Try DuckDuckGo search as fallback
@@ -415,20 +411,20 @@ class SmartScraper:
             if not is_valid:
                 logger.info(f"Image URL validation failed for {data['image_url']}, using favicon")
                 data["image_url"] = None
-        
+
         # If no valid image, use Google favicon
         if not data["image_url"]:
             data["image_url"] = self.image_validator.get_fallback_image(data["url"])
 
     def _enhance_amazon_data(self, data: dict, soup, html: str):
         """Enhanced Amazon-specific data extraction.
-        
+
         This method tries additional Amazon-specific selectors and patterns
         to extract product titles and images when standard metadata is insufficient.
         """
         # Extract ASIN if not already done
         asin = self.extract_asin(data["url"]) or self.extract_asin(html)
-        
+
         # Try to get product title from Amazon-specific selectors if current title is generic
         current_title = data.get("title", "")
         if not current_title or current_title in ["Amazon Product", "Amazon Produkt", "Amazon"]:
@@ -441,7 +437,7 @@ class SmartScraper:
                 'h1[id="title"]',
                 ".product-title-word-break",
             ]
-            
+
             for selector in title_selectors:
                 title_elem = soup.select_one(selector)
                 if title_elem:
@@ -450,7 +446,7 @@ class SmartScraper:
                         data["title"] = title_text
                         logger.info(f"Extracted Amazon title using selector {selector}: {title_text[:50]}")
                         break
-        
+
         # Try to enhance image URL with ASIN-based URLs if no good image found
         if asin:
             current_image = data.get("image_url", "")
@@ -462,21 +458,21 @@ class SmartScraper:
                     f"https://m.media-amazon.com/images/I/{asin}.jpg",
                     f"https://images-na.ssl-images-amazon.com/images/P/{asin}.01.MAIN._SCLZZZZZZZ_.jpg",
                 ]
-                
+
                 # Use the first format as default
                 data["image_url"] = image_urls[0]
                 data["_amazon_image_alternatives"] = image_urls[1:]
                 logger.info(f"Using ASIN-based image URL for Amazon product {asin}")
-            
+
             # Try to extract actual image from page HTML
             img_selectors = [
                 "#landingImage",
                 "#imgBlkFront",
                 "#main-image",
                 "img.a-dynamic-image",
-                'img[data-a-dynamic-image]',
+                "img[data-a-dynamic-image]",
             ]
-            
+
             for selector in img_selectors:
                 img_elem = soup.select_one(selector)
                 if img_elem:
@@ -495,18 +491,18 @@ class SmartScraper:
                         except (json.JSONDecodeError, IndexError, KeyError) as e:
                             # Log parsing errors for debugging
                             logger.debug(f"Failed to parse Amazon dynamic image data: {e}")
-                    
+
                     # Fallback to src attribute
                     img_src = img_elem.get("src")
                     if img_src and "data:image" not in img_src:
                         data["image_url"] = img_src
                         logger.info(f"Extracted Amazon image from {selector}")
                         break
-    
+
     def _should_try_browser_scraping(self, data: dict, domain: str) -> bool:
         """
         Determine if browser scraping should be attempted.
-        
+
         Browser scraping is tried when:
         - Title is still the domain name (no real title extracted)
         - Title appears to be a bot challenge or error page
@@ -516,48 +512,50 @@ class SmartScraper:
         image_url = data.get("image_url") or ""
         image_url_lower = image_url.lower()
         has_image = bool(image_url) and "favicon" not in image_url_lower
-        
+
         # Check if title is just the domain or looks like an error
         title_is_poor = (
-            title == domain or
-            self.title_cleaner.is_bad_title(title, domain) or
-            any(x in title.lower() for x in ["cloudflare", "attention required", "captcha", "please wait"])
+            title == domain
+            or self.title_cleaner.is_bad_title(title, domain)
+            or any(x in title.lower() for x in ["cloudflare", "attention required", "captcha", "please wait"])
         )
-        
+
         # Try browser scraping if we have poor results
         return title_is_poor or not has_image
-    
+
     async def _scrape_with_browser(self, url: str) -> Optional[dict]:
         """
         Scrape URL using browser automation.
-        
+
         Returns:
             Dictionary with scraped data or None on failure
         """
         try:
             browser_scraper = await get_browser_scraper()
             browser_result = await browser_scraper.scrape(url)
-            
+
             if not browser_result:
                 return None
-            
+
             # Parse the HTML from browser
-            soup = BeautifulSoup(browser_result['html'], 'html.parser')
-            
+            soup = BeautifulSoup(browser_result["html"], "html.parser")
+
             # Extract metadata using our standard extractors
-            metadata = self.extract_metadata(soup, browser_result['final_url'])
-            
+            metadata = self.extract_metadata(soup, browser_result["final_url"])
+
             # Use browser page title as fallback
-            if not metadata.get('title') and browser_result.get('title'):
-                metadata['title'] = browser_result['title']
-            
+            if not metadata.get("title") and browser_result.get("title"):
+                metadata["title"] = browser_result["title"]
+
             # Add the final URL (after redirects)
-            metadata['final_url'] = browser_result['final_url']
-            
-            logger.info(f"Browser scraping extracted: title={metadata.get('title', 'N/A')[:50]}, image={bool(metadata.get('image_url'))}")
-            
+            metadata["final_url"] = browser_result["final_url"]
+
+            logger.info(
+                f"Browser scraping extracted: title={metadata.get('title', 'N/A')[:50]}, image={bool(metadata.get('image_url'))}"
+            )
+
             return metadata
-            
+
         except Exception as e:
             logger.error(f"Browser scraping error: {e}", exc_info=True)
             return None

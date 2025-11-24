@@ -96,7 +96,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 # Slug validation pattern
-SLUG_PATTERN = re.compile(r'^[a-z0-9-]+$')
+SLUG_PATTERN = re.compile(r"^[a-z0-9-]+$")
 
 # --- Background Task for Scraping ---
 
@@ -148,7 +148,7 @@ async def create_new_page(page_data: PageCreate, user=Depends(require_auth)):
     # Validate slug format
     if not SLUG_PATTERN.match(page_data.slug):
         raise HTTPException(400, "Slug darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten")
-    
+
     # Check if slug already exists
     existing = get_page_by_slug(page_data.slug)
     if existing:
@@ -174,7 +174,7 @@ async def update_existing_page(page_id: int, page_data: PageUpdate, user=Depends
         existing = get_page_by_slug(page_data.slug)
         if existing and existing["id"] != page_id:
             raise HTTPException(400, "Eine Seite mit diesem Slug existiert bereits")
-    
+
     updated = update_page(page_id, page_data.model_dump(exclude_unset=True))
     if not updated:
         raise HTTPException(404, "Page nicht gefunden")
@@ -505,97 +505,98 @@ async def get_advanced_analytics(
     """
     with get_db_connection() as conn:
         cur = conn.cursor()
-        
+
         # Build WHERE clauses for filters
         where_clauses = []
         params = []
-        
+
         if start_date:
             where_clauses.append("date(timestamp) >= ?")
             params.append(start_date)
-        
+
         if end_date:
             where_clauses.append("date(timestamp) <= ?")
             params.append(end_date)
-        
+
         if item_id:
             where_clauses.append("item_id = ?")
             params.append(item_id)
-        
+
         if country and country != "all":
             if country == "unknown":
                 where_clauses.append("(country_code IS NULL OR country_code = '')")
             else:
                 where_clauses.append("country_code = ?")
                 params.append(country)
-        
+
         if referer and referer != "all":
             if referer == "direct":
                 where_clauses.append("(referer IS NULL OR referer = '')")
             else:
                 where_clauses.append("referer = ?")
                 params.append(referer)
-        
+
         where_clause = " AND ".join(where_clauses) if where_clauses else "1=1"
-        
+
         # Total clicks with filters
         cur.execute(f"SELECT COUNT(id) FROM clicks WHERE {where_clause}", params)
         total_clicks = cur.fetchone()[0] or 0
-        
+
         # Clicks per day (last 30 days by default, or filtered range)
         date_range_days = 30
         if start_date and end_date:
             # Calculate days between dates
             from datetime import datetime as dt
+
             try:
                 d1 = dt.strptime(start_date, "%Y-%m-%d")
                 d2 = dt.strptime(end_date, "%Y-%m-%d")
                 date_range_days = max((d2 - d1).days, 1)
             except (ValueError, TypeError):
                 date_range_days = 30
-        
+
         cur.execute(
             f"SELECT date(timestamp) as day, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY day ORDER BY day DESC LIMIT ?",
-            params + [min(date_range_days, 365)]
+            params + [min(date_range_days, 365)],
         )
         clicks_per_day = [dict(r) for r in cur.fetchall()]
         clicks_per_day.reverse()  # Show chronologically
-        
+
         # Top links with filters
         cur.execute(
             f"SELECT i.id, i.title, COUNT(c.id) as clicks FROM clicks c JOIN items i ON c.item_id = i.id WHERE {where_clause} GROUP BY i.id, i.title ORDER BY clicks DESC LIMIT 20",
-            params
+            params,
         )
         top_links = [dict(r) for r in cur.fetchall()]
-        
+
         # Top referrers with filters
         cur.execute(
             f"SELECT CASE WHEN referer IS NULL OR referer = '' THEN '(Direkt)' ELSE referer END as referer_domain, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY referer_domain ORDER BY clicks DESC LIMIT 20",
-            params
+            params,
         )
         top_referers = [dict(r) for r in cur.fetchall()]
-        
+
         # Top countries with filters
         cur.execute(
             f"SELECT CASE WHEN country_code IS NULL THEN 'Unbekannt' ELSE country_code END as country, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY country ORDER BY clicks DESC LIMIT 20",
-            params
+            params,
         )
         top_countries = [dict(r) for r in cur.fetchall()]
-        
+
         # Hourly distribution
         cur.execute(
             f"SELECT CAST(strftime('%H', timestamp) AS INTEGER) as hour, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY hour ORDER BY hour ASC",
-            params
+            params,
         )
         clicks_per_hour = [dict(r) for r in cur.fetchall()]
-        
+
         # Clicks by day of week
         cur.execute(
             f"SELECT CAST(strftime('%w', timestamp) AS INTEGER) as day_of_week, COUNT(id) as clicks FROM clicks WHERE {where_clause} GROUP BY day_of_week ORDER BY day_of_week ASC",
-            params
+            params,
         )
         clicks_per_weekday = [dict(r) for r in cur.fetchall()]
-        
+
         return {
             "total_clicks": total_clicks,
             "clicks_per_day": clicks_per_day,
@@ -610,7 +611,7 @@ async def get_advanced_analytics(
                 "item_id": item_id,
                 "country": country,
                 "referer": referer,
-            }
+            },
         }
 
 
@@ -660,11 +661,11 @@ async def export_subscribers_excel(user=Depends(require_auth)):
     # Add headers with styling
     headers = ["Email", "Subscribed At"]
     ws.append(headers)
-    
+
     # Style the header row
     header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
     header_font = Font(bold=True, color="FFFFFF")
-    
+
     for cell in ws[1]:
         cell.fill = header_fill
         cell.font = header_font
@@ -674,8 +675,8 @@ async def export_subscribers_excel(user=Depends(require_auth)):
         ws.append([sub[0], sub[1]])
 
     # Auto-adjust column widths
-    ws.column_dimensions['A'].width = 40
-    ws.column_dimensions['B'].width = 25
+    ws.column_dimensions["A"].width = 40
+    ws.column_dimensions["B"].width = 25
 
     # Save to BytesIO
     output = io.BytesIO()
@@ -711,9 +712,7 @@ async def delete_message(id: int, user=Depends(require_auth)):
 async def get_public_pages():
     """Get list of active pages for public use (e.g., newsletter redirect dropdown)."""
     with get_db_connection() as conn:
-        pages = conn.execute(
-            "SELECT id, slug, title FROM pages WHERE is_active = 1 ORDER BY created_at ASC"
-        ).fetchall()
+        pages = conn.execute("SELECT id, slug, title FROM pages WHERE is_active = 1 ORDER BY created_at ASC").fetchall()
         return [{"id": p[0], "slug": p[1], "title": p[2]} for p in pages]
 
 
@@ -728,16 +727,16 @@ async def get_public_items(request: Request, page_id: Optional[int] = None):
     query = "SELECT * FROM items"
     params = []
     conditions = []
-    
+
     if page_id is not None:
         conditions.append("page_id = ?")
         params.append(page_id)
-    
+
     if user is None:
         conditions.append("is_active = 1")
         conditions.append("(publish_on IS NULL OR publish_on <= datetime('now', 'localtime'))")
         conditions.append("(expires_on IS NULL OR expires_on >= datetime('now', 'localtime'))")
-    
+
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     query += " ORDER BY display_order ASC"
@@ -792,17 +791,21 @@ async def subscribe(req: SubscribeRequest):
         with get_db_connection() as conn:
             # Validate redirect_page_id if provided
             if req.redirect_page_id:
-                page = conn.execute("SELECT slug FROM pages WHERE id = ? AND is_active = 1", (req.redirect_page_id,)).fetchone()
+                page = conn.execute(
+                    "SELECT slug FROM pages WHERE id = ? AND is_active = 1", (req.redirect_page_id,)
+                ).fetchone()
                 if not page:
                     # Invalid or inactive page, ignore redirect
                     req.redirect_page_id = None
                 else:
                     slug = page[0]
                     redirect_url = f"/{slug}" if slug else "/"
-            
-            conn.execute("INSERT INTO subscribers (email, redirect_page_id) VALUES (?, ?)", (req.email, req.redirect_page_id))
+
+            conn.execute(
+                "INSERT INTO subscribers (email, redirect_page_id) VALUES (?, ?)", (req.email, req.redirect_page_id)
+            )
             conn.commit()
-            
+
         return {"message": "Abonniert!", "redirect_url": redirect_url}
     except sqlite3.IntegrityError:
         return {"message": "Bereits registriert.", "redirect_url": None}
@@ -862,6 +865,7 @@ async def get_qr():
 async def get_special_pages_list():
     """Get all special pages for admin panel."""
     from .database import get_all_special_pages
+
     pages = get_all_special_pages()
     return {"pages": pages}
 
@@ -870,14 +874,15 @@ async def get_special_pages_list():
 async def get_special_page_content(page_key: str):
     """Get specific special page content."""
     from .database import get_special_page, get_special_page_blocks
+
     page = get_special_page(page_key)
     if not page:
         raise HTTPException(404, "Seite nicht gefunden")
-    
+
     # Get blocks if they exist
     blocks = get_special_page_blocks(page_key)
-    page['blocks'] = blocks
-    
+    page["blocks"] = blocks
+
     return page
 
 
@@ -885,14 +890,15 @@ async def get_special_page_content(page_key: str):
 async def update_special_page_content(page_key: str, request: Request):
     """Update special page content."""
     from .database import update_special_page
+
     data = await request.json()
     title = data.get("title", "")
     subtitle = data.get("subtitle", "")
     content = data.get("content", "")
-    
+
     if not title or not content:
         raise HTTPException(400, "Titel und Inhalt sind erforderlich")
-    
+
     update_special_page(page_key, title, subtitle, content)
     return {"message": "Seite aktualisiert"}
 
@@ -902,6 +908,7 @@ async def update_special_page_content(page_key: str, request: Request):
 async def get_special_page_blocks_endpoint(page_key: str):
     """Get all blocks for a special page."""
     from .database import get_special_page_blocks
+
     blocks = get_special_page_blocks(page_key)
     return {"blocks": blocks}
 
@@ -910,9 +917,10 @@ async def get_special_page_blocks_endpoint(page_key: str):
 async def save_special_page_blocks_endpoint(page_key: str, request: Request):
     """Save blocks for a special page."""
     from .database import save_special_page_blocks
+
     data = await request.json()
     blocks = data.get("blocks", [])
-    
+
     save_special_page_blocks(page_key, blocks)
     return {"message": "Blöcke gespeichert"}
 
@@ -921,10 +929,11 @@ async def save_special_page_blocks_endpoint(page_key: str, request: Request):
 async def update_special_page_block_endpoint(block_id: int, request: Request):
     """Update a specific block."""
     from .database import update_special_page_block
+
     data = await request.json()
     content = data.get("content", "")
     settings = data.get("settings", {})
-    
+
     update_special_page_block(block_id, content, settings)
     return {"message": "Block aktualisiert"}
 
@@ -933,6 +942,7 @@ async def update_special_page_block_endpoint(block_id: int, request: Request):
 async def delete_special_page_block_endpoint(block_id: int):
     """Delete a specific block."""
     from .database import delete_special_page_block
+
     delete_special_page_block(block_id)
     return {"message": "Block gelöscht"}
 
@@ -955,10 +965,10 @@ async def update_mediakit_admin_data(request: Request):
     key = data.get("key", "")
     value = data.get("value", "")
     display_order = data.get("display_order", 0)
-    
+
     if not section or not key:
         raise HTTPException(400, "Section und Key sind erforderlich")
-    
+
     update_mediakit_data(section, key, value, display_order)
     return {"message": "Media Kit Daten aktualisiert"}
 
@@ -968,19 +978,19 @@ async def update_mediakit_batch(request: Request):
     """Batch update media kit data."""
     data = await request.json()
     updates = data.get("updates", [])
-    
+
     if not updates:
         raise HTTPException(400, "Keine Updates bereitgestellt")
-    
+
     for update in updates:
         section = update.get("section", "")
         key = update.get("key", "")
         value = update.get("value", "")
         display_order = update.get("display_order", 0)
-        
+
         if section and key:
             update_mediakit_data(section, key, value, display_order)
-    
+
     return {"message": "Alle Media Kit Daten aktualisiert"}
 
 
@@ -990,10 +1000,10 @@ async def delete_mediakit_admin_data(request: Request):
     data = await request.json()
     section = data.get("section", "")
     key = data.get("key", "")
-    
+
     if not section or not key:
         raise HTTPException(400, "Section und Key sind erforderlich")
-    
+
     delete_mediakit_entry(section, key)
     return {"message": "Eintrag gelöscht"}
 
@@ -1003,63 +1013,66 @@ async def refresh_social_stats(request: Request):
     """Fetch fresh social media statistics from Profile tab handles and update cache."""
     # Get social handles from Profile tab (settings) instead of mediakit_data
     settings = get_settings_from_db()
-    
+
     config = {
-        'instagram_handle': settings.get('social_instagram', ''),
-        'tiktok_handle': settings.get('social_tiktok', ''),
-        'youtube_handle': settings.get('social_youtube', ''),
-        'twitch_handle': settings.get('social_twitch', ''),
-        'x_handle': settings.get('social_x', ''),
+        "instagram_handle": settings.get("social_instagram", ""),
+        "tiktok_handle": settings.get("social_tiktok", ""),
+        "youtube_handle": settings.get("social_youtube", ""),
+        "twitch_handle": settings.get("social_twitch", ""),
+        "x_handle": settings.get("social_x", ""),
     }
-    
+
     # Remove empty handles
     config = {k: v for k, v in config.items() if v}
-    
+
     if not config:
-        raise HTTPException(400, "Keine Social Media Handles konfiguriert. Bitte zuerst im Profil-Tab Social Media Handles eingeben und speichern.")
-    
+        raise HTTPException(
+            400,
+            "Keine Social Media Handles konfiguriert. Bitte zuerst im Profil-Tab Social Media Handles eingeben und speichern.",
+        )
+
     # Fetch stats
     stats_service = get_stats_service()
     results = await stats_service.fetch_all_stats(config)
-    
+
     # Check if we got any data
-    if not results.get('platforms'):
+    if not results.get("platforms"):
         # If scraping failed, provide helpful error message
         error_msg = "Konnte keine Daten abrufen. "
-        if results.get('errors'):
-            error_msg += " Mögliche Gründe: " + ", ".join(results['errors'][:2])
+        if results.get("errors"):
+            error_msg += " Mögliche Gründe: " + ", ".join(results["errors"][:2])
         raise HTTPException(500, error_msg)
-    
+
     # Save to cache with full analytics data
-    for platform, stats in results.get('platforms', {}).items():
-        save_social_stats_cache(platform, stats['username'], json.dumps(stats))
-    
+    for platform, stats in results.get("platforms", {}).items():
+        save_social_stats_cache(platform, stats["username"], json.dumps(stats))
+
     # Update mediakit_data with new stats for backward compatibility
-    if 'instagram' in results['platforms']:
-        ig_stats = results['platforms']['instagram']
-        followers = stats_service.format_number(ig_stats.get('followers', 0))
-        update_mediakit_data('platforms', 'instagram_followers', followers, 1)
-        update_mediakit_data('platforms', 'instagram_handle', f"@{ig_stats['username']}", 1)
-    
-    if 'tiktok' in results['platforms']:
-        tt_stats = results['platforms']['tiktok']
-        followers = stats_service.format_number(tt_stats.get('followers', 0))
-        update_mediakit_data('platforms', 'tiktok_followers', followers, 2)
-        update_mediakit_data('platforms', 'tiktok_handle', f"@{tt_stats['username']}", 2)
-    
+    if "instagram" in results["platforms"]:
+        ig_stats = results["platforms"]["instagram"]
+        followers = stats_service.format_number(ig_stats.get("followers", 0))
+        update_mediakit_data("platforms", "instagram_followers", followers, 1)
+        update_mediakit_data("platforms", "instagram_handle", f"@{ig_stats['username']}", 1)
+
+    if "tiktok" in results["platforms"]:
+        tt_stats = results["platforms"]["tiktok"]
+        followers = stats_service.format_number(tt_stats.get("followers", 0))
+        update_mediakit_data("platforms", "tiktok_followers", followers, 2)
+        update_mediakit_data("platforms", "tiktok_handle", f"@{tt_stats['username']}", 2)
+
     # Update total
-    total = stats_service.format_number(results.get('total_followers', 0))
-    update_mediakit_data('analytics', 'total_followers', total, 0)
-    
+    total = stats_service.format_number(results.get("total_followers", 0))
+    update_mediakit_data("analytics", "total_followers", total, 0)
+
     # Store last update timestamp
-    update_mediakit_data('analytics', 'last_updated', datetime.now().strftime('%d.%m.%Y'), 99)
-    
+    update_mediakit_data("analytics", "last_updated", datetime.now().strftime("%d.%m.%Y"), 99)
+
     return {
         "message": "Social Media Statistiken erfolgreich aktualisiert",
         "data": results,
         "total_followers": total,
-        "total_followers_raw": results.get('total_followers', 0),
-        "platforms_updated": list(results.get('platforms', {}).keys())
+        "total_followers_raw": results.get("total_followers", 0),
+        "platforms_updated": list(results.get("platforms", {}).keys()),
     }
 
 
@@ -1075,31 +1088,33 @@ async def get_follower_summary():
     """Get follower summary for platforms with 1000+ followers (public endpoint)."""
     cache = get_social_stats_cache()
     stats_service = get_stats_service()
-    
+
     qualified_platforms = []
     total_qualified_followers = 0
-    
+
     for platform, data in cache.items():
-        stats = data.get('data', {})
-        followers = stats.get('followers', 0)
-        
+        stats = data.get("data", {})
+        followers = stats.get("followers", 0)
+
         # Only include platforms with 1000+ followers
         if followers >= 1000:
-            qualified_platforms.append({
-                'platform': platform,
-                'username': data.get('username', ''),
-                'followers': followers,
-                'followers_formatted': stats_service.format_number(followers),
-                'verified': stats.get('verified', False),
-                'fetched_at': data.get('fetched_at', '')
-            })
+            qualified_platforms.append(
+                {
+                    "platform": platform,
+                    "username": data.get("username", ""),
+                    "followers": followers,
+                    "followers_formatted": stats_service.format_number(followers),
+                    "verified": stats.get("verified", False),
+                    "fetched_at": data.get("fetched_at", ""),
+                }
+            )
             total_qualified_followers += followers
-    
+
     return {
         "total_followers": total_qualified_followers,
         "total_followers_formatted": stats_service.format_number(total_qualified_followers),
         "platforms": qualified_platforms,
-        "platform_count": len(qualified_platforms)
+        "platform_count": len(qualified_platforms),
     }
 
 
@@ -1107,45 +1122,45 @@ async def get_follower_summary():
 async def get_platform_analytics(platform: str):
     """Get detailed analytics for a specific platform (public endpoint)."""
     cache = get_social_stats_cache(platform)
-    
+
     # Check if we got any data back for this platform
     if not cache:
         raise HTTPException(404, f"Keine Daten für Plattform '{platform}' gefunden")
-    
+
     # The filtered cache should have the platform as a key
     if platform not in cache:
         raise HTTPException(404, f"Keine Daten für Plattform '{platform}' gefunden")
-    
+
     data = cache[platform]
-    stats = data.get('data', {})
-    
+    stats = data.get("data", {})
+
     # Build platform-specific analytics response
     analytics = {
-        'platform': platform,
-        'username': data.get('username', ''),
-        'fetched_at': data.get('fetched_at', ''),
-        'metrics': {}
+        "platform": platform,
+        "username": data.get("username", ""),
+        "fetched_at": data.get("fetched_at", ""),
+        "metrics": {},
     }
-    
+
     # Common metrics
-    if 'followers' in stats:
-        analytics['metrics']['followers'] = stats['followers']
-    if 'following' in stats:
-        analytics['metrics']['following'] = stats['following']
-    
+    if "followers" in stats:
+        analytics["metrics"]["followers"] = stats["followers"]
+    if "following" in stats:
+        analytics["metrics"]["following"] = stats["following"]
+
     # Platform-specific metrics
-    if platform == 'instagram':
-        analytics['metrics']['posts'] = stats.get('posts', 0)
-        analytics['metrics']['engagement_rate'] = stats.get('engagement_rate')
-        analytics['metrics']['verified'] = stats.get('verified', False)
-    elif platform == 'tiktok':
-        analytics['metrics']['likes'] = stats.get('likes', 0)
-        analytics['metrics']['videos'] = stats.get('videos', 0)
-    elif platform == 'youtube':
-        analytics['metrics']['subscribers'] = stats.get('subscribers', 0)
-        analytics['metrics']['videos'] = stats.get('videos', 0)
-        analytics['metrics']['views'] = stats.get('views', 0)
-    
+    if platform == "instagram":
+        analytics["metrics"]["posts"] = stats.get("posts", 0)
+        analytics["metrics"]["engagement_rate"] = stats.get("engagement_rate")
+        analytics["metrics"]["verified"] = stats.get("verified", False)
+    elif platform == "tiktok":
+        analytics["metrics"]["likes"] = stats.get("likes", 0)
+        analytics["metrics"]["videos"] = stats.get("videos", 0)
+    elif platform == "youtube":
+        analytics["metrics"]["subscribers"] = stats.get("subscribers", 0)
+        analytics["metrics"]["videos"] = stats.get("videos", 0)
+        analytics["metrics"]["views"] = stats.get("views", 0)
+
     return analytics
 
 
@@ -1157,71 +1172,67 @@ async def refresh_instagram_api_stats():
     """
     from dotenv import load_dotenv
     from .instagram_fetcher import get_instagram_fetcher_from_env
-    
+
     # Load .env.social if it exists
-    social_env_path = Path(__file__).parent.parent / '.env.social'
+    social_env_path = Path(__file__).parent.parent / ".env.social"
     if social_env_path.exists():
         load_dotenv(social_env_path)
     else:
-        raise HTTPException(
-            400, 
-            "Keine .env.social Datei gefunden. Bitte Instagram API Credentials konfigurieren."
-        )
-    
+        raise HTTPException(400, "Keine .env.social Datei gefunden. Bitte Instagram API Credentials konfigurieren.")
+
     # Get Instagram fetcher
     fetcher = get_instagram_fetcher_from_env()
     if not fetcher:
         raise HTTPException(
-            400,
-            "Instagram API nicht konfiguriert. Prüfe INSTAGRAM_ACCESS_TOKEN und INSTAGRAM_USERNAME in .env.social"
+            400, "Instagram API nicht konfiguriert. Prüfe INSTAGRAM_ACCESS_TOKEN und INSTAGRAM_USERNAME in .env.social"
         )
-    
+
     try:
         # Fetch stats and refresh token
         stats, new_token = await fetcher.fetch_and_refresh_token()
-        
+
         if not stats:
             raise HTTPException(500, "Konnte Instagram Daten nicht abrufen")
-        
+
         # Save to cache
         save_social_stats_cache(
-            platform='instagram',
-            username=stats['profile']['username'],
-            stats_data=json.dumps(stats)
+            platform="instagram", username=stats["profile"]["username"], stats_data=json.dumps(stats)
         )
-        
+
         # Update mediakit_data for backward compatibility
         stats_service = get_stats_service()
-        followers = stats_service.format_number(stats['stats']['followers'])
-        update_mediakit_data('platforms', 'instagram_followers', followers, 1)
-        update_mediakit_data('platforms', 'instagram_handle', f"@{stats['profile']['username']}", 1)
-        
+        followers = stats_service.format_number(stats["stats"]["followers"])
+        update_mediakit_data("platforms", "instagram_followers", followers, 1)
+        update_mediakit_data("platforms", "instagram_handle", f"@{stats['profile']['username']}", 1)
+
         # Update analytics
-        update_mediakit_data('analytics', 'last_updated', datetime.now().strftime('%d.%m.%Y'), 99)
-        
+        update_mediakit_data("analytics", "last_updated", datetime.now().strftime("%d.%m.%Y"), 99)
+
         response_data = {
             "message": "Instagram Statistiken erfolgreich über API aktualisiert",
             "data": {
-                "username": stats['profile']['username'],
-                "followers": stats['stats']['followers'],
+                "username": stats["profile"]["username"],
+                "followers": stats["stats"]["followers"],
                 "followers_formatted": followers,
-                "posts": stats['stats']['posts'],
-                "reach_daily": stats['stats']['reach_daily'],
-                "impressions_daily": stats['stats']['impressions_daily'],
-                "profile_views": stats['stats']['profile_views'],
+                "posts": stats["stats"]["posts"],
+                "reach_daily": stats["stats"]["reach_daily"],
+                "impressions_daily": stats["stats"]["impressions_daily"],
+                "profile_views": stats["stats"]["profile_views"],
             },
             "source": "Meta Graph API",
-            "updated_at": stats['meta']['updated_at']
+            "updated_at": stats["meta"]["updated_at"],
         }
-        
+
         # Include token refresh info if token was refreshed
         if new_token:
             response_data["token_refreshed"] = True
-            response_data["warning"] = "Access Token wurde erneuert. Bitte GitHub Secret 'INSTAGRAM_SECRET' aktualisieren!"
+            response_data["warning"] = (
+                "Access Token wurde erneuert. Bitte GitHub Secret 'INSTAGRAM_SECRET' aktualisieren!"
+            )
             # Note: Do not expose any part of the token for security reasons
-        
+
         return response_data
-        
+
     except Exception as e:
         logging.error(f"Error fetching Instagram API stats: {e}")
         raise HTTPException(500, f"Fehler beim Abrufen der Instagram Daten: {str(e)}")
@@ -1235,70 +1246,62 @@ async def refresh_tiktok_api_stats():
     """
     from dotenv import load_dotenv
     from .tiktok_fetcher import get_tiktok_fetcher_from_env
-    
+
     # Load .env.social if it exists
-    social_env_path = Path(__file__).parent.parent / '.env.social'
+    social_env_path = Path(__file__).parent.parent / ".env.social"
     if social_env_path.exists():
         load_dotenv(social_env_path)
     else:
-        raise HTTPException(
-            400, 
-            "Keine .env.social Datei gefunden. Bitte TikTok API Credentials konfigurieren."
-        )
-    
+        raise HTTPException(400, "Keine .env.social Datei gefunden. Bitte TikTok API Credentials konfigurieren.")
+
     # Get TikTok fetcher
     fetcher = get_tiktok_fetcher_from_env()
     if not fetcher:
         raise HTTPException(
-            400,
-            "TikTok API nicht konfiguriert. Prüfe TIKTOK_ACCESS_TOKEN und TIKTOK_REFRESH_TOKEN in .env.social"
+            400, "TikTok API nicht konfiguriert. Prüfe TIKTOK_ACCESS_TOKEN und TIKTOK_REFRESH_TOKEN in .env.social"
         )
-    
+
     try:
         # Fetch stats and refresh token
         stats, new_tokens = await fetcher.fetch_and_refresh_token()
-        
+
         if not stats:
             raise HTTPException(500, "Konnte TikTok Daten nicht abrufen")
-        
+
         # Save to cache
-        save_social_stats_cache(
-            platform='tiktok',
-            username=stats['profile']['username'],
-            stats_data=json.dumps(stats)
-        )
-        
+        save_social_stats_cache(platform="tiktok", username=stats["profile"]["username"], stats_data=json.dumps(stats))
+
         # Update mediakit_data for backward compatibility
         stats_service = get_stats_service()
-        followers = stats_service.format_number(stats['stats']['followers'])
-        update_mediakit_data('platforms', 'tiktok_followers', followers, 2)
-        update_mediakit_data('platforms', 'tiktok_handle', f"@{stats['profile']['username']}", 2)
-        
+        followers = stats_service.format_number(stats["stats"]["followers"])
+        update_mediakit_data("platforms", "tiktok_followers", followers, 2)
+        update_mediakit_data("platforms", "tiktok_handle", f"@{stats['profile']['username']}", 2)
+
         # Update analytics
-        update_mediakit_data('analytics', 'last_updated', datetime.now().strftime('%d.%m.%Y'), 99)
-        
+        update_mediakit_data("analytics", "last_updated", datetime.now().strftime("%d.%m.%Y"), 99)
+
         response_data = {
             "message": "TikTok Statistiken erfolgreich über API aktualisiert",
             "data": {
-                "username": stats['profile']['username'],
-                "followers": stats['stats']['followers'],
+                "username": stats["profile"]["username"],
+                "followers": stats["stats"]["followers"],
                 "followers_formatted": followers,
-                "likes": stats['stats']['likes'],
-                "videos": stats['stats']['videos'],
+                "likes": stats["stats"]["likes"],
+                "videos": stats["stats"]["videos"],
             },
             "source": "TikTok Official API",
-            "updated_at": stats['meta']['updated_at']
+            "updated_at": stats["meta"]["updated_at"],
         }
-        
+
         # Include token refresh info if tokens were refreshed
         if new_tokens:
             new_access_token, new_refresh_token = new_tokens
             response_data["token_refreshed"] = True
             response_data["warning"] = "Access Token wurde erneuert. Bitte GitHub Secret 'TIKTOK_SECRET' aktualisieren!"
             # Note: Do not expose any part of the tokens for security reasons
-        
+
         return response_data
-        
+
     except Exception as e:
         logging.error(f"Error fetching TikTok API stats: {e}")
         raise HTTPException(500, f"Fehler beim Abrufen der TikTok Daten: {str(e)}")
@@ -1316,10 +1319,10 @@ async def get_mediakit_settings_endpoint():
 async def update_mediakit_settings_endpoint(request: Request):
     """Update media kit settings."""
     data = await request.json()
-    
+
     for key, value in data.items():
         update_mediakit_setting(key, str(value) if value is not None else "")
-    
+
     return {"message": "Media Kit Einstellungen aktualisiert"}
 
 
@@ -1328,25 +1331,22 @@ async def update_mediakit_settings_endpoint(request: Request):
 async def track_mediakit_view_endpoint(request: Request):
     """Track a media kit view (public endpoint)."""
     data = await request.json()
-    
+
     # Get viewer info
     viewer_email = data.get("email")
     viewer_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
+
     # Get country from IP (async)
     viewer_country = None
     if viewer_ip:
         viewer_country = await get_country_from_ip(viewer_ip)
-    
+
     # Track the view
     track_mediakit_view(
-        viewer_email=viewer_email,
-        viewer_ip=viewer_ip,
-        viewer_country=viewer_country,
-        user_agent=user_agent
+        viewer_email=viewer_email, viewer_ip=viewer_ip, viewer_country=viewer_country, user_agent=user_agent
     )
-    
+
     return {"message": "View tracked successfully"}
 
 
@@ -1369,35 +1369,29 @@ async def get_mediakit_views_stats_endpoint():
 async def request_mediakit_access(request: Request):
     """Request access to view media kit (for gated access)."""
     data = await request.json()
-    
+
     email = data.get("email", "").strip()
     name = data.get("name", "").strip()
     company = data.get("company", "").strip()
     message = data.get("message", "").strip()
-    
+
     if not email:
         raise HTTPException(400, "Email ist erforderlich")
-    
+
     # Validate email format
-    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     if not re.match(email_pattern, email):
         raise HTTPException(400, "Ungültige E-Mail-Adresse")
-    
+
     # Get IP address
     ip_address = request.client.host if request.client else None
-    
+
     # Create access request
-    request_id = create_access_request(
-        email=email,
-        name=name,
-        company=company,
-        message=message,
-        ip_address=ip_address
-    )
-    
+    request_id = create_access_request(email=email, name=name, company=company, message=message, ip_address=ip_address)
+
     return {
         "message": "Zugriffsanfrage wurde gesendet. Sie erhalten eine E-Mail, sobald Ihre Anfrage genehmigt wurde.",
-        "request_id": request_id
+        "request_id": request_id,
     }
 
 
@@ -1413,12 +1407,12 @@ async def update_access_request_endpoint(request_id: int, request: Request):
     """Update access request status."""
     data = await request.json()
     status = data.get("status", "").strip()
-    
+
     if status not in ["approved", "rejected", "pending"]:
         raise HTTPException(400, "Ungültiger Status")
-    
+
     update_access_request_status(request_id, status)
-    
+
     return {"message": f"Zugriffsanfrage wurde {status}"}
 
 
@@ -1437,9 +1431,12 @@ async def export_mediakit_pdf():
         # We'll use a library to generate PDF from HTML
         # For now, return a placeholder response
         # In production, you'd use something like weasyprint or pdfkit
-        
-        raise HTTPException(501, "PDF Export wird in Kürze verfügbar sein. Bitte verwenden Sie vorerst die Browser-Druckfunktion (Strg+P).")
-        
+
+        raise HTTPException(
+            501,
+            "PDF Export wird in Kürze verfügbar sein. Bitte verwenden Sie vorerst die Browser-Druckfunktion (Strg+P).",
+        )
+
     except Exception as e:
         logging.error(f"Error exporting PDF: {e}")
         raise HTTPException(500, "Fehler beim Exportieren des PDFs")
@@ -1462,15 +1459,15 @@ async def create_new_mediakit_block(request: Request):
     """Create a new media kit block."""
     try:
         data = await request.json()
-        block_type = data.get('block_type')
-        title = data.get('title')
-        content = data.get('content')
-        settings = data.get('settings', {})
-        position = data.get('position')
-        
+        block_type = data.get("block_type")
+        title = data.get("title")
+        content = data.get("content")
+        settings = data.get("settings", {})
+        position = data.get("position")
+
         if not block_type:
             return JSONResponse(status_code=400, content={"detail": "block_type is required"})
-        
+
         block_id = create_mediakit_block(block_type, title, content, settings, position)
         return {"success": True, "block_id": block_id}
     except Exception as e:
@@ -1483,11 +1480,11 @@ async def update_existing_mediakit_block(block_id: int, request: Request):
     """Update a media kit block."""
     try:
         data = await request.json()
-        title = data.get('title')
-        content = data.get('content')
-        settings = data.get('settings')
-        is_visible = data.get('is_visible')
-        
+        title = data.get("title")
+        content = data.get("content")
+        settings = data.get("settings")
+        is_visible = data.get("is_visible")
+
         update_mediakit_block(block_id, title, content, settings, is_visible)
         return {"success": True}
     except Exception as e:
@@ -1511,7 +1508,7 @@ async def reorder_blocks(request: Request):
     """Reorder media kit blocks."""
     try:
         data = await request.json()
-        block_positions = data.get('blocks', [])
+        block_positions = data.get("blocks", [])
         reorder_mediakit_blocks(block_positions)
         return {"success": True}
     except Exception as e:

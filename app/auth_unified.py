@@ -2,6 +2,7 @@
 Unified Authentication Module
 Combines basic auth (legacy) with enhanced password hashing, 2FA, and session management.
 """
+
 import os
 import secrets
 import base64
@@ -42,11 +43,33 @@ REQUIRE_SPECIAL = True
 
 # List of common weak passwords to warn about
 WEAK_PASSWORDS = {
-    "admin", "password", "123456", "12345678", "qwerty", "abc123",
-    "monkey", "1234567", "letmein", "trustno1", "dragon", "baseball",
-    "iloveyou", "master", "sunshine", "ashley", "bailey", "passw0rd",
-    "shadow", "123123", "654321", "superman", "qazwsx", "michael",
-    "football", "password1", "super-sicheres-passwort-123",
+    "admin",
+    "password",
+    "123456",
+    "12345678",
+    "qwerty",
+    "abc123",
+    "monkey",
+    "1234567",
+    "letmein",
+    "trustno1",
+    "dragon",
+    "baseball",
+    "iloveyou",
+    "master",
+    "sunshine",
+    "ashley",
+    "bailey",
+    "passw0rd",
+    "shadow",
+    "123123",
+    "654321",
+    "superman",
+    "qazwsx",
+    "michael",
+    "football",
+    "password1",
+    "super-sicheres-passwort-123",
 }
 
 
@@ -54,14 +77,15 @@ WEAK_PASSWORDS = {
 # Password Hashing & Validation
 # ============================================================================
 
+
 def hash_password(password: str) -> str:
     """
     Hash a password using bcrypt.
     Pre-hashes with SHA256 if password > 72 bytes to work around bcrypt limitation.
     """
     # Bcrypt has a 72-byte limit, so we pre-hash with SHA256 for long passwords
-    if len(password.encode('utf-8')) > 72:
-        password = hashlib.sha256(password.encode('utf-8')).hexdigest()
+    if len(password.encode("utf-8")) > 72:
+        password = hashlib.sha256(password.encode("utf-8")).hexdigest()
     return pwd_context.hash(password)
 
 
@@ -72,8 +96,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     try:
         # Pre-hash if password is too long
-        if len(plain_password.encode('utf-8')) > 72:
-            plain_password = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
+        if len(plain_password.encode("utf-8")) > 72:
+            plain_password = hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
         return pwd_context.verify(plain_password, hashed_password)
     except Exception as e:
         logger.error(f"Password verification error: {e}")
@@ -87,27 +111,33 @@ def validate_password_strength(password: str) -> Tuple[bool, str]:
     """
     if len(password) < MIN_PASSWORD_LENGTH:
         return False, f"Password must be at least {MIN_PASSWORD_LENGTH} characters long"
-    
+
     if REQUIRE_UPPERCASE and not any(c.isupper() for c in password):
         return False, "Password must contain at least one uppercase letter"
-    
+
     if REQUIRE_LOWERCASE and not any(c.islower() for c in password):
         return False, "Password must contain at least one lowercase letter"
-    
+
     if REQUIRE_DIGIT and not any(c.isdigit() for c in password):
         return False, "Password must contain at least one digit"
-    
+
     if REQUIRE_SPECIAL and not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password):
         return False, "Password must contain at least one special character"
-    
+
     # Check against common passwords
     common_passwords = {
-        "password123!", "Password123!", "Admin123!", "Welcome123!", "P@ssw0rd123",
-        "Change.me123", "Default123!", "Super-sicheres-passwort-123"
+        "password123!",
+        "Password123!",
+        "Admin123!",
+        "Welcome123!",
+        "P@ssw0rd123",
+        "Change.me123",
+        "Default123!",
+        "Super-sicheres-passwort-123",
     }
     if password in common_passwords:
         return False, "This password is too common. Please choose a more unique password"
-    
+
     return True, ""
 
 
@@ -140,13 +170,10 @@ def validate_admin_password_on_startup():
         )
         validate_admin_password()
         return False
-    
+
     if REQUIRE_2FA and not totp_secrets.get(ADMIN_USERNAME):
-        logger.warning(
-            "⚠️  2FA is enabled but no secret is configured. "
-            "Please set up 2FA through the admin panel."
-        )
-    
+        logger.warning("⚠️  2FA is enabled but no secret is configured. " "Please set up 2FA through the admin panel.")
+
     logger.info("✓ Password security validated")
     return True
 
@@ -155,11 +182,12 @@ def validate_admin_password_on_startup():
 # Session Management
 # ============================================================================
 
+
 def create_session(username: str, remember_me: bool = False) -> str:
     """Create a new session and return session token."""
     session_token = secrets.token_urlsafe(32)
     expiry_hours = SESSION_EXPIRY_HOURS * 7 if remember_me else SESSION_EXPIRY_HOURS
-    
+
     sessions[session_token] = {
         "username": username,
         "created_at": datetime.now(timezone.utc),
@@ -167,7 +195,7 @@ def create_session(username: str, remember_me: bool = False) -> str:
         "ip": None,  # Set by caller
         "user_agent": None,  # Set by caller
     }
-    
+
     return session_token
 
 
@@ -178,14 +206,14 @@ def validate_session(session_token: str) -> Optional[str]:
     """
     if session_token not in sessions:
         return None
-    
+
     session = sessions[session_token]
-    
+
     # Check expiry
     if datetime.now(timezone.utc) > session["expires_at"]:
         del sessions[session_token]
         return None
-    
+
     return session["username"]
 
 
@@ -201,7 +229,7 @@ def cleanup_expired_sessions():
     expired = [token for token, session in sessions.items() if now > session["expires_at"]]
     for token in expired:
         del sessions[token]
-    
+
     if expired:
         logger.info(f"Cleaned up {len(expired)} expired sessions")
 
@@ -216,7 +244,7 @@ def get_session_info(session_token: str) -> Optional[Dict]:
     """Get information about a session."""
     if session_token not in sessions:
         return None
-    
+
     session = sessions[session_token]
     return {
         "username": session["username"],
@@ -231,6 +259,7 @@ def get_session_info(session_token: str) -> Optional[Dict]:
 # Two-Factor Authentication
 # ============================================================================
 
+
 def generate_2fa_secret(username: str) -> str:
     """Generate a new 2FA secret for a user."""
     secret = pyotp.random_base32()
@@ -242,7 +271,7 @@ def get_2fa_qr_code_url(username: str, app_name: str = "Link-in-Bio") -> Optiona
     """Get the QR code provisioning URL for 2FA setup."""
     if username not in totp_secrets:
         return None
-    
+
     totp = pyotp.TOTP(totp_secrets[username])
     return totp.provisioning_uri(name=username, issuer_name=app_name)
 
@@ -251,7 +280,7 @@ def verify_2fa_code(username: str, code: str) -> bool:
     """Verify a 2FA code for a user."""
     if username not in totp_secrets:
         return False
-    
+
     totp = pyotp.TOTP(totp_secrets[username])
     return totp.verify(code, valid_window=1)  # Allow 30s window
 
@@ -259,6 +288,7 @@ def verify_2fa_code(username: str, code: str) -> bool:
 # ============================================================================
 # Authentication Checks
 # ============================================================================
+
 
 async def check_auth_basic(request: Request) -> Optional[str]:
     """
@@ -276,15 +306,15 @@ async def check_auth_basic(request: Request) -> Optional[str]:
 
         if username != ADMIN_USERNAME:
             return None
-        
+
         # Try hashed password first (preferred)
         if ADMIN_PASSWORD_HASH and verify_password(password, ADMIN_PASSWORD_HASH):
             return username
-        
+
         # Fallback to plain password comparison (legacy)
         if secrets.compare_digest(password, ADMIN_PASSWORD):
             return username
-        
+
         return None
     except Exception as e:
         logger.error(f"Basic auth error: {e}")
@@ -303,10 +333,10 @@ async def check_auth_session(request: Request) -> Optional[str]:
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
             session_token = auth_header.split(" ")[1]
-    
+
     if not session_token:
         return None
-    
+
     return validate_session(session_token)
 
 
@@ -319,7 +349,7 @@ async def check_auth(request: Request) -> Optional[str]:
     username = await check_auth_session(request)
     if username:
         return username
-    
+
     # Fallback to basic auth (for API clients and backward compatibility)
     return await check_auth_basic(request)
 
@@ -327,9 +357,5 @@ async def check_auth(request: Request) -> Optional[str]:
 def require_auth(username: str = Depends(check_auth)):
     """Dependency that requires authentication."""
     if username is None:
-        raise HTTPException(
-            status_code=401,
-            detail="Nicht authentifiziert",
-            headers={"WWW-Authenticate": "Basic"}
-        )
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert", headers={"WWW-Authenticate": "Basic"})
     return username

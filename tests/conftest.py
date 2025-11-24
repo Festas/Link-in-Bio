@@ -1,6 +1,7 @@
 """
 Shared pytest fixtures for testing.
 """
+
 import os
 import tempfile
 import pytest
@@ -8,9 +9,9 @@ from fastapi.testclient import TestClient
 
 # Set up test database before importing main
 test_db_fd, test_db_path = tempfile.mkstemp()
-os.environ['DATABASE_FILE'] = test_db_path
-os.environ['ADMIN_USERNAME'] = 'testadmin'
-os.environ['ADMIN_PASSWORD'] = 'test_password_12345'
+os.environ["DATABASE_FILE"] = test_db_path
+os.environ["ADMIN_USERNAME"] = "testadmin"
+os.environ["ADMIN_PASSWORD"] = "test_password_12345"
 
 from main import app
 from app.database import init_db, get_db_connection
@@ -35,6 +36,7 @@ def client(test_app):
 def auth_headers():
     """Create authentication headers for testing."""
     import base64
+
     credentials = base64.b64encode(b"testadmin:test_password_12345").decode("utf-8")
     return {"Authorization": f"Basic {credentials}"}
 
@@ -62,22 +64,13 @@ def clean_db():
 @pytest.fixture
 def sample_item_data():
     """Sample item data for testing."""
-    return {
-        "title": "Test Link",
-        "url": "https://example.com",
-        "item_type": "link"
-    }
+    return {"title": "Test Link", "url": "https://example.com", "item_type": "link"}
 
 
 @pytest.fixture
 def sample_settings():
     """Sample settings data for testing."""
-    return {
-        "title": "Test Bio",
-        "bio": "Test Description",
-        "theme": "theme-dark",
-        "button_style": "style-rounded"
-    }
+    return {"title": "Test Bio", "bio": "Test Description", "theme": "theme-dark", "button_style": "style-rounded"}
 
 
 def pytest_sessionfinish(session, exitstatus):

@@ -368,7 +368,7 @@ class SpecialPageEditor {
                 },
                 body: JSON.stringify({
                     content: block.content,
-                    settings: { ...block.settings, is_visible: block.is_visible }
+                    settings: block.settings || {}
                 })
             });
             

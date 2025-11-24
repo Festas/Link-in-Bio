@@ -42,7 +42,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for key, info in special_pages.items() %}
             <a href="/admin/{{ key }}" 
-               class="bg-gray-800 hover:bg-gray-750 rounded-lg shadow-lg p-6 border border-gray-700 hover:border-blue-500 transition-all group">
+               class="bg-gray-800 hover:bg-gray-700 rounded-lg shadow-lg p-6 border border-gray-700 hover:border-blue-500 transition-all group">
                 <div class="flex items-start space-x-4">
                     <div class="bg-blue-600 group-hover:bg-blue-500 rounded-lg p-3">
                         <i data-lucide="{{ info.icon }}" class="w-6 h-6 text-white"></i>

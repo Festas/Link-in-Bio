@@ -217,16 +217,20 @@
         }
         
         // Mobile navigation toggle
-        document.getElementById('mobile-nav-toggle')?.addEventListener('click', () => {
-            const menu = document.getElementById('mobile-nav-menu');
-            menu.classList.toggle('hidden');
-        });
+        const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+        const mobileNavMenu = document.getElementById('mobile-nav-menu');
+        
+        if (mobileNavToggle && mobileNavMenu) {
+            mobileNavToggle.addEventListener('click', () => {
+                mobileNavMenu.classList.toggle('hidden');
+            });
+        }
         
         // Close mobile menu when clicking outside
         document.addEventListener('click', (e) => {
             const menu = document.getElementById('mobile-nav-menu');
             const toggle = document.getElementById('mobile-nav-toggle');
-            if (!menu.contains(e.target) && !toggle.contains(e.target)) {
+            if (menu && toggle && !menu.contains(e.target) && !toggle.contains(e.target)) {
                 menu.classList.add('hidden');
             }
         });

@@ -9,11 +9,12 @@ export function socialIconSVG(name, classes = '') {
                 </svg>
             `.trim();
             
-        case 'instagram':
+        case 'instagram': {
+            const gradientId = `ig-gradient-${Math.random().toString(36).substr(2, 9)}`;
             return `
                 <svg ${cls} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <defs>
-                        <radialGradient id="ig-gradient-${Math.random().toString(36).substr(2, 9)}" cx="0.2" cy="1" r="1.2">
+                        <radialGradient id="${gradientId}" cx="0.2" cy="1" r="1.2">
                             <stop offset="0%" stop-color="#f09433"/>
                             <stop offset="25%" stop-color="#e6683c"/>
                             <stop offset="50%" stop-color="#dc2743"/>
@@ -21,11 +22,12 @@ export function socialIconSVG(name, classes = '') {
                             <stop offset="100%" stop-color="#bc1888"/>
                         </radialGradient>
                     </defs>
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="url(#ig-gradient-${Math.random().toString(36).substr(2, 9)})"/>
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="url(#${gradientId})"/>
                     <path d="M16 8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" fill="white"/>
                     <circle cx="12" cy="12" r="4" stroke="white" stroke-width="2" fill="none"/>
                 </svg>
             `.trim();
+        }
             
         case 'tiktok':
             return `

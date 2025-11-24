@@ -1,6 +1,24 @@
 # Link-in-Bio 🎮⚡
 
-Eine moderne, selbst-gehostete Link-in-Bio Lösung ähnlich wie Linktree & Beacons.ai - gebaut mit FastAPI und modernen Web-Technologien. Optimiert für Content Creators, Influencer und Gaming-Enthusiasten.
+Eine moderne, selbst-gehostete Link-in-Bio Lösung die **besser als Linktree & Beacons.ai** ist - gebaut mit FastAPI und modernen Web-Technologien. Optimiert für Content Creators, Influencer und Gaming-Enthusiasten.
+
+## 🏆 Warum besser als die Konkurrenz?
+
+| Feature | Link-in-Bio | Beacons.ai | Linktree |
+|---------|-------------|------------|----------|
+| **💰 Transaction Fees** | ✅ **0% Forever** | ❌ 2.5-9% | ❌ 2-5% |
+| **🏠 Self-Hosted** | ✅ **Full Control** | ❌ Cloud Only | ❌ Cloud Only |
+| **🔐 2FA Security** | ✅ **Free** | ⚠️ Paid Only | ⚠️ Paid Only |
+| **📊 Advanced Analytics** | ✅ **Free** | ✅ Yes | ⚠️ $9-24/mo |
+| **📄 Media Kit** | ✅ **Free** | ✅ Yes | ❌ No |
+| **🎨 Custom CSS** | ✅ **Full Control** | ❌ Limited | ❌ Limited |
+| **📁 Multiple Pages** | ✅ **Unlimited** | ❌ Single | ❌ Single |
+| **💾 Data Ownership** | ✅ **100% Yours** | ❌ No | ❌ No |
+| **🔓 Open Source** | ✅ **MIT License** | ❌ Proprietary | ❌ Proprietary |
+
+**💵 Cost Savings:** $300-5,000/year in transaction fees saved!
+
+👉 **[Full Competitive Analysis](./docs/COMPETITIVE_ANALYSIS_2025.md)** | **[Migration Guide](./docs/MIGRATION_GUIDE.md)**
 
 ## ✨ Features
 
@@ -27,7 +45,7 @@ Eine moderne, selbst-gehostete Link-in-Bio Lösung ähnlich wie Linktree & Beaco
 - 🎨 **Event System**: Custom event tracking for any action
 - 🔄 **Session Management**: Secure session-based authentication
 
-👉 **[See all enhanced features](./ENHANCED_FEATURES.md)** | **[Competitive analysis vs Beacons.ai](./OPTIMIZATION_ANALYSIS.md)**
+👉 **[See all enhanced features](./docs/ENHANCED_FEATURES.md)** | **[Competitive Analysis 2025](./docs/COMPETITIVE_ANALYSIS_2025.md)** | **[Migrate from Linktree/Beacons](./docs/MIGRATION_GUIDE.md)**
 
 ## 🚀 Quick Start
 

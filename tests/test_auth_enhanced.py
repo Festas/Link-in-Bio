@@ -15,7 +15,7 @@ from app.auth_unified import (
     cleanup_expired_sessions,
 )
 import pyotp
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class TestPasswordHashing:

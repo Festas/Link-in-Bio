@@ -1,0 +1,46 @@
+<!-- Video Block -->
+{% set video_data = block.content|from_json if block.content else {} %}
+<div class="glass-card p-6 sm:p-8 rounded-xl mb-6">
+    {% if block.title %}
+    <h2 class="text-2xl sm:text-3xl font-bold mb-6 text-center border-b border-gray-600 pb-3">
+        {{ block.title }}
+    </h2>
+    {% endif %}
+    
+    {% if video_data.video_url %}
+    <div class="aspect-video rounded-lg overflow-hidden bg-gray-900/50 mb-4">
+        {% if 'youtube.com' in video_data.video_url or 'youtu.be' in video_data.video_url %}
+            {% set youtube_parts = video_data.video_url.split('v=') %}
+            {% if youtube_parts|length > 1 and youtube_parts[1] %}
+                {% set youtube_id = youtube_parts[1].split('&')[0] %}
+            {% elif '/' in video_data.video_url %}
+                {% set youtube_id = video_data.video_url.split('/')[-1].split('?')[0] %}
+            {% else %}
+                {% set youtube_id = '' %}
+            {% endif %}
+            {% if youtube_id %}
+            <iframe src="https://www.youtube.com/embed/{{ youtube_id }}" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            {% endif %}
+        {% elif 'vimeo.com' in video_data.video_url %}
+            {% set vimeo_parts = video_data.video_url.split('/') %}
+            {% if vimeo_parts|length > 0 %}
+                {% set vimeo_id = vimeo_parts[-1].split('?')[0] %}
+                {% if vimeo_id and vimeo_id.isdigit() %}
+                <iframe src="https://player.vimeo.com/video/{{ vimeo_id }}" class="w-full h-full" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+                {% endif %}
+            {% endif %}
+        {% else %}
+            <video controls class="w-full h-full" {% if video_data.thumbnail %}poster="{{ video_data.thumbnail|e }}"{% endif %}>
+                <source src="{{ video_data.video_url|e }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% if video_data.description %}
+    <p class="text-base opacity-80 text-center" style="color: var(--color-text-muted);">
+        {{ video_data.description|e }}
+    </p>
+    {% endif %}
+</div>

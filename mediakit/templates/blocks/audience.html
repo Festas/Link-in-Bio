@@ -1,0 +1,83 @@
+<!-- Audience Block -->
+{% set audience_data = block.content|from_json if block.content else {} %}
+<div class="glass-card p-6 sm:p-8 rounded-xl mb-6">
+    {% if block.title %}
+    <h2 class="text-2xl sm:text-3xl font-bold mb-6 text-center border-b border-gray-600 pb-3">
+        {{ block.title }}
+    </h2>
+    {% endif %}
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Age Distribution -->
+        <div class="p-4 bg-gradient-to-br from-cyan-900/20 to-blue-900/20 rounded-lg border border-cyan-500/30">
+            <h3 class="text-lg font-semibold mb-4 text-cyan-300">
+                <i data-lucide="calendar" class="w-5 h-5 inline-block mr-2"></i>
+                Altersverteilung
+            </h3>
+            <div class="space-y-3">
+                {% if audience_data.age_18_24 %}
+                {% set age_18_24_pct = audience_data.age_18_24|int|default(0) %}
+                {% if age_18_24_pct >= 0 and age_18_24_pct <= 100 %}
+                <div class="flex items-center justify-between">
+                    <span class="text-sm" style="color: var(--color-text-muted);">18-24 Jahre</span>
+                    <div class="flex items-center">
+                        <div class="w-32 h-2 bg-gray-700 rounded-full overflow-hidden mr-3">
+                            <div class="h-full bg-gradient-to-r from-cyan-400 to-blue-400" style="width: {{ age_18_24_pct }}%"></div>
+                        </div>
+                        <span class="text-sm font-semibold text-cyan-400">{{ age_18_24_pct }}%</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                {# Repeat for other age groups #}
+            </div>
+        </div>
+        
+        <!-- Gender Distribution -->
+        <div class="p-4 bg-gradient-to-br from-purple-900/20 to-pink-900/20 rounded-lg border border-purple-500/30">
+            <h3 class="text-lg font-semibold mb-4 text-purple-300">
+                <i data-lucide="users" class="w-5 h-5 inline-block mr-2"></i>
+                Geschlecht
+            </h3>
+            <div class="space-y-3">
+                {% if audience_data.gender_female %}
+                {% set gender_female_pct = audience_data.gender_female|int|default(0) %}
+                {% if gender_female_pct >= 0 and gender_female_pct <= 100 %}
+                <div class="flex items-center justify-between">
+                    <span class="text-sm" style="color: var(--color-text-muted);">Weiblich</span>
+                    <div class="flex items-center">
+                        <div class="w-32 h-2 bg-gray-700 rounded-full overflow-hidden mr-3">
+                            <div class="h-full bg-gradient-to-r from-purple-400 to-pink-400" style="width: {{ gender_female_pct }}%"></div>
+                        </div>
+                        <span class="text-sm font-semibold text-purple-400">{{ gender_female_pct }}%</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    {% if audience_data.top_countries or audience_data.top_cities %}
+    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {% if audience_data.top_countries %}
+        <div class="p-4 bg-white/5 rounded-lg">
+            <h4 class="text-sm font-semibold mb-3 text-cyan-300">
+                <i data-lucide="map" class="w-4 h-4 inline-block mr-1"></i>
+                Top Länder
+            </h4>
+            <p class="text-sm opacity-80">{{ audience_data.top_countries|e }}</p>
+        </div>
+        {% endif %}
+        {% if audience_data.top_cities %}
+        <div class="p-4 bg-white/5 rounded-lg">
+            <h4 class="text-sm font-semibold mb-3 text-cyan-300">
+                <i data-lucide="map-pin" class="w-4 h-4 inline-block mr-1"></i>
+                Top Städte
+            </h4>
+            <p class="text-sm opacity-80">{{ audience_data.top_cities|e }}</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>

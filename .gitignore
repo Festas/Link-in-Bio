@@ -116,3 +116,7 @@ test_mediakit_feature.py
 # Keep documentation organized
 !docs/
 !docs/archive/
+
+# Media Kit generated files
+mediakit/generated/
+mediakit/Instagram/

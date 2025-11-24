@@ -1,0 +1,54 @@
+{
+  "brand_name": "Your Brand Name",
+  "colors": {
+    "primary": "#06b6d4",
+    "secondary": "#3b82f6",
+    "accent": "#8b5cf6",
+    "text": "#ffffff",
+    "text_muted": "#94a3b8",
+    "background": "#0f172a",
+    "card_bg": "rgba(30, 41, 59, 0.5)"
+  },
+  "fonts": {
+    "heading": "Inter, system-ui, -apple-system, sans-serif",
+    "body": "Inter, system-ui, -apple-system, sans-serif",
+    "mono": "ui-monospace, monospace"
+  },
+  "logo": {
+    "url": "/static/uploads/logo.png",
+    "alt": "Brand Logo",
+    "width": 120,
+    "height": 120
+  },
+  "contact": {
+    "email": "contact@example.com",
+    "phone": "",
+    "website": "https://example.com"
+  },
+  "social_handles": {
+    "instagram": "",
+    "tiktok": "",
+    "youtube": "",
+    "twitter": "",
+    "twitch": ""
+  },
+  "language": "de",
+  "currency": "EUR",
+  "templates": {
+    "default": "default.html",
+    "pdf": "pdf.html",
+    "email": "email.html"
+  },
+  "features": {
+    "show_stats": true,
+    "show_partners": true,
+    "show_rates": true,
+    "show_audience_demographics": true,
+    "show_video_pitch": true
+  },
+  "metadata": {
+    "title": "Media Kit",
+    "description": "Professional Media Kit showcasing reach, engagement, and collaboration opportunities",
+    "keywords": "influencer, media kit, collaboration, brand partnerships"
+  }
+}

@@ -1,0 +1,16 @@
+<!-- Text Block -->
+<div class="glass-card p-6 sm:p-8 rounded-xl mb-6">
+    {% if block.title %}
+    <h2 class="text-2xl sm:text-3xl font-bold mb-4 border-b border-gray-600 pb-3">
+        {{ block.title }}
+    </h2>
+    {% endif %}
+    
+    {% if block.content %}
+    <div class="prose prose-invert max-w-none">
+        <p class="text-base sm:text-lg leading-relaxed opacity-90 whitespace-pre-wrap">
+            {{ block.content }}
+        </p>
+    </div>
+    {% endif %}
+</div>

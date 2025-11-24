@@ -1,0 +1,36 @@
+<!-- Hero Block -->
+{% set hero_data = block.content|from_json if block.content else {} %}
+<div class="glass-card p-6 sm:p-8 md:p-10 rounded-xl mb-6 text-center">
+    {% if hero_data.image_url %}
+    <div class="flex justify-center mb-6">
+        <div class="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-4 border-cyan-500/30 shadow-xl">
+            <img src="{{ hero_data.image_url }}" alt="Profile" class="w-full h-full object-cover">
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if block.title %}
+    <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 gradient-text">
+        {{ block.title }}
+    </h1>
+    {% endif %}
+    
+    {% if hero_data.tagline %}
+    <p class="text-lg sm:text-xl opacity-90 mb-4" style="color: var(--color-text-muted);">
+        {{ hero_data.tagline }}
+    </p>
+    {% endif %}
+    
+    {% if hero_data.location %}
+    <p class="text-sm opacity-70 mb-4" style="color: var(--color-text-muted);">
+        <i data-lucide="map-pin" class="w-4 h-4 inline-block mr-1"></i>
+        {{ hero_data.location }}
+    </p>
+    {% endif %}
+    
+    {% if hero_data.description %}
+    <p class="text-base opacity-80 max-w-2xl mx-auto leading-relaxed">
+        {{ hero_data.description }}
+    </p>
+    {% endif %}
+</div>

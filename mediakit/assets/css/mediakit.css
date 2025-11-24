@@ -1,0 +1,51 @@
+/* Media Kit Custom Styles */
+
+:root {
+    --mk-primary: #06b6d4;
+    --mk-secondary: #3b82f6;
+    --mk-accent: #8b5cf6;
+    --mk-text: #ffffff;
+    --mk-text-muted: #94a3b8;
+    --mk-bg: #0f172a;
+    --mk-card-bg: rgba(30, 41, 59, 0.5);
+}
+
+/* Override from branding.json */
+.mediakit-container {
+    color: var(--mk-text);
+    background: var(--mk-bg);
+}
+
+.mk-card {
+    background: var(--mk-card-bg);
+    backdrop-filter: blur(10px);
+}
+
+.mk-heading {
+    color: var(--mk-primary);
+}
+
+.mk-button-primary {
+    background: linear-gradient(135deg, var(--mk-primary), var(--mk-secondary));
+}
+
+.mk-button-primary:hover {
+    opacity: 0.9;
+}
+
+/* Print styles for PDF generation */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .mk-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    
+    body {
+        background: white;
+        color: black;
+    }
+}

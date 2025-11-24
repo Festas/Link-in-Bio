@@ -380,7 +380,7 @@ def init_custom_pages_db():
                         default_bio = settings.get("bio", default_bio)
                         default_image = settings.get("image_url", default_image)
                         default_bg = settings.get("bg_image_url", default_bg)
-                except (sqlite3.Error, sqlite3.OperationalError):
+                except sqlite3.Error:
                     # If main database doesn't have settings table yet or other DB error, use defaults
                     pass
 
@@ -535,8 +535,15 @@ def cleanup_orphaned_references():
         with get_custom_pages_db_connection() as pages_conn:
             pages_cursor = pages_conn.cursor()
             pages_cursor.execute("SELECT id FROM pages")
-            # Ensure all IDs are integers for safety
-            valid_page_ids = tuple(int(row[0]) for row in pages_cursor.fetchall())
+            # Ensure all IDs are integers for safety, skip any invalid entries
+            valid_page_ids = []
+            for row in pages_cursor.fetchall():
+                try:
+                    valid_page_ids.append(int(row[0]))
+                except (ValueError, TypeError):
+                    # Skip corrupted entries
+                    continue
+            valid_page_ids = tuple(valid_page_ids)
 
         # Clean up items with invalid page_id
         if valid_page_ids:

@@ -8,6 +8,7 @@ services:
       - ./linktree.db:/app/linktree.db
       - ./special_pages.db:/app/special_pages.db
       - ./pages.db:/app/pages.db
+      - ./mediakit.db:/app/mediakit.db
       - ./static/uploads:/app/static/uploads
       # Die .env Datei wird auf dem Server erstellt/hinterlegt
       - ./.env:/app/.env

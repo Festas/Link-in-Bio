@@ -1,4 +1,4 @@
-.PHONY: help install dev test lint format clean run docker-build docker-up docker-down
+.PHONY: help install dev test lint format clean run docker-build docker-up docker-down ensure-db
 
 help:  ## Show this help message
 	@echo 'Usage: make [target]'
@@ -44,7 +44,14 @@ run:  ## Run development server
 docker-build:  ## Build Docker image
 	docker-compose build
 
-docker-up:  ## Start Docker containers
+ensure-db:  ## Ensure all database files exist before Docker start
+	@if [ -f ensure_databases.sh ]; then \
+		chmod +x ensure_databases.sh && ./ensure_databases.sh; \
+	else \
+		echo "Warning: ensure_databases.sh not found, skipping database check"; \
+	fi
+
+docker-up: ensure-db  ## Start Docker containers (ensures databases exist first)
 	docker-compose up -d
 
 docker-down:  ## Stop Docker containers

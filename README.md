@@ -112,8 +112,15 @@ cp .env.example .env
 
 3. **Container starten**
 ```bash
+# Empfohlen: Nutze make, um sicherzustellen dass alle Datenbanken vorhanden sind
+make docker-up
+
+# Oder manuell:
+./ensure_databases.sh  # Prüft/erstellt fehlende Datenbank-Dateien
 docker-compose up -d
 ```
+
+> **Hinweis**: `make docker-up` prüft automatisch ob alle Datenbank-Dateien (linktree.db, special_pages.db, pages.db, mediakit.db) vorhanden sind und erstellt sie falls nötig. Dies verhindert Fehler nach dem Löschen von Datenbanken.
 
 4. **Automatisches SSL**: Caddy konfiguriert automatisch Let's Encrypt SSL-Zertifikate
 

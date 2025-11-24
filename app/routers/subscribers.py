@@ -2,6 +2,7 @@
 Subscribers Router
 Handles subscriber management, exports, and contact messages.
 """
+
 import csv
 import io
 from datetime import datetime
@@ -23,7 +24,9 @@ router = APIRouter()
 async def get_subscribers(user=Depends(require_auth)):
     """Get all subscribers."""
     with get_db_connection() as conn:
-        rows = conn.execute("SELECT id, email, subscribed_at, redirect_page_id FROM subscribers ORDER BY subscribed_at DESC").fetchall()
+        rows = conn.execute(
+            "SELECT id, email, subscribed_at, redirect_page_id FROM subscribers ORDER BY subscribed_at DESC"
+        ).fetchall()
         return [dict(r) for r in rows]
 
 
@@ -69,11 +72,11 @@ async def export_subscribers_excel(user=Depends(require_auth)):
     # Add headers with styling
     headers = ["Email", "Subscribed At"]
     ws.append(headers)
-    
+
     # Style the header row
     header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
     header_font = Font(bold=True, color="FFFFFF")
-    
+
     for cell in ws[1]:
         cell.fill = header_fill
         cell.font = header_font
@@ -83,8 +86,8 @@ async def export_subscribers_excel(user=Depends(require_auth)):
         ws.append([sub[0], sub[1]])
 
     # Auto-adjust column widths
-    ws.column_dimensions['A'].width = 40
-    ws.column_dimensions['B'].width = 25
+    ws.column_dimensions["A"].width = 40
+    ws.column_dimensions["B"].width = 25
 
     # Save to BytesIO
     output = io.BytesIO()

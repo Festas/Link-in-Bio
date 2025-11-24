@@ -2,6 +2,7 @@
 Item Management Router
 Handles CRUD operations for items (links, videos, headers, etc.).
 """
+
 from fastapi import APIRouter, HTTPException, Depends, Response, BackgroundTasks
 from typing import Optional, List
 
@@ -22,9 +23,11 @@ router = APIRouter()
 
 # --- Helper Functions ---
 
+
 async def background_scrape_and_update(item_id: int, url: str):
     """Background task to scrape link details and update item."""
     import logging
+
     logger = logging.getLogger(__name__)
     try:
         details = await scrape_link_details(url)

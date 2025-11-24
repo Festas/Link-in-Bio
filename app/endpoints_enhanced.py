@@ -2,6 +2,7 @@
 Enhanced API Endpoints for New Features
 Provides REST API for enhanced analytics, authentication, and caching.
 """
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from typing import Optional, List
 from datetime import datetime, timedelta
@@ -39,6 +40,7 @@ router = APIRouter()
 
 # ===== Authentication Endpoints =====
 
+
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -68,11 +70,11 @@ async def login(request: LoginRequest, http_request: Request, response: Response
     """Enhanced login with session management and 2FA support."""
     from .auth_unified import ADMIN_USERNAME, ADMIN_PASSWORD_HASH, REQUIRE_2FA, verify_password
     import os
-    
+
     # Validate credentials
     if request.username != ADMIN_USERNAME:
         return LoginResponse(success=False, message="Ungültige Anmeldedaten")
-    
+
     # Check password
     password_valid = False
     if ADMIN_PASSWORD_HASH:
@@ -81,21 +83,21 @@ async def login(request: LoginRequest, http_request: Request, response: Response
         # Fallback to plain password (migration period)
         plain_password = os.getenv("ADMIN_PASSWORD", "")
         password_valid = request.password == plain_password
-    
+
     if not password_valid:
         return LoginResponse(success=False, message="Ungültige Anmeldedaten")
-    
+
     # Check 2FA if enabled
     if REQUIRE_2FA:
         if not request.totp_code:
             return LoginResponse(success=False, requires_2fa=True, message="2FA Code erforderlich")
-        
+
         if not verify_2fa_code(request.username, request.totp_code):
             return LoginResponse(success=False, requires_2fa=True, message="Ungültiger 2FA Code")
-    
+
     # Create session
     session_token = create_session(request.username, request.remember_me)
-    
+
     # Set session cookie
     response.set_cookie(
         key="session_token",
@@ -105,7 +107,7 @@ async def login(request: LoginRequest, http_request: Request, response: Response
         samesite="lax",
         max_age=86400 * 7 if request.remember_me else 86400,
     )
-    
+
     return LoginResponse(success=True, session_token=session_token, message="Erfolgreich angemeldet")
 
 
@@ -115,20 +117,17 @@ async def logout(request: Request, response: Response):
     session_token = request.cookies.get("session_token")
     if session_token:
         invalidate_session(session_token)
-    
+
     response.delete_cookie("session_token")
     return {"success": True, "message": "Erfolgreich abgemeldet"}
 
 
 @router.post("/auth/change-password")
-async def change_password(
-    req: PasswordChangeRequest,
-    username: str = Depends(require_auth)
-):
+async def change_password(req: PasswordChangeRequest, username: str = Depends(require_auth)):
     """Change admin password."""
     from .auth_unified import ADMIN_PASSWORD_HASH, verify_password
     import os
-    
+
     # Verify current password
     if ADMIN_PASSWORD_HASH:
         if not verify_password(req.current_password, ADMIN_PASSWORD_HASH):
@@ -137,22 +136,22 @@ async def change_password(
         plain_password = os.getenv("ADMIN_PASSWORD", "")
         if req.current_password != plain_password:
             raise HTTPException(400, "Aktuelles Passwort ist falsch")
-    
+
     # Validate new password strength
     is_valid, error_msg = validate_password_strength(req.new_password)
     if not is_valid:
         raise HTTPException(400, error_msg)
-    
+
     # Hash new password
     new_hash = hash_password(req.new_password)
-    
+
     # In production, this should update the database or secure storage
     # For now, we'll return the hash for manual update
     return {
         "success": True,
         "message": "Passwort erfolgreich geändert",
         "new_hash": new_hash,
-        "instructions": "Bitte ADMIN_PASSWORD_HASH in .env auf diesen Wert setzen und Server neu starten"
+        "instructions": "Bitte ADMIN_PASSWORD_HASH in .env auf diesen Wert setzen und Server neu starten",
     }
 
 
@@ -161,10 +160,10 @@ async def setup_2fa(username: str = Depends(require_auth)):
     """Setup 2FA for user."""
     secret = generate_2fa_secret(username)
     qr_url = get_2fa_qr_code_url(username)
-    
+
     if not qr_url:
         raise HTTPException(500, "Fehler beim Generieren der QR-Code-URL")
-    
+
     return Setup2FAResponse(secret=secret, qr_code_url=qr_url)
 
 
@@ -183,6 +182,7 @@ async def get_sessions(username: str = Depends(require_auth)):
 
 
 # ===== Cache Management Endpoints =====
+
 
 @router.get("/cache/stats")
 async def get_cache_stats(username: str = Depends(require_auth)):
@@ -207,6 +207,7 @@ async def invalidate_cache(pattern: str, username: str = Depends(require_auth)):
 
 # ===== Enhanced Analytics Endpoints =====
 
+
 class TrackEventRequest(BaseModel):
     event_type: EventType
     session_id: Optional[str] = None
@@ -230,11 +231,11 @@ async def track_event(req: TrackEventRequest, request: Request):
     utm_params = {}
     if req.url:
         utm_params = extract_utm_params(req.url)
-    
+
     # Auto-detect some fields if not provided
     if not req.referer:
         req.referer = request.headers.get("referer")
-    
+
     if not req.device_type or not req.browser:
         user_agent = request.headers.get("user-agent", "")
         if "Mobile" in user_agent:
@@ -243,7 +244,7 @@ async def track_event(req: TrackEventRequest, request: Request):
             req.device_type = "tablet"
         else:
             req.device_type = "desktop"
-    
+
     # Create event
     event = AnalyticsEvent(
         event_type=req.event_type,
@@ -266,7 +267,7 @@ async def track_event(req: TrackEventRequest, request: Request):
         conversion_goal_id=req.conversion_goal_id,
         conversion_value=req.conversion_value,
     )
-    
+
     success = analytics.track_event(event)
     return {"success": success}
 
@@ -276,42 +277,32 @@ async def get_conversion_rate(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     conversion_goal_id: Optional[str] = None,
-    username: str = Depends(require_auth)
+    username: str = Depends(require_auth),
 ):
     """Get conversion rate statistics."""
     start = datetime.fromisoformat(start_date) if start_date else None
     end = datetime.fromisoformat(end_date) if end_date else None
-    
+
     stats = analytics.get_conversion_rate(start, end, conversion_goal_id)
     return stats
 
 
 @router.get("/analytics/funnel/{funnel_id}")
-async def get_funnel(
-    funnel_id: str,
-    days: int = 30,
-    username: str = Depends(require_auth)
-):
+async def get_funnel(funnel_id: str, days: int = 30, username: str = Depends(require_auth)):
     """Get funnel analytics."""
     stats = analytics.get_funnel_analytics(funnel_id, days)
     return stats
 
 
 @router.get("/analytics/utm-performance")
-async def get_utm_performance(
-    days: int = 30,
-    username: str = Depends(require_auth)
-):
+async def get_utm_performance(days: int = 30, username: str = Depends(require_auth)):
     """Get UTM campaign performance."""
     stats = analytics.get_utm_performance(days)
     return stats
 
 
 @router.get("/analytics/realtime")
-async def get_realtime(
-    minutes: int = 30,
-    username: str = Depends(require_auth)
-):
+async def get_realtime(minutes: int = 30, username: str = Depends(require_auth)):
     """Get real-time analytics."""
     stats = analytics.get_realtime_stats(minutes)
     return stats
@@ -327,10 +318,7 @@ class ConversionGoalRequest(BaseModel):
 
 
 @router.post("/analytics/conversion-goals")
-async def create_goal(
-    req: ConversionGoalRequest,
-    username: str = Depends(require_auth)
-):
+async def create_goal(req: ConversionGoalRequest, username: str = Depends(require_auth)):
     """Create a conversion goal."""
     goal = ConversionGoal(**req.dict())
     success = analytics.create_conversion_goal(goal)
@@ -338,6 +326,7 @@ async def create_goal(
 
 
 # ===== Health & Monitoring Endpoints =====
+
 
 @router.get("/system/health")
 async def system_health():
@@ -350,7 +339,7 @@ async def system_health():
             db_status = "healthy"
     except Exception as e:
         db_status = f"unhealthy: {str(e)}"
-    
+
     # Check cache
     try:
         cache_stats = cache_enhanced.get_stats()
@@ -358,7 +347,7 @@ async def system_health():
     except Exception as e:
         cache_status = f"unhealthy: {str(e)}"
         cache_stats = {}
-    
+
     return {
         "status": "healthy" if db_status == "healthy" and cache_status == "healthy" else "degraded",
         "database": db_status,
@@ -373,10 +362,10 @@ async def system_metrics(username: str = Depends(require_auth)):
     """Get system metrics."""
     import psutil
     import sys
-    
+
     # Get process info
     process = psutil.Process()
-    
+
     return {
         "cpu_percent": process.cpu_percent(interval=0.1),
         "memory_mb": process.memory_info().rss / 1024 / 1024,

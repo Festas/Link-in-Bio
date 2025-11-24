@@ -1,6 +1,7 @@
 """
 Tests for authentication and authorization.
 """
+
 import base64
 
 
@@ -35,10 +36,6 @@ def test_protected_endpoint_without_auth(client):
 
 def test_protected_endpoint_with_auth(client, auth_headers, clean_db):
     """Test that protected endpoints work with authentication."""
-    response = client.post(
-        "/api/links",
-        json={"url": "https://example.com"},
-        headers=auth_headers
-    )
+    response = client.post("/api/links", json={"url": "https://example.com"}, headers=auth_headers)
     # Should succeed (status 200) or fail with validation error, not 401
     assert response.status_code != 401

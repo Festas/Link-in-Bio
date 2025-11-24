@@ -2,6 +2,7 @@
 Page Management Router
 Handles CRUD operations for pages.
 """
+
 import re
 from fastapi import APIRouter, HTTPException, Depends, Response
 from typing import List
@@ -21,7 +22,7 @@ from ..cache_unified import cache
 router = APIRouter()
 
 # Slug validation pattern
-SLUG_PATTERN = re.compile(r'^[a-z0-9-]+$')
+SLUG_PATTERN = re.compile(r"^[a-z0-9-]+$")
 
 
 @router.get("", response_model=List[Page])
@@ -46,7 +47,7 @@ async def create_new_page(page_data: PageCreate, user=Depends(require_auth)):
     # Validate slug format
     if not SLUG_PATTERN.match(page_data.slug):
         raise HTTPException(400, "Slug darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten")
-    
+
     # Check if slug already exists
     existing = get_page_by_slug(page_data.slug)
     if existing:
@@ -72,7 +73,7 @@ async def update_existing_page(page_id: int, page_data: PageUpdate, user=Depends
         existing = get_page_by_slug(page_data.slug)
         if existing and existing["id"] != page_id:
             raise HTTPException(400, "Eine Seite mit diesem Slug existiert bereits")
-    
+
     updated = update_page(page_id, page_data.model_dump(exclude_unset=True))
     if not updated:
         raise HTTPException(404, "Page nicht gefunden")

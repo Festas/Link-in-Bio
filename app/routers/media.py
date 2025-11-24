@@ -2,6 +2,7 @@
 Media Management Router
 Handles file uploads and media management.
 """
+
 import os
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Depends, File, UploadFile
@@ -41,11 +42,11 @@ async def delete_media_file(filename: str, user=Depends(require_auth)):
     # Security: prevent path traversal
     if ".." in filename or "/" in filename or "\\" in filename:
         raise HTTPException(400, "Ungültiger Dateiname")
-    
+
     file_path = UPLOAD_DIR / filename
     if not file_path.exists():
         raise HTTPException(404, "Datei nicht gefunden")
-    
+
     try:
         file_path.unlink()
         return {"success": True}

@@ -14,11 +14,7 @@ class TestItemEndpoints:
 
     def test_create_link(self, client, auth_headers, clean_db):
         """Test creating a new link item."""
-        response = client.post(
-            "/api/links",
-            json={"url": "https://example.com"},
-            headers=auth_headers
-        )
+        response = client.post("/api/links", json={"url": "https://example.com"}, headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["item_type"] == "link"
@@ -27,11 +23,7 @@ class TestItemEndpoints:
 
     def test_create_header(self, client, auth_headers, clean_db):
         """Test creating a header item."""
-        response = client.post(
-            "/api/headers",
-            json={"title": "Test Header"},
-            headers=auth_headers
-        )
+        response = client.post("/api/headers", json={"title": "Test Header"}, headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["item_type"] == "header"
@@ -40,19 +32,11 @@ class TestItemEndpoints:
     def test_update_item(self, client, auth_headers, clean_db):
         """Test updating an item."""
         # First create an item
-        create_response = client.post(
-            "/api/headers",
-            json={"title": "Original Title"},
-            headers=auth_headers
-        )
+        create_response = client.post("/api/headers", json={"title": "Original Title"}, headers=auth_headers)
         item_id = create_response.json()["id"]
 
         # Then update it
-        update_response = client.put(
-            f"/api/items/{item_id}",
-            json={"title": "Updated Title"},
-            headers=auth_headers
-        )
+        update_response = client.put(f"/api/items/{item_id}", json={"title": "Updated Title"}, headers=auth_headers)
         assert update_response.status_code == 200
         data = update_response.json()
         assert data["title"] == "Updated Title"
@@ -60,18 +44,11 @@ class TestItemEndpoints:
     def test_delete_item(self, client, auth_headers, clean_db):
         """Test deleting an item."""
         # Create an item first
-        create_response = client.post(
-            "/api/headers",
-            json={"title": "To Delete"},
-            headers=auth_headers
-        )
+        create_response = client.post("/api/headers", json={"title": "To Delete"}, headers=auth_headers)
         item_id = create_response.json()["id"]
 
         # Delete it
-        delete_response = client.delete(
-            f"/api/items/{item_id}",
-            headers=auth_headers
-        )
+        delete_response = client.delete(f"/api/items/{item_id}", headers=auth_headers)
         assert delete_response.status_code == 204
 
         # Verify it's gone
@@ -82,19 +59,12 @@ class TestItemEndpoints:
     def test_toggle_visibility(self, client, auth_headers, clean_db):
         """Test toggling item visibility."""
         # Create an item
-        create_response = client.post(
-            "/api/headers",
-            json={"title": "Visibility Test"},
-            headers=auth_headers
-        )
+        create_response = client.post("/api/headers", json={"title": "Visibility Test"}, headers=auth_headers)
         item_id = create_response.json()["id"]
         original_state = create_response.json()["is_active"]
 
         # Toggle visibility
-        toggle_response = client.put(
-            f"/api/items/{item_id}/toggle_visibility",
-            headers=auth_headers
-        )
+        toggle_response = client.put(f"/api/items/{item_id}/toggle_visibility", headers=auth_headers)
         assert toggle_response.status_code == 200
         new_state = toggle_response.json()["is_active"]
         assert new_state != original_state
@@ -113,14 +83,7 @@ class TestSettingsEndpoints:
 
     def test_update_settings(self, client, auth_headers):
         """Test updating settings."""
-        response = client.put(
-            "/api/settings",
-            json={
-                "title": "New Title",
-                "bio": "New Bio"
-            },
-            headers=auth_headers
-        )
+        response = client.put("/api/settings", json={"title": "New Title", "bio": "New Bio"}, headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["title"] == "New Title"
@@ -142,11 +105,7 @@ class TestAnalyticsEndpoints:
     def test_track_click(self, client, auth_headers, clean_db):
         """Test click tracking."""
         # Create an item first
-        create_response = client.post(
-            "/api/links",
-            json={"url": "https://example.com"},
-            headers=auth_headers
-        )
+        create_response = client.post("/api/links", json={"url": "https://example.com"}, headers=auth_headers)
         item_id = create_response.json()["id"]
 
         # Track a click
@@ -159,35 +118,17 @@ class TestCommunityEndpoints:
 
     def test_subscribe(self, client, clean_db):
         """Test newsletter subscription."""
-        response = client.post(
-            "/api/subscribe",
-            json={
-                "email": "test@example.com",
-                "privacy_agreed": True
-            }
-        )
+        response = client.post("/api/subscribe", json={"email": "test@example.com", "privacy_agreed": True})
         assert response.status_code == 200
         assert "message" in response.json()
 
     def test_subscribe_duplicate(self, client, clean_db):
         """Test subscribing with same email twice."""
         # First subscription
-        client.post(
-            "/api/subscribe",
-            json={
-                "email": "test@example.com",
-                "privacy_agreed": True
-            }
-        )
+        client.post("/api/subscribe", json={"email": "test@example.com", "privacy_agreed": True})
 
         # Second subscription with same email
-        response = client.post(
-            "/api/subscribe",
-            json={
-                "email": "test@example.com",
-                "privacy_agreed": True
-            }
-        )
+        response = client.post("/api/subscribe", json={"email": "test@example.com", "privacy_agreed": True})
         assert response.status_code == 200
         # Should return a message about already being registered
 
@@ -195,12 +136,7 @@ class TestCommunityEndpoints:
         """Test contact form."""
         response = client.post(
             "/api/contact",
-            json={
-                "name": "Test User",
-                "email": "test@example.com",
-                "message": "Test message",
-                "privacy_agreed": True
-            }
+            json={"name": "Test User", "email": "test@example.com", "message": "Test message", "privacy_agreed": True},
         )
         assert response.status_code == 200
         assert "message" in response.json()
@@ -208,13 +144,7 @@ class TestCommunityEndpoints:
     def test_get_subscribers(self, client, auth_headers, clean_db):
         """Test getting subscriber list."""
         # Add a subscriber first
-        client.post(
-            "/api/subscribe",
-            json={
-                "email": "test@example.com",
-                "privacy_agreed": True
-            }
-        )
+        client.post("/api/subscribe", json={"email": "test@example.com", "privacy_agreed": True})
 
         # Get subscribers
         response = client.get("/api/subscribers", headers=auth_headers)
@@ -229,12 +159,7 @@ class TestCommunityEndpoints:
         # Send a message first
         client.post(
             "/api/contact",
-            json={
-                "name": "Test User",
-                "email": "test@example.com",
-                "message": "Test message",
-                "privacy_agreed": True
-            }
+            json={"name": "Test User", "email": "test@example.com", "message": "Test message", "privacy_agreed": True},
         )
 
         # Get messages

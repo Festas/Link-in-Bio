@@ -1,6 +1,7 @@
 """
 Logging configuration for structured logging.
 """
+
 import logging
 import sys
 import json

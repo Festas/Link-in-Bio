@@ -380,8 +380,8 @@ def init_custom_pages_db():
                         default_bio = settings.get("bio", default_bio)
                         default_image = settings.get("image_url", default_image)
                         default_bg = settings.get("bg_image_url", default_bg)
-                except Exception:
-                    # If main database doesn't have settings table yet, use defaults
+                except (sqlite3.Error, sqlite3.OperationalError):
+                    # If main database doesn't have settings table yet or other DB error, use defaults
                     pass
 
             cursor.execute(
@@ -535,15 +535,15 @@ def cleanup_orphaned_references():
         with get_custom_pages_db_connection() as pages_conn:
             pages_cursor = pages_conn.cursor()
             pages_cursor.execute("SELECT id FROM pages")
-            valid_page_ids = {row[0] for row in pages_cursor.fetchall()}
+            # Ensure all IDs are integers for safety
+            valid_page_ids = tuple(int(row[0]) for row in pages_cursor.fetchall())
 
         # Clean up items with invalid page_id
         if valid_page_ids:
+            # Build safe parameterized query - placeholders is just "?" repeated, not user input
             placeholders = ",".join("?" * len(valid_page_ids))
-            main_cursor.execute(
-                f"UPDATE items SET page_id = NULL WHERE page_id IS NOT NULL AND page_id NOT IN ({placeholders})",
-                tuple(valid_page_ids),
-            )
+            query = f"UPDATE items SET page_id = NULL WHERE page_id IS NOT NULL AND page_id NOT IN ({placeholders})"
+            main_cursor.execute(query, valid_page_ids)
         else:
             main_cursor.execute("UPDATE items SET page_id = NULL WHERE page_id IS NOT NULL")
 
@@ -551,11 +551,10 @@ def cleanup_orphaned_references():
 
         # Clean up subscribers with invalid redirect_page_id
         if valid_page_ids:
+            # Build safe parameterized query - placeholders is just "?" repeated, not user input
             placeholders = ",".join("?" * len(valid_page_ids))
-            main_cursor.execute(
-                f"UPDATE subscribers SET redirect_page_id = NULL WHERE redirect_page_id IS NOT NULL AND redirect_page_id NOT IN ({placeholders})",
-                tuple(valid_page_ids),
-            )
+            query = f"UPDATE subscribers SET redirect_page_id = NULL WHERE redirect_page_id IS NOT NULL AND redirect_page_id NOT IN ({placeholders})"
+            main_cursor.execute(query, valid_page_ids)
         else:
             main_cursor.execute("UPDATE subscribers SET redirect_page_id = NULL WHERE redirect_page_id IS NOT NULL")
 

@@ -17,7 +17,7 @@
             <div class="space-y-3">
                 {% if audience_data.age_18_24 %}
                 {% set age_18_24_pct = audience_data.age_18_24|int|default(0) %}
-                {% if age_18_24_pct >= 0 and age_18_24_pct <= 100 %}
+                {% if age_18_24_pct <= 100 %}
                 <div class="flex items-center justify-between">
                     <span class="text-sm" style="color: var(--color-text-muted);">18-24 Jahre</span>
                     <div class="flex items-center">
@@ -29,7 +29,48 @@
                 </div>
                 {% endif %}
                 {% endif %}
-                {# Repeat for other age groups #}
+                {% if audience_data.age_25_34 %}
+                {% set age_25_34_pct = audience_data.age_25_34|int|default(0) %}
+                {% if age_25_34_pct <= 100 %}
+                <div class="flex items-center justify-between">
+                    <span class="text-sm" style="color: var(--color-text-muted);">25-34 Jahre</span>
+                    <div class="flex items-center">
+                        <div class="w-32 h-2 bg-gray-700 rounded-full overflow-hidden mr-3">
+                            <div class="h-full bg-gradient-to-r from-cyan-400 to-blue-400" style="width: {{ age_25_34_pct }}%"></div>
+                        </div>
+                        <span class="text-sm font-semibold text-cyan-400">{{ age_25_34_pct }}%</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                {% if audience_data.age_35_44 %}
+                {% set age_35_44_pct = audience_data.age_35_44|int|default(0) %}
+                {% if age_35_44_pct <= 100 %}
+                <div class="flex items-center justify-between">
+                    <span class="text-sm" style="color: var(--color-text-muted);">35-44 Jahre</span>
+                    <div class="flex items-center">
+                        <div class="w-32 h-2 bg-gray-700 rounded-full overflow-hidden mr-3">
+                            <div class="h-full bg-gradient-to-r from-cyan-400 to-blue-400" style="width: {{ age_35_44_pct }}%"></div>
+                        </div>
+                        <span class="text-sm font-semibold text-cyan-400">{{ age_35_44_pct }}%</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                {% if audience_data.age_45_plus %}
+                {% set age_45_plus_pct = audience_data.age_45_plus|int|default(0) %}
+                {% if age_45_plus_pct <= 100 %}
+                <div class="flex items-center justify-between">
+                    <span class="text-sm" style="color: var(--color-text-muted);">45+ Jahre</span>
+                    <div class="flex items-center">
+                        <div class="w-32 h-2 bg-gray-700 rounded-full overflow-hidden mr-3">
+                            <div class="h-full bg-gradient-to-r from-cyan-400 to-blue-400" style="width: {{ age_45_plus_pct }}%"></div>
+                        </div>
+                        <span class="text-sm font-semibold text-cyan-400">{{ age_45_plus_pct }}%</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
             </div>
         </div>
         
@@ -42,7 +83,7 @@
             <div class="space-y-3">
                 {% if audience_data.gender_female %}
                 {% set gender_female_pct = audience_data.gender_female|int|default(0) %}
-                {% if gender_female_pct >= 0 and gender_female_pct <= 100 %}
+                {% if gender_female_pct <= 100 %}
                 <div class="flex items-center justify-between">
                     <span class="text-sm" style="color: var(--color-text-muted);">Weiblich</span>
                     <div class="flex items-center">
@@ -50,6 +91,20 @@
                             <div class="h-full bg-gradient-to-r from-purple-400 to-pink-400" style="width: {{ gender_female_pct }}%"></div>
                         </div>
                         <span class="text-sm font-semibold text-purple-400">{{ gender_female_pct }}%</span>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                {% if audience_data.gender_male %}
+                {% set gender_male_pct = audience_data.gender_male|int|default(0) %}
+                {% if gender_male_pct <= 100 %}
+                <div class="flex items-center justify-between">
+                    <span class="text-sm" style="color: var(--color-text-muted);">Männlich</span>
+                    <div class="flex items-center">
+                        <div class="w-32 h-2 bg-gray-700 rounded-full overflow-hidden mr-3">
+                            <div class="h-full bg-gradient-to-r from-purple-400 to-pink-400" style="width: {{ gender_male_pct }}%"></div>
+                        </div>
+                        <span class="text-sm font-semibold text-purple-400">{{ gender_male_pct }}%</span>
                     </div>
                 </div>
                 {% endif %}

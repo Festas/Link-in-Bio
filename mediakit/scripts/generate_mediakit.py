@@ -162,13 +162,24 @@ def render_template(template_name: str, context: Dict[str, Any]) -> str:
     
     # Add custom filters
     def from_json(value):
-        """Parse JSON string."""
+        """Parse JSON string. Returns appropriate empty structure on error."""
         try:
-            return json.loads(value) if isinstance(value, str) else value
+            if isinstance(value, str):
+                parsed = json.loads(value)
+                return parsed
+            return value if value is not None else {}
         except (json.JSONDecodeError, TypeError):
+            # Return empty dict by default, works for most use cases
             return {}
     
+    def split_filter(value, delimiter=','):
+        """Split string by delimiter."""
+        if isinstance(value, str):
+            return value.split(delimiter)
+        return []
+    
     env.filters['from_json'] = from_json
+    env.filters['split'] = split_filter
     
     template = env.get_template(template_name)
     return template.render(**context)

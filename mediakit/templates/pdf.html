@@ -213,7 +213,7 @@
                 <h2>{{ block.title }}</h2>
                 {% endif %}
                 {% if block.content %}
-                {% set partners = block.content.split(',') if ',' in block.content else [block.content] %}
+                {% set partners = block.content|split(',') if block.content else [] %}
                 <div class="partners-list">
                     {% for partner in partners %}
                     <span class="partner-badge">{{ partner.strip()|e }}</span>

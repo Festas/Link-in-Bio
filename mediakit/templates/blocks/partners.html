@@ -1,6 +1,6 @@
 <!-- Partners Block -->
 {% if block.content %}
-{% set partners = block.content.split(',') if ',' in block.content else [block.content] %}
+{% set partners = block.content|split(',') if block.content else [] %}
 <div class="glass-card p-6 sm:p-8 rounded-xl mb-6">
     {% if block.title %}
     <h2 class="text-2xl sm:text-3xl font-bold mb-6 text-center border-b border-gray-600 pb-3">

@@ -25,7 +25,8 @@
             {% set vimeo_parts = video_data.video_url.split('/') %}
             {% if vimeo_parts|length > 0 %}
                 {% set vimeo_id = vimeo_parts[-1].split('?')[0] %}
-                {% if vimeo_id and vimeo_id.isdigit() %}
+                {# Check if vimeo_id is numeric by trying to extract only digits #}
+                {% if vimeo_id and vimeo_id|replace('0','')|replace('1','')|replace('2','')|replace('3','')|replace('4','')|replace('5','')|replace('6','')|replace('7','')|replace('8','')|replace('9','') == '' %}
                 <iframe src="https://player.vimeo.com/video/{{ vimeo_id }}" class="w-full h-full" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
                 {% endif %}
             {% endif %}

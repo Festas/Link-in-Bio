@@ -5,6 +5,8 @@
 # Falls Datenbanken fehlen oder gelöscht wurden, werden leere Dateien erstellt.
 #
 
+set -e
+
 # Farben für Output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -15,7 +17,7 @@ echo "=========================================="
 echo "Datenbank-Prüfung für Link-in-Bio"
 echo "=========================================="
 
-# Liste aller benötigten Datenbanken
+# Liste aller benötigten Datenbanken (nur Dateinamen, keine Pfade)
 DATABASES=(
     "linktree.db"
     "special_pages.db"
@@ -25,22 +27,37 @@ DATABASES=(
 
 # Zähler für fehlende Datenbanken
 missing_count=0
+error_occurred=false
 
 # Prüfe jede Datenbank
 for db in "${DATABASES[@]}"; do
+    # Sicherheitsprüfung: Nur sichere Dateinamen erlauben (keine Pfadtraversierung)
+    if [[ "$db" =~ [/\\] ]] || [[ "$db" == ".."* ]]; then
+        echo -e "${RED}✗${NC} Ungültiger Dateiname: $db"
+        error_occurred=true
+        continue
+    fi
+
     if [ -f "$db" ]; then
         echo -e "${GREEN}✓${NC} $db existiert"
     else
         echo -e "${YELLOW}⚠${NC} $db fehlt - wird erstellt..."
-        touch "$db"
-        echo -e "${GREEN}✓${NC} $db wurde erstellt"
-        missing_count=$((missing_count + 1))
+        if touch "$db" 2>/dev/null; then
+            echo -e "${GREEN}✓${NC} $db wurde erstellt"
+            missing_count=$((missing_count + 1))
+        else
+            echo -e "${RED}✗${NC} Fehler beim Erstellen von $db"
+            error_occurred=true
+        fi
     fi
 done
 
 echo ""
 echo "=========================================="
-if [ $missing_count -eq 0 ]; then
+if [ "$error_occurred" = true ]; then
+    echo -e "${RED}Fehler bei der Datenbank-Prüfung aufgetreten.${NC}"
+    exit 1
+elif [ $missing_count -eq 0 ]; then
     echo -e "${GREEN}Alle Datenbanken sind vorhanden.${NC}"
 else
     echo -e "${YELLOW}$missing_count Datenbank(en) wurden erstellt.${NC}"

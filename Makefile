@@ -45,8 +45,11 @@ docker-build:  ## Build Docker image
 	docker-compose build
 
 ensure-db:  ## Ensure all database files exist before Docker start
-	@chmod +x ensure_databases.sh
-	@./ensure_databases.sh
+	@if [ -f ensure_databases.sh ]; then \
+		chmod +x ensure_databases.sh && ./ensure_databases.sh; \
+	else \
+		echo "Warning: ensure_databases.sh not found, skipping database check"; \
+	fi
 
 docker-up: ensure-db  ## Start Docker containers (ensures databases exist first)
 	docker-compose up -d

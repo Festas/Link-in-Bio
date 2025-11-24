@@ -116,11 +116,11 @@ cp .env.example .env
 make docker-up
 
 # Oder manuell:
-./ensure_databases.sh  # Prüft/erstellt fehlende Datenbank-Dateien
+./ensure_databases.sh  # Prüft/erstellt data/*.db Dateien
 docker-compose up -d
 ```
 
-> **Hinweis**: `make docker-up` prüft automatisch ob alle Datenbank-Dateien (linktree.db, special_pages.db, pages.db, mediakit.db) vorhanden sind und erstellt sie falls nötig. Dies verhindert Fehler nach dem Löschen von Datenbanken.
+> **Hinweis**: Alle Datenbanken werden im `data/` Ordner gespeichert und als Volume gemountet.
 
 4. **Automatisches SSL**: Caddy konfiguriert automatisch Let's Encrypt SSL-Zertifikate
 
@@ -133,15 +133,20 @@ Siehe `.env.example` für alle verfügbaren Optionen:
 - `ADMIN_USERNAME`: Admin-Benutzername (Standard: admin)
 - `ADMIN_PASSWORD`: **WICHTIG**: Unbedingt ändern!
 - `APP_DOMAIN`: Deine Domain (z.B. example.com)
-- `DATABASE_FILE`: Pfad zur SQLite-Datenbank (Standard: linktree.db)
 - `JSONLINK_API_KEY`: Optional für erweiterte Link-Vorschau
 - `SCRAPER_MAX_RETRIES`: Anzahl Retries beim Scraping (Standard: 5)
 - `SCRAPER_CACHE_TTL`: Cache-TTL für Scraping in Sekunden (Standard: 3600)
-- `SCRAPER_VERIFY_TLS`: TLS-Verifikation (Standard: true)
-- `SCRAPER_PROXIES`: Optional Proxy-Liste (komma-getrennt)
-- `SCRAPER_BROWSER_ENABLED`: Browser-Scraping aktivieren (Standard: true, **NEU**)
-- `SCRAPER_BROWSER_FALLBACK`: Browser als Fallback nutzen (Standard: true, **NEU**)
-- `SCRAPER_BROWSER_TIMEOUT`: Browser-Timeout in Sekunden (Standard: 30, **NEU**)
+- `SCRAPER_BROWSER_ENABLED`: Browser-Scraping aktivieren (Standard: true)
+
+### Datenbanken
+
+Alle Datenbanken werden automatisch im `data/` Ordner gespeichert:
+- `data/linktree.db` - Hauptdatenbank (Items, Clicks, Settings)
+- `data/special_pages.db` - Spezielle Seiten
+- `data/pages.db` - Custom Pages
+- `data/mediakit.db` - MediaKit
+
+Siehe [docs/DATABASE_ARCHITECTURE.md](docs/DATABASE_ARCHITECTURE.md) für Details.
 
 ### Enhanced Web Scraper mit Browser-Automatisierung 🌐
 
@@ -173,49 +178,42 @@ Siehe [docs/SCRAPER_DOCUMENTATION.md](docs/SCRAPER_DOCUMENTATION.md) und [docs/B
 ```
 Link-in-Bio/
 ├── main.py                   # FastAPI Application Entry Point
-├── download_vendor.py        # Script zum Download von Vendor-Dateien
+├── init_databases.py         # Datenbank-Initialisierung
 ├── app/                      # Hauptanwendung
-│   ├── __init__.py
-│   ├── config.py             # Konfiguration und Template-Setup
-│   ├── database.py           # Datenbank-Layer (SQLite)
+│   ├── config.py             # Konfiguration
+│   ├── database.py           # Datenbank-Layer (alle DBs in data/)
 │   ├── models.py             # Pydantic Models
-│   ├── endpoints.py          # API Endpoints
-│   ├── auth.py               # Authentifizierung
-│   ├── services.py           # Business Logic
-│   ├── middleware.py         # Security Middleware
-│   ├── exceptions.py         # Exception Handlers
-│   ├── rate_limit.py         # Rate Limiting
-│   ├── cache.py              # In-Memory Cache
-│   ├── logging_config.py     # Logging Konfiguration
+│   ├── auth_unified.py       # Authentifizierung
+│   ├── cache_unified.py      # Caching
+│   ├── routers/              # Modulare API Router
+│   │   ├── pages.py
+│   │   ├── items.py
+│   │   ├── analytics.py
+│   │   └── ...
 │   └── scraper/              # Web Scraping Module
-│       ├── __init__.py
-│       ├── scraper.py        # Haupt-Scraper (Orchestrator)
-│       ├── scraper_browser.py      # Browser-basiertes Scraping (Playwright) 🆕
-│       ├── scraper_extractors.py   # Metadaten-Extractoren
-│       ├── scraper_utils.py        # Scraper Utilities
-│       └── scraper_domains.py      # Spezial-Domain-Handler
+│       ├── scraper.py        # Haupt-Scraper
+│       └── scraper_browser.py # Browser-basiertes Scraping
+├── data/                     # 📁 Alle Datenbanken (zentralisiert)
+│   ├── linktree.db           # Hauptdatenbank
+│   ├── special_pages.db      # Spezielle Seiten
+│   ├── pages.db              # Custom Pages
+│   └── mediakit.db           # MediaKit
 ├── templates/                # Jinja2 Templates
-│   ├── layout.html
-│   ├── index.html
-│   ├── admin.html
-│   └── ...
 ├── static/                   # Statische Assets
 │   ├── css/
 │   ├── js/
-│   ├── uploads/             # User Uploads
-│   └── vendor/              # Frontend Libraries
+│   ├── uploads/              # User Uploads
+│   └── vendor/               # Frontend Libraries
 ├── tests/                    # Test Suite
-├── docs/                     # Dokumentation
-│   ├── guides/              # Anleitungen
-│   ├── archive/             # Archiv-Dokumentation
-│   ├── SCRAPER_ARCHITECTURE.md
-│   ├── SCRAPER_DOCUMENTATION.md
-│   ├── SCRAPER_QUICK_REFERENCE.md
-│   └── BROWSER_SCRAPING_DE.md
-├── .github/
-│   └── workflows/
-│       ├── ci.yml           # CI Workflow
-│       └── deploy.yml       # Deployment Workflow
+├── docs/                     # 📚 Dokumentation
+│   ├── API_REFERENCE.md      # API Dokumentation
+│   ├── ARCHITECTURE.md       # Architektur
+│   ├── DATABASE_ARCHITECTURE.md
+│   ├── guides/               # Anleitungen
+│   └── archive/              # Archivierte Docs
+├── .github/workflows/        # CI/CD Workflows
+│   ├── ci.yml                # Tests & Linting
+│   └── deploy.yml            # Auto-Deploy zu Hetzner
 ├── docker-compose.yml        # Docker Compose Config
 ├── dockerfile                # Docker Image
 ├── requirements.txt          # Python Dependencies

@@ -10,6 +10,7 @@ load_dotenv()
 DATABASE_FILE = os.getenv("DATABASE_FILE", "linktree.db")
 SPECIAL_PAGES_DB = os.getenv("SPECIAL_PAGES_DB", "special_pages.db")
 CUSTOM_PAGES_DB = os.getenv("CUSTOM_PAGES_DB", "pages.db")
+MEDIAKIT_DB = os.getenv("MEDIAKIT_DB", "mediakit.db")
 
 
 @contextmanager
@@ -25,7 +26,7 @@ def get_db_connection():
 
 @contextmanager
 def get_special_pages_db_connection():
-    """Special pages database connection for special_pages, mediakit tables"""
+    """Special pages database connection for special_pages tables (impressum, datenschutz, ueber-mich, kontakt)"""
     conn = sqlite3.connect(SPECIAL_PAGES_DB)
     conn.row_factory = sqlite3.Row
     try:
@@ -45,11 +46,23 @@ def get_custom_pages_db_connection():
         conn.close()
 
 
+@contextmanager
+def get_mediakit_db_connection():
+    """Media Kit database connection for all mediakit tables"""
+    conn = sqlite3.connect(MEDIAKIT_DB)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
 def init_db():
     print("Initialisiere Datenbanken...")
     init_main_db()
     init_special_pages_db()
     init_custom_pages_db()
+    init_mediakit_db()
     print("✓ Alle Datenbanken initialisiert")
 
 
@@ -194,7 +207,7 @@ def init_main_db():
 
 
 def init_special_pages_db():
-    """Initialize special pages database for special_pages, mediakit tables"""
+    """Initialize special pages database for special_pages tables (impressum, datenschutz, ueber-mich, kontakt)"""
     print("Initialisiere Special-Pages-Datenbank (special_pages.db)...")
     with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
@@ -227,74 +240,8 @@ def init_special_pages_db():
         )"""
         )
 
-        # Media kit data table
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS mediakit_data (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            section TEXT NOT NULL,
-            key TEXT NOT NULL,
-            value TEXT,
-            display_order INTEGER DEFAULT 0,
-            updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
-            UNIQUE(section, key)
-        )"""
-        )
-
-        # Media kit settings table (for access control, video pitch, etc.)
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS mediakit_settings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            setting_key TEXT NOT NULL UNIQUE,
-            setting_value TEXT,
-            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
-        )"""
-        )
-
-        # Media kit views tracking table
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS mediakit_views (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            viewer_email TEXT,
-            viewer_ip TEXT,
-            viewer_country TEXT,
-            user_agent TEXT,
-            viewed_at DATETIME DEFAULT (datetime('now', 'localtime'))
-        )"""
-        )
-
-        # Media kit access requests table (for gated access)
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS mediakit_access_requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT NOT NULL,
-            name TEXT,
-            company TEXT,
-            message TEXT,
-            status TEXT DEFAULT 'pending',
-            ip_address TEXT,
-            requested_at DATETIME DEFAULT (datetime('now', 'localtime')),
-            approved_at DATETIME
-        )"""
-        )
-
-        # Media kit blocks table (new flexible block-based system)
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS mediakit_blocks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            block_type TEXT NOT NULL,
-            title TEXT,
-            content TEXT,
-            settings TEXT,
-            position INTEGER NOT NULL DEFAULT 0,
-            is_visible BOOLEAN DEFAULT 1,
-            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
-            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
-        )"""
-        )
-
         # Create indexes for special pages database
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_special_pages_key ON special_pages(page_key)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_section ON mediakit_data(section)")
 
         # Initialize special pages with default content if not exists
         cursor.execute("SELECT COUNT(*) FROM special_pages")
@@ -392,6 +339,87 @@ def init_custom_pages_db():
 
         conn.commit()
         print("✓ Custom-Pages-Datenbank initialisiert")
+
+
+def init_mediakit_db():
+    """Initialize Media Kit database for all mediakit tables"""
+    print("Initialisiere Media-Kit-Datenbank (mediakit.db)...")
+    with get_mediakit_db_connection() as conn:
+        cursor = conn.cursor()
+
+        # Media kit data table
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            section TEXT NOT NULL,
+            key TEXT NOT NULL,
+            value TEXT,
+            display_order INTEGER DEFAULT 0,
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            UNIQUE(section, key)
+        )"""
+        )
+
+        # Media kit settings table (for access control, video pitch, etc.)
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            setting_key TEXT NOT NULL UNIQUE,
+            setting_value TEXT,
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
+
+        # Media kit views tracking table
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_views (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            viewer_email TEXT,
+            viewer_ip TEXT,
+            viewer_country TEXT,
+            user_agent TEXT,
+            viewed_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
+
+        # Media kit access requests table (for gated access)
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_access_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL,
+            name TEXT,
+            company TEXT,
+            message TEXT,
+            status TEXT DEFAULT 'pending',
+            ip_address TEXT,
+            requested_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            approved_at DATETIME
+        )"""
+        )
+
+        # Media kit blocks table (new flexible block-based system)
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_blocks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            block_type TEXT NOT NULL,
+            title TEXT,
+            content TEXT,
+            settings TEXT,
+            position INTEGER NOT NULL DEFAULT 0,
+            is_visible BOOLEAN DEFAULT 1,
+            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
+
+        # Create indexes for mediakit database
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_section ON mediakit_data(section)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_views_date ON mediakit_views(viewed_at)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_access_status ON mediakit_access_requests(status)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_blocks_position ON mediakit_blocks(position)")
+
+        conn.commit()
+        print("✓ Media-Kit-Datenbank initialisiert")
 
 
 def get_next_display_order(page_id: Optional[int] = None) -> int:
@@ -672,7 +700,7 @@ def delete_special_page_block(block_id: int):
 
 def get_mediakit_data() -> Dict[str, Dict[str, str]]:
     """Get all media kit data organized by section."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT section, key, value FROM mediakit_data ORDER BY section, display_order")
         rows = cursor.fetchall()
@@ -690,7 +718,7 @@ def get_mediakit_data() -> Dict[str, Dict[str, str]]:
 
 def update_mediakit_data(section: str, key: str, value: str, display_order: int = 0):
     """Update or insert media kit data."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO mediakit_data (section, key, value, display_order, updated_at)
@@ -704,7 +732,7 @@ def update_mediakit_data(section: str, key: str, value: str, display_order: int 
 
 def delete_mediakit_entry(section: str, key: str):
     """Delete a media kit entry."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM mediakit_data WHERE section = ? AND key = ?", (section, key))
         conn.commit()
@@ -754,7 +782,7 @@ def clear_social_stats_cache():
 # Media Kit Settings Functions
 def get_mediakit_setting(key: str) -> Optional[str]:
     """Get a media kit setting value."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT setting_value FROM mediakit_settings WHERE setting_key = ?", (key,))
         row = cursor.fetchone()
@@ -763,7 +791,7 @@ def get_mediakit_setting(key: str) -> Optional[str]:
 
 def update_mediakit_setting(key: str, value: str):
     """Update or insert a media kit setting."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO mediakit_settings (setting_key, setting_value, updated_at)
@@ -778,7 +806,7 @@ def update_mediakit_setting(key: str, value: str):
 
 def get_all_mediakit_settings() -> Dict[str, str]:
     """Get all media kit settings."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT setting_key, setting_value FROM mediakit_settings")
         return {row[0]: row[1] for row in cursor.fetchall()}
@@ -792,7 +820,7 @@ def track_mediakit_view(
     user_agent: Optional[str] = None,
 ):
     """Track a media kit view."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO mediakit_views (viewer_email, viewer_ip, viewer_country, user_agent, viewed_at)
@@ -804,7 +832,7 @@ def track_mediakit_view(
 
 def get_mediakit_views(limit: int = 100) -> list:
     """Get recent media kit views."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """SELECT id, viewer_email, viewer_ip, viewer_country, user_agent, viewed_at 
@@ -818,7 +846,7 @@ def get_mediakit_views(limit: int = 100) -> list:
 
 def get_mediakit_views_stats() -> Dict[str, Any]:
     """Get media kit views statistics."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
 
         # Total views
@@ -867,7 +895,7 @@ def create_access_request(
     ip_address: Optional[str] = None,
 ) -> int:
     """Create a new access request."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO mediakit_access_requests 
@@ -881,7 +909,7 @@ def create_access_request(
 
 def get_access_requests(status: Optional[str] = None) -> list:
     """Get access requests, optionally filtered by status."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         if status:
             cursor.execute(
@@ -904,7 +932,7 @@ def get_access_requests(status: Optional[str] = None) -> list:
 
 def update_access_request_status(request_id: int, status: str):
     """Update access request status."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         if status == "approved":
             cursor.execute(
@@ -925,7 +953,7 @@ def update_access_request_status(request_id: int, status: str):
 
 def check_access_approved(email: str) -> bool:
     """Check if an email has approved access."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """SELECT COUNT(*) FROM mediakit_access_requests 
@@ -938,7 +966,7 @@ def check_access_approved(email: str) -> bool:
 # Media Kit Blocks Functions (New Block-Based System)
 def get_mediakit_blocks() -> list:
     """Get all media kit blocks ordered by position."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """SELECT id, block_type, title, content, settings, position, is_visible 
@@ -964,7 +992,7 @@ def get_mediakit_blocks() -> list:
 
 def get_visible_mediakit_blocks() -> list:
     """Get only visible media kit blocks ordered by position."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """SELECT id, block_type, title, content, settings, position 
@@ -992,7 +1020,7 @@ def create_mediakit_block(
     block_type: str, title: str = None, content: str = None, settings: dict = None, position: int = None
 ) -> int:
     """Create a new media kit block."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
 
         # If position not provided, add at the end
@@ -1016,7 +1044,7 @@ def update_mediakit_block(
     block_id: int, title: str = None, content: str = None, settings: dict = None, is_visible: bool = None
 ):
     """Update a media kit block."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
 
         updates = []
@@ -1049,7 +1077,7 @@ def update_mediakit_block(
 
 def delete_mediakit_block(block_id: int):
     """Delete a media kit block."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM mediakit_blocks WHERE id = ?", (block_id,))
         conn.commit()
@@ -1057,7 +1085,7 @@ def delete_mediakit_block(block_id: int):
 
 def reorder_mediakit_blocks(block_positions: list):
     """Reorder media kit blocks. Expects list of {'id': int, 'position': int}."""
-    with get_special_pages_db_connection() as conn:
+    with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
         for item in block_positions:
             cursor.execute(

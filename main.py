@@ -33,13 +33,16 @@ logger = get_logger(__name__)
 
 from app.database import init_db, get_settings_from_db, get_page_by_slug, get_all_pages, get_special_page, get_mediakit_data, get_special_page_blocks, get_visible_mediakit_blocks
 from app.block_system import render_blocks_to_html as render_blocks_enhanced
-from app.endpoints import router as api_router
+from app.endpoints import router as api_router  # Original endpoints (will be replaced with modular routers)
 from app.endpoints_enhanced import router as api_router_enhanced
 from app.services import APP_DOMAIN
 from app.rate_limit import limiter_standard
 from app.config import BASE_DIR, UPLOAD_DIR, templates, configure_template_globals
 from app.middleware import add_security_headers, add_request_id
 from app.exceptions import custom_http_exception_handler, general_exception_handler
+
+# Import new modular routers
+from app.routers import pages, items, media, settings, analytics, subscribers, public, tools
 
 
 @asynccontextmanager
@@ -68,6 +71,18 @@ app.middleware("http")(add_request_id)
 app.middleware("http")(add_security_headers)
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+
+# Include new modular routers
+app.include_router(pages.router, prefix="/api/pages", tags=["Pages"])
+app.include_router(items.router, prefix="/api/items", tags=["Items"])
+app.include_router(media.router, prefix="/api/media", tags=["Media"])
+app.include_router(settings.router, prefix="/api/settings", tags=["Settings"])
+app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
+app.include_router(subscribers.router, prefix="/api/subscribers", tags=["Subscribers"])
+app.include_router(public.router, prefix="/api", tags=["Public"])
+app.include_router(tools.router, prefix="/api", tags=["Tools"])
+
+# Include legacy/remaining endpoints
 app.include_router(api_router, prefix="/api")
 app.include_router(api_router_enhanced, prefix="/api")
 

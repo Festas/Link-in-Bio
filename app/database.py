@@ -7,10 +7,24 @@ from dotenv import load_dotenv
 from datetime import datetime
 
 load_dotenv()
-DATABASE_FILE = os.getenv("DATABASE_FILE", "linktree.db")
-SPECIAL_PAGES_DB = os.getenv("SPECIAL_PAGES_DB", "special_pages.db")
-CUSTOM_PAGES_DB = os.getenv("CUSTOM_PAGES_DB", "pages.db")
-MEDIAKIT_DB = os.getenv("MEDIAKIT_DB", "mediakit.db")
+
+# Zentraler Datenbank-Ordner - alle .db Dateien werden hier gespeichert
+DATA_DIR = os.getenv("DATA_DIR", "data")
+
+# Datenbank-Ordner erstellen falls nicht vorhanden
+os.makedirs(DATA_DIR, exist_ok=True)
+
+
+def _get_db_path(filename: str) -> str:
+    """Erstellt den vollständigen Pfad für eine Datenbank-Datei im data/ Ordner."""
+    return os.path.join(DATA_DIR, filename)
+
+
+# Datenbank-Pfade mit zentralem Ordner
+DATABASE_FILE = os.getenv("DATABASE_FILE", _get_db_path("linktree.db"))
+SPECIAL_PAGES_DB = os.getenv("SPECIAL_PAGES_DB", _get_db_path("special_pages.db"))
+CUSTOM_PAGES_DB = os.getenv("CUSTOM_PAGES_DB", _get_db_path("pages.db"))
+MEDIAKIT_DB = os.getenv("MEDIAKIT_DB", _get_db_path("mediakit.db"))
 
 
 @contextmanager

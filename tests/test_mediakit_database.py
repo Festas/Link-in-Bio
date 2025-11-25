@@ -25,15 +25,20 @@ from app.database import (
     create_access_request,
     get_access_requests,
     update_access_request_status,
+    DATA_DIR,
+    MEDIAKIT_DB,
 )
 
 
 @pytest.fixture(scope="function")
 def clean_mediakit_db():
     """Clean mediakit database before and after each test"""
+    # Ensure data directory exists
+    os.makedirs(DATA_DIR, exist_ok=True)
+
     # Remove database if exists
-    if os.path.exists("mediakit.db"):
-        os.remove("mediakit.db")
+    if os.path.exists(MEDIAKIT_DB):
+        os.remove(MEDIAKIT_DB)
 
     # Initialize fresh database
     init_mediakit_db()
@@ -41,17 +46,17 @@ def clean_mediakit_db():
     yield
 
     # Cleanup after test
-    if os.path.exists("mediakit.db"):
-        os.remove("mediakit.db")
+    if os.path.exists(MEDIAKIT_DB):
+        os.remove(MEDIAKIT_DB)
 
 
 def test_mediakit_database_creation(clean_mediakit_db):
     """Test that mediakit database is created with correct tables"""
     # Database is already initialized by fixture
-    assert os.path.exists("mediakit.db")
+    assert os.path.exists(MEDIAKIT_DB)
 
     # Check tables exist
-    conn = sqlite3.connect("mediakit.db")
+    conn = sqlite3.connect(MEDIAKIT_DB)
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
     tables = [row[0] for row in cursor.fetchall()]
@@ -189,7 +194,7 @@ def test_mediakit_access_requests(clean_mediakit_db):
 def test_mediakit_database_indexes(clean_mediakit_db):
     """Test that proper indexes are created"""
     # Database is already initialized by fixture
-    conn = sqlite3.connect("mediakit.db")
+    conn = sqlite3.connect(MEDIAKIT_DB)
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='index' ORDER BY name")
     indexes = [row[0] for row in cursor.fetchall()]

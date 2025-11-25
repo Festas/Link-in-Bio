@@ -25,10 +25,10 @@ def test_read_main():
 
 
 def test_admin_page():
-    """Test that the admin page returns 200 OK."""
+    """Test that the admin page requires authentication (returns 401)."""
     response = client.get("/admin")
-    assert response.status_code == 200
-    assert "text/html" in response.headers["content-type"]
+    # Admin requires authentication
+    assert response.status_code == 401
 
 
 def test_login_page():

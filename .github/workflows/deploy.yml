@@ -19,12 +19,12 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "."
           target: "/var/www/app"
-          # Ausschließen: DB-Dateien (alle drei Datenbanken), Uploads, Git, Tests, Dev-Dateien, Archiv-Docs
+          # Ausschließen: DB-Dateien, Uploads, Git, Tests, Dev-Dateien, Archiv-Docs
           rm: false 
-          exclude: "linktree.db,special_pages.db,pages.db,static/uploads,venv,.git,.github,tests,docs/archive,.pytest_cache,.mypy_cache,htmlcov,*.pyc,__pycache__,.env.example,Makefile,.flake8,pyproject.toml"
+          exclude: "data/,static/uploads,venv,.git,.github,tests,docs/archive,.pytest_cache,.mypy_cache,htmlcov,*.pyc,__pycache__,.env.example,Makefile,.flake8,pyproject.toml,mediakit/Instagram"
 
-      # 2. .env Datei aus Secrets erstellen und Datenbanken initialisieren
-      - name: Create .env file and initialize databases
+      # 2. Alle .env Dateien aus GitHub Secrets erstellen (ersetzt existierende)
+      - name: Create all .env files from secrets
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -32,11 +32,49 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /var/www/app
+            
+            # Haupt-.env Datei erstellen (wird immer ersetzt)
             echo "${{ secrets.ENV_FILE }}" > .env
-            # Initialize databases (creates them if they don't exist)
-            python3 init_databases.py
+            echo "✓ .env erstellt"
+            
+            # Social Media Credentials (.env.social) erstellen
+            # Kombiniert Instagram und TikTok Secrets
+            if [ -n "${{ secrets.INSTAGRAM_SECRET }}" ] || [ -n "${{ secrets.TIKTOK_SECRET }}" ]; then
+              > .env.social
+              if [ -n "${{ secrets.INSTAGRAM_SECRET }}" ]; then
+                echo "${{ secrets.INSTAGRAM_SECRET }}" >> .env.social
+                echo "" >> .env.social
+              fi
+              if [ -n "${{ secrets.TIKTOK_SECRET }}" ]; then
+                echo "${{ secrets.TIKTOK_SECRET }}" >> .env.social
+              fi
+              echo "✓ .env.social erstellt"
+            fi
+            
+            # Berechtigungen setzen
+            chmod 600 .env .env.social 2>/dev/null || true
+            
+            echo "✓ Alle .env Dateien wurden aus GitHub Secrets geladen"
 
-      # 3. Docker neu starten
+      # 3. Datenbank-Verzeichnis und Datenbanken initialisieren
+      - name: Initialize data directory and databases
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/app
+            
+            # Datenbank-Verzeichnis erstellen falls nicht vorhanden
+            mkdir -p data
+            
+            # Datenbanken initialisieren (erstellt sie falls nicht vorhanden)
+            python3 init_databases.py
+            
+            echo "✓ Datenbanken initialisiert"
+
+      # 4. Docker neu starten
       - name: Restart Docker Containers
         uses: appleboy/ssh-action@master
         with:
@@ -47,3 +85,4 @@ jobs:
             cd /var/www/app
             docker compose up -d --build --remove-orphans
             docker image prune -f
+            echo "✓ Docker Container neu gestartet"

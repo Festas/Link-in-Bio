@@ -4,6 +4,8 @@
 # Stellt sicher, dass alle Datenbank-Dateien existieren, bevor Docker gestartet wird.
 # Falls Datenbanken fehlen oder gelöscht wurden, werden leere Dateien erstellt.
 #
+# Alle Datenbanken werden im data/ Verzeichnis gespeichert.
+#
 
 set -e
 
@@ -17,7 +19,17 @@ echo "=========================================="
 echo "Datenbank-Prüfung für Link-in-Bio"
 echo "=========================================="
 
-# Liste aller benötigten Datenbanken (nur Dateinamen, keine Pfade)
+# Datenbank-Verzeichnis
+DATA_DIR="data"
+
+# Verzeichnis erstellen falls nicht vorhanden
+if [ ! -d "$DATA_DIR" ]; then
+    echo -e "${YELLOW}⚠${NC} data/ Verzeichnis fehlt - wird erstellt..."
+    mkdir -p "$DATA_DIR"
+    echo -e "${GREEN}✓${NC} data/ Verzeichnis wurde erstellt"
+fi
+
+# Liste aller benötigten Datenbanken im data/ Ordner
 DATABASES=(
     "linktree.db"
     "special_pages.db"
@@ -31,6 +43,8 @@ error_occurred=false
 
 # Prüfe jede Datenbank
 for db in "${DATABASES[@]}"; do
+    db_path="$DATA_DIR/$db"
+    
     # Sicherheitsprüfung: Nur sichere Dateinamen erlauben (keine Pfadtraversierung)
     if [[ "$db" =~ [/\\] ]] || [[ "$db" == ".."* ]]; then
         echo -e "${RED}✗${NC} Ungültiger Dateiname: $db"
@@ -38,15 +52,15 @@ for db in "${DATABASES[@]}"; do
         continue
     fi
 
-    if [ -f "$db" ]; then
-        echo -e "${GREEN}✓${NC} $db existiert"
+    if [ -f "$db_path" ]; then
+        echo -e "${GREEN}✓${NC} $db_path existiert"
     else
-        echo -e "${YELLOW}⚠${NC} $db fehlt - wird erstellt..."
-        if touch "$db" 2>/dev/null; then
-            echo -e "${GREEN}✓${NC} $db wurde erstellt"
+        echo -e "${YELLOW}⚠${NC} $db_path fehlt - wird erstellt..."
+        if touch "$db_path" 2>/dev/null; then
+            echo -e "${GREEN}✓${NC} $db_path wurde erstellt"
             missing_count=$((missing_count + 1))
         else
-            echo -e "${RED}✗${NC} Fehler beim Erstellen von $db"
+            echo -e "${RED}✗${NC} Fehler beim Erstellen von $db_path"
             error_occurred=true
         fi
     fi

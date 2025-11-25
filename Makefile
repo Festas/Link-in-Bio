@@ -36,7 +36,7 @@ clean:  ## Clean up generated files
 	find . -type d -name htmlcov -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete
 	find . -type f -name ".coverage" -delete
-	rm -f linktree.db
+	rm -rf data/*.db
 
 run:  ## Run development server
 	python main.py
@@ -60,15 +60,20 @@ docker-down:  ## Stop Docker containers
 docker-logs:  ## View Docker logs
 	docker-compose logs -f
 
-backup:  ## Create database backup
+backup:  ## Create database backup (all databases in data/)
 	@mkdir -p backups
-	@cp linktree.db backups/linktree_$(shell date +%Y%m%d_%H%M%S).db
+	@for db in data/*.db; do \
+		if [ -f "$$db" ]; then \
+			cp "$$db" "backups/$$(basename $$db .db)_$$(date +%Y%m%d_%H%M%S).db"; \
+		fi \
+	done
 	@echo "Backup created in backups/"
 
 vendor:  ## Download vendor files
 	python download_vendor.py
 
-init:  ## Initialize project (install deps + vendor files)
+init:  ## Initialize project (install deps + vendor files + data dir)
 	make install
 	make vendor
+	@mkdir -p data
 	@echo "Project initialized! Run 'make run' to start the server."

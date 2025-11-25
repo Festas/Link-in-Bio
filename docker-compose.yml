@@ -4,14 +4,13 @@ services:
     container_name: linktree_app
     restart: unless-stopped
     volumes:
-      # Persistente Daten: Wir mappen die Dateien vom Server in den Container
-      - ./linktree.db:/app/linktree.db
-      - ./special_pages.db:/app/special_pages.db
-      - ./pages.db:/app/pages.db
-      - ./mediakit.db:/app/mediakit.db
+      # Alle Datenbanken in einem zentralen Ordner
+      - ./data:/app/data
+      # Uploads
       - ./static/uploads:/app/static/uploads
-      # Die .env Datei wird auf dem Server erstellt/hinterlegt
+      # Konfiguration
       - ./.env:/app/.env
+      - ./.env.social:/app/.env.social
     # Kein Port-Mapping nach außen nötig, Caddy übernimmt das intern
 
   caddy:

@@ -41,13 +41,6 @@ SPECIAL_PAGES = {
 }
 
 
-@router.get("/admin", response_class=HTMLResponse)
-async def get_special_pages_admin_index(request: Request, user=Depends(require_auth)):
-    """Main admin panel for special pages - shows overview/dashboard"""
-    context = {"special_pages": SPECIAL_PAGES}
-    return templates.TemplateResponse(request=request, name="admin_special_pages_index.html", context=context)
-
-
 @router.get("/admin/{page_key}", response_class=HTMLResponse)
 async def get_special_page_admin(request: Request, page_key: str, user=Depends(require_auth)):
     """Admin panel for a specific special page"""

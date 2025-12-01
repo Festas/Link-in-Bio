@@ -34,8 +34,17 @@ def get_subdomain(host: str) -> Optional[str]:
     host_without_port = host.split(":")[0]
 
     # Handle localhost and IP addresses
-    if host_without_port in ("localhost", "127.0.0.1") or host_without_port.replace(".", "").isdigit():
+    if host_without_port == "localhost":
         return None
+
+    # Check if it's an IP address using ipaddress module
+    try:
+        import ipaddress
+
+        ipaddress.ip_address(host_without_port)
+        return None  # It's a valid IP address, no subdomain
+    except ValueError:
+        pass  # Not an IP address, continue processing
 
     # Check for subdomain
     parts = host_without_port.split(".")

@@ -40,6 +40,12 @@ class TestSubdomainDetection:
 
         assert get_subdomain("127.0.0.1:8000") is None
 
+    def test_get_subdomain_ipv6_address(self):
+        from app.subdomain_middleware import get_subdomain
+
+        assert get_subdomain("::1") is None
+        assert get_subdomain("2001:db8::1") is None
+
     def test_is_admin_subdomain(self):
         from app.subdomain_middleware import is_admin_subdomain
 

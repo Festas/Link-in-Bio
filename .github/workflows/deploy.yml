@@ -47,9 +47,9 @@ jobs:
             if [ -d /lib/data ]; then
               mv /lib/data /tmp/lib_data_backup 2>/dev/null || true
             fi
-            if [ -d /lib/static/uploads ]; then
+            if [ -d /lib/static/uploads ] && [ "$(ls -A /lib/static/uploads 2>/dev/null)" ]; then
               mkdir -p /tmp/lib_uploads_backup
-              mv /lib/static/uploads/* /tmp/lib_uploads_backup/ 2>/dev/null || true
+              cp -r /lib/static/uploads/* /tmp/lib_uploads_backup/
             fi
             if [ -f /lib/.env ]; then
               cp /lib/.env /tmp/lib_env_backup 2>/dev/null || true
@@ -67,9 +67,9 @@ jobs:
             if [ -d /tmp/lib_data_backup ]; then
               mv /tmp/lib_data_backup /lib/data 2>/dev/null || true
             fi
-            if [ -d /tmp/lib_uploads_backup ]; then
+            if [ -d /tmp/lib_uploads_backup ] && [ "$(ls -A /tmp/lib_uploads_backup 2>/dev/null)" ]; then
               mkdir -p /lib/static/uploads
-              mv /tmp/lib_uploads_backup/* /lib/static/uploads/ 2>/dev/null || true
+              cp -r /tmp/lib_uploads_backup/* /lib/static/uploads/
               rm -rf /tmp/lib_uploads_backup
             fi
             if [ -f /tmp/lib_env_backup ]; then
@@ -166,10 +166,12 @@ jobs:
             sleep 5
             
             # Prüfe ob Container laufen
-            if docker compose ps | grep -q "Up"; then
-              echo "✓ Docker Container laufen"
+            RUNNING_CONTAINERS=$(docker compose ps --services --filter status=running | wc -l)
+            if [ "$RUNNING_CONTAINERS" -ge 2 ]; then
+              echo "✓ Docker Container laufen ($RUNNING_CONTAINERS Services aktiv)"
             else
-              echo "⚠ Warnung: Container scheinen nicht zu laufen"
+              echo "⚠ Warnung: Nicht alle Container laufen (nur $RUNNING_CONTAINERS von 2)"
+              docker compose ps
               docker compose logs --tail=50
               exit 1
             fi

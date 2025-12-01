@@ -5,6 +5,7 @@
 # This script ensures all databases and directories exist.
 #
 
+# Exit immediately if any command fails (includes pipefail behavior)
 set -e
 
 echo "=========================================="

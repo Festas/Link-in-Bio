@@ -2,6 +2,65 @@
 
 This guide explains how to set up the admin subdomain (`admin.your-domain.com`) for your Link-in-Bio installation.
 
+## Quick Verification Checklist ✅
+
+Use this checklist to verify your admin subdomain is correctly configured:
+
+### 1. DNS Check
+```bash
+# Check if DNS is resolving (run from your local machine or terminal)
+nslookup admin.festas-builds.com
+
+# Or using dig
+dig admin.festas-builds.com +short
+
+# Expected: Should return your server IP (e.g., 185.207.250.174)
+```
+
+### 2. Online DNS Checker
+Visit [DNS Checker](https://dnschecker.org/#A/admin.festas-builds.com) to verify global DNS propagation.
+
+### 3. Admin Subdomain Status Check (Recommended)
+```bash
+# Test if the admin subdomain middleware is working correctly
+curl -s https://admin.festas-builds.com/status | jq .
+
+# Expected response:
+# {
+#   "status": "ok",
+#   "subdomain_detected": "admin",
+#   "is_admin_subdomain": true,
+#   "host": "admin.festas-builds.com",
+#   "message": "Admin subdomain is correctly configured!",
+#   ...
+# }
+```
+
+Or simply open in your browser: **https://admin.festas-builds.com/status**
+
+### 4. Admin Panel Access
+Open these URLs in your browser:
+- **Status Check**: `https://admin.festas-builds.com/status` (no auth required)
+- **Login**: `https://admin.festas-builds.com/login`
+- **Dashboard**: `https://admin.festas-builds.com/` (after login)
+- **Health Check**: `https://admin.festas-builds.com/health`
+
+### 5. Server-Side Verification (SSH to your server)
+```bash
+# Check if Caddy is running and serving both domains
+docker compose logs caddy --tail=20
+
+# Check if linktree app is responding
+docker compose logs linktree --tail=20
+
+# Test internal routing with admin subdomain simulation
+curl -H "Host: admin.festas-builds.com" http://localhost:8000/status
+
+# Expected: JSON with "is_admin_subdomain": true
+```
+
+---
+
 ## Overview
 
 The admin panel is now accessible via a subdomain instead of a path:
@@ -157,16 +216,17 @@ Once DNS is propagated:
 
 On the admin subdomain, the following routes are available:
 
-| Route | Description |
-|-------|-------------|
-| `/` | Main admin dashboard |
-| `/login` | Login page |
-| `/analytics` | Analytics dashboard |
-| `/mediakit` | Media Kit editor |
-| `/impressum` | Impressum editor |
-| `/datenschutz` | Privacy policy editor |
-| `/ueber-mich` | About page editor |
-| `/kontakt` | Contact page editor |
+| Route | Description | Auth Required |
+|-------|-------------|---------------|
+| `/status` | Subdomain configuration status check | No |
+| `/login` | Login page | No |
+| `/` | Main admin dashboard | Yes |
+| `/analytics` | Analytics dashboard | Yes |
+| `/mediakit` | Media Kit editor | Yes |
+| `/impressum` | Impressum editor | Yes |
+| `/datenschutz` | Privacy policy editor | Yes |
+| `/ueber-mich` | About page editor | Yes |
+| `/kontakt` | Contact page editor | Yes |
 
 ## Security Considerations
 

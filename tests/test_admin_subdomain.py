@@ -117,6 +117,39 @@ class TestMainDomainRoutes:
         assert response.status_code == 200
 
 
+class TestAdminSubdomainStatus:
+    """Test the admin subdomain status endpoint."""
+
+    def test_status_endpoint_on_admin_subdomain(self, client: TestClient):
+        """Status endpoint should work on admin subdomain without auth."""
+        response = client.get("/status", headers={"Host": "admin.festas-builds.com"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "ok"
+        assert data["subdomain_detected"] == "admin"
+        assert data["is_admin_subdomain"] is True
+        assert data["message"] == "Admin subdomain is correctly configured!"
+        assert len(data["available_routes"]) > 0
+
+    def test_status_endpoint_returns_routes(self, client: TestClient):
+        """Status endpoint should list available routes on admin subdomain."""
+        from app.subdomain_middleware import ADMIN_PATH_MAPPINGS
+
+        response = client.get("/status", headers={"Host": "admin.festas-builds.com"})
+        assert response.status_code == 200
+        data = response.json()
+        # All routes from ADMIN_PATH_MAPPINGS should be in available_routes
+        for route in ADMIN_PATH_MAPPINGS.keys():
+            assert route in data["available_routes"]
+
+    def test_status_endpoint_includes_status_route(self, client: TestClient):
+        """Status endpoint should include itself in available routes."""
+        response = client.get("/status", headers={"Host": "admin.festas-builds.com"})
+        assert response.status_code == 200
+        data = response.json()
+        assert "/status" in data["available_routes"]
+
+
 class TestPathRewriting:
     """Test that path rewriting works correctly for admin subdomain."""
 

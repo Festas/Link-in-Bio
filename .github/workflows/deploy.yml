@@ -10,7 +10,78 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. Dateien auf den Server kopieren
+      # 1. Alte Docker Container stoppen und entfernen
+      - name: Stop and remove existing Docker containers
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "=== Stoppe existierende Docker Container ==="
+            cd /lib 2>/dev/null || true
+            
+            # Stoppe und entferne Container falls vorhanden
+            if [ -f docker-compose.yml ]; then
+              docker compose down --remove-orphans 2>/dev/null || true
+              echo "✓ Container gestoppt"
+            else
+              echo "ℹ Keine bestehenden Container gefunden"
+            fi
+
+      # 2. Zielverzeichnis vorbereiten und alte Dateien bereinigen
+      - name: Prepare target directory and cleanup old files
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "=== Bereite Zielverzeichnis vor ==="
+            
+            # Erstelle /lib falls nicht vorhanden
+            mkdir -p /lib
+            
+            # Sichere persistente Daten (data/, static/uploads/, .env Dateien)
+            echo "ℹ Sichere persistente Daten..."
+            if [ -d /lib/data ]; then
+              mv /lib/data /tmp/lib_data_backup 2>/dev/null || true
+            fi
+            if [ -d /lib/static/uploads ]; then
+              mkdir -p /tmp/lib_uploads_backup
+              mv /lib/static/uploads/* /tmp/lib_uploads_backup/ 2>/dev/null || true
+            fi
+            if [ -f /lib/.env ]; then
+              cp /lib/.env /tmp/lib_env_backup 2>/dev/null || true
+            fi
+            if [ -f /lib/.env.social ]; then
+              cp /lib/.env.social /tmp/lib_env_social_backup 2>/dev/null || true
+            fi
+            
+            # Bereinige alle alten Dateien (außer versteckte)
+            echo "ℹ Bereinige alte Dateien..."
+            find /lib -mindepth 1 -maxdepth 1 ! -name '.*' -exec rm -rf {} + 2>/dev/null || true
+            
+            # Stelle persistente Daten wieder her
+            echo "ℹ Stelle persistente Daten wieder her..."
+            if [ -d /tmp/lib_data_backup ]; then
+              mv /tmp/lib_data_backup /lib/data 2>/dev/null || true
+            fi
+            if [ -d /tmp/lib_uploads_backup ]; then
+              mkdir -p /lib/static/uploads
+              mv /tmp/lib_uploads_backup/* /lib/static/uploads/ 2>/dev/null || true
+              rm -rf /tmp/lib_uploads_backup
+            fi
+            if [ -f /tmp/lib_env_backup ]; then
+              mv /tmp/lib_env_backup /lib/.env 2>/dev/null || true
+            fi
+            if [ -f /tmp/lib_env_social_backup ]; then
+              mv /tmp/lib_env_social_backup /lib/.env.social 2>/dev/null || true
+            fi
+            
+            echo "✓ Zielverzeichnis vorbereitet"
+
+      # 3. Nur benötigte Dateien auf den Server kopieren
       - name: Copy files via SCP
         uses: appleboy/scp-action@master
         with:
@@ -18,12 +89,12 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "."
-          target: "/var/www/app"
-          # Ausschließen: DB-Dateien, Uploads, Git, Tests, Dev-Dateien, Archiv-Docs
-          rm: false 
-          exclude: "data/,static/uploads,venv,.git,.github,tests,docs/archive,.pytest_cache,.mypy_cache,htmlcov,*.pyc,__pycache__,.env.example,Makefile,.flake8,pyproject.toml,mediakit/Instagram"
+          target: "/lib"
+          rm: false
+          # Ausschließen: DB-Dateien, Uploads, Git, Tests, Dev-Dateien, Archiv-Docs, nicht benötigte Dateien
+          exclude: "data/,static/uploads/,venv/,.git/,.github/,tests/,docs/archive/,.pytest_cache/,.mypy_cache/,htmlcov/,*.pyc,__pycache__/,.env,.env.example,.env.social,.env.social.example,Makefile,.flake8,pyproject.toml,mediakit/Instagram/,mediakit/generated/,test_*.py,*_test.py,setup_enhanced.py,setup_social_media.py,CONTRIBUTING.md,CHANGELOG.md,LICENSE,*.log,*.tmp,*.temp,.coverage,.coverage.*,.hypothesis/,.tox/,.nox/,coverage.xml,*.cover,.DS_Store,Thumbs.db,*.swp,*.swo,alembic/"
 
-      # 2. Alle .env Dateien aus GitHub Secrets erstellen (ersetzt existierende)
+      # 4. Alle .env Dateien aus GitHub Secrets erstellen (ersetzt existierende)
       - name: Create all .env files from secrets
         uses: appleboy/ssh-action@master
         with:
@@ -31,7 +102,8 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /var/www/app
+            echo "=== Erstelle .env Dateien ==="
+            cd /lib
             
             # Haupt-.env Datei erstellen (wird immer ersetzt)
             echo "${{ secrets.ENV_FILE }}" > .env
@@ -56,7 +128,7 @@ jobs:
             
             echo "✓ Alle .env Dateien wurden aus GitHub Secrets geladen"
 
-      # 3. Datenbank-Verzeichnis und Datenbanken initialisieren
+      # 5. Datenbank-Verzeichnis und Datenbanken initialisieren
       - name: Initialize data directory and databases
         uses: appleboy/ssh-action@master
         with:
@@ -64,25 +136,45 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /var/www/app
+            echo "=== Initialisiere Datenbanken ==="
+            cd /lib
             
             # Datenbank-Verzeichnis erstellen falls nicht vorhanden
             mkdir -p data
+            mkdir -p static/uploads
             
             # Datenbanken initialisieren (erstellt sie falls nicht vorhanden)
             python3 init_databases.py
             
             echo "✓ Datenbanken initialisiert"
 
-      # 4. Docker neu starten
-      - name: Restart Docker Containers
+      # 6. Docker Container neu bauen und starten
+      - name: Build and start Docker containers
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /var/www/app
-            docker compose up -d --build --remove-orphans
+            echo "=== Starte Docker Container ==="
+            cd /lib
+            
+            # Container neu bauen und starten
+            docker compose up -d --build --force-recreate --remove-orphans
+            
+            # Warte kurz auf Container-Start
+            sleep 5
+            
+            # Prüfe ob Container laufen
+            if docker compose ps | grep -q "Up"; then
+              echo "✓ Docker Container laufen"
+            else
+              echo "⚠ Warnung: Container scheinen nicht zu laufen"
+              docker compose logs --tail=50
+              exit 1
+            fi
+            
+            # Alte, ungenutzte Docker Images entfernen
             docker image prune -f
-            echo "✓ Docker Container neu gestartet"
+            
+            echo "✓ Deployment erfolgreich abgeschlossen"

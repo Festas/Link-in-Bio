@@ -48,11 +48,12 @@ from app.services import APP_DOMAIN
 from app.rate_limit import limiter_standard
 from app.config import BASE_DIR, UPLOAD_DIR, templates, configure_template_globals
 from app.middleware import add_security_headers, add_request_id
+from app.subdomain_middleware import SubdomainMiddleware, subdomain_middleware
 from app.exceptions import custom_http_exception_handler, general_exception_handler
 
 # Import new modular routers
 from app.routers import pages, items, media, settings, analytics, subscribers, public, tools
-from app.routers import special_pages_admin
+from app.routers import admin_subdomain
 
 
 @asynccontextmanager
@@ -77,8 +78,12 @@ app = FastAPI(
     redoc_url="/api/redoc",
 )
 
+# Add ASGI middleware for subdomain handling (path rewriting)
+app.add_middleware(SubdomainMiddleware)
+
 app.middleware("http")(add_request_id)
 app.middleware("http")(add_security_headers)
+app.middleware("http")(subdomain_middleware)
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
@@ -92,8 +97,8 @@ app.include_router(subscribers.router, prefix="/api/subscribers", tags=["Subscri
 app.include_router(public.router, prefix="/api", tags=["Public"])
 app.include_router(tools.router, prefix="/api", tags=["Tools"])
 
-# Include special pages admin router (new standalone admin panel)
-app.include_router(special_pages_admin.router, tags=["Special Pages Admin"])
+# Include admin subdomain router (accessible only on admin.domain.com)
+app.include_router(admin_subdomain.router, tags=["Admin Subdomain"])
 
 # Include legacy/remaining endpoints
 app.include_router(api_router, prefix="/api")

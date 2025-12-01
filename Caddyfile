@@ -1,4 +1,11 @@
-# Ersetze 'deine-domain.de' mit deiner echten Domain!
+# Main domain - public-facing Link-in-Bio site
+# Replace 'festas-builds.com' with your actual domain
 festas-builds.com {
+    reverse_proxy linktree:8000
+}
+
+# Admin subdomain - administrative interface
+# Replace 'festas-builds.com' with your actual domain
+admin.festas-builds.com {
     reverse_proxy linktree:8000
 }

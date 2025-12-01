@@ -19,7 +19,7 @@
             <div class="flex justify-between items-center h-16">
                 <!-- Left: Back to main admin + Page Title -->
                 <div class="flex items-center space-x-4">
-                    <a href="/admin" class="text-gray-400 hover:text-white flex items-center space-x-2">
+                    <a href="{% if is_subdomain %}/{% else %}/admin{% endif %}" class="text-gray-400 hover:text-white flex items-center space-x-2">
                         <i data-lucide="arrow-left" class="w-5 h-5"></i>
                         <span class="hidden md:inline">Zurück zum Admin</span>
                     </a>
@@ -37,7 +37,7 @@
                 <div class="flex items-center space-x-2">
                     <div class="hidden md:flex items-center space-x-1 mr-4">
                         {% for key, info in all_special_pages.items() %}
-                        <a href="/admin/{{ key }}" 
+                        <a href="{% if is_subdomain %}/{{ key }}{% else %}/admin/{{ key }}{% endif %}" 
                            class="px-3 py-2 rounded text-sm {% if key == page_key %}bg-blue-600 text-white{% else %}text-gray-400 hover:text-white hover:bg-gray-700{% endif %}"
                            title="{{ info.description }}">
                             <i data-lucide="{{ info.icon }}" class="w-4 h-4 inline-block mr-1"></i>
@@ -53,7 +53,7 @@
                         </button>
                         <div id="mobile-nav-menu" class="hidden absolute right-0 mt-2 w-56 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-50">
                             {% for key, info in all_special_pages.items() %}
-                            <a href="/admin/{{ key }}" 
+                            <a href="{% if is_subdomain %}/{{ key }}{% else %}/admin/{{ key }}{% endif %}" 
                                class="block px-4 py-3 hover:bg-gray-700 {% if key == page_key %}bg-blue-600{% endif %} first:rounded-t-lg last:rounded-b-lg">
                                 <div class="flex items-center space-x-2">
                                     <i data-lucide="{{ info.icon }}" class="w-4 h-4"></i>
@@ -68,7 +68,7 @@
                     </div>
                     
                     <!-- View Public Page Button -->
-                    <a href="/{{ page_key }}" target="_blank" 
+                    <a href="{% if is_subdomain and main_domain_url %}{{ main_domain_url }}/{{ page_key }}{% else %}/{{ page_key }}{% endif %}" target="_blank" 
                        class="text-sm bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center space-x-2">
                         <i data-lucide="external-link" class="w-4 h-4"></i>
                         <span class="hidden lg:inline">Vorschau</span>

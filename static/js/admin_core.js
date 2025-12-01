@@ -30,9 +30,11 @@ export async function initCore() {
     // 2. Logout Listener
     document.getElementById('logout-button')?.addEventListener('click', logout);
 
-    // 3. Tab-Navigation
-    document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    // 3. Tab-Navigation (supports both old .tab-button and new .admin-tab)
+    document.querySelectorAll('.tab-button, .admin-tab').forEach(btn => {
+        if (btn.dataset.tab) {
+            btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+        }
     });
 
     // 4. QR-Code Modal
@@ -56,13 +58,19 @@ export async function initCore() {
 }
 
 function switchTab(tabName) {
-    // Buttons stylen
+    // Update old .tab-button styles (for backwards compatibility)
     document.querySelectorAll('.tab-button').forEach(b => {
-            const isActive = b.dataset.tab === tabName;
-            b.classList.toggle('border-blue-400', isActive);
-            b.classList.toggle('text-blue-400', isActive);
-            b.classList.toggle('border-transparent', !isActive);
-            b.classList.toggle('text-gray-400', !isActive);
+        const isActive = b.dataset.tab === tabName;
+        b.classList.toggle('border-blue-400', isActive);
+        b.classList.toggle('text-blue-400', isActive);
+        b.classList.toggle('border-transparent', !isActive);
+        b.classList.toggle('text-gray-400', !isActive);
+    });
+    
+    // Update new .admin-tab styles
+    document.querySelectorAll('.admin-tab').forEach(b => {
+        const isActive = b.dataset.tab === tabName;
+        b.classList.toggle('active', isActive);
     });
     
     // Content umschalten

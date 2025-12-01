@@ -9,76 +9,92 @@
     <script src="{{ vendor.chartjs }}?v={{ version }}"></script>
     
     <link rel="stylesheet" href="/static/css/admin.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/admin-modern.css?v={{ version }}">
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-4 md:p-8">
+<body class="bg-gray-900 text-gray-100 min-h-screen">
 
-    <div class="max-w-7xl mx-auto">
-        <header class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold">Analytics-Dashboard</h1>
-            <div>
-                <a href="/admin" class="inline-flex justify-center py-2 px-4 border border-gray-500 rounded-md shadow-sm text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
-                    <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
-                    Zurück zum Admin-Panel
-                </a>
+    <!-- Navigation Header -->
+    <nav class="sticky top-0 z-50 bg-gray-900/80 backdrop-blur-xl border-b border-gray-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <a href="/admin" class="btn-icon" title="Zurück zum Admin">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </a>
+                    <div class="h-6 w-px bg-gray-700"></div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                            <i data-lucide="bar-chart-2" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold">Analytics-Dashboard</h1>
+                            <p class="text-xs text-gray-500">Statistiken & Insights</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </header>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         <!-- Filter Section -->
-        <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold flex items-center">
-                    <i data-lucide="filter" class="w-5 h-5 mr-2"></i>
+        <div class="admin-card mb-8">
+            <div class="admin-card-header">
+                <h2 class="flex items-center gap-2">
+                    <i data-lucide="filter" class="w-5 h-5 text-cyan-400"></i>
                     Filter
                 </h2>
-                <button id="reset-filters-btn" class="text-sm px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors">
-                    <i data-lucide="x" class="w-4 h-4 inline mr-1"></i>
+                <button id="reset-filters-btn" class="btn-secondary text-sm">
+                    <i data-lucide="x" class="w-4 h-4"></i>
                     Zurücksetzen
                 </button>
             </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Von Datum</label>
-                    <input type="date" id="filter-start-date" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <div class="admin-card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Von Datum</label>
+                        <input type="date" id="filter-start-date">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Bis Datum</label>
+                        <input type="date" id="filter-end-date">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Link</label>
+                        <select id="filter-link">
+                            <option value="">Alle Links</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Land</label>
+                        <select id="filter-country">
+                            <option value="">Alle Länder</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Quelle</label>
+                        <select id="filter-referer">
+                            <option value="">Alle Quellen</option>
+                        </select>
+                    </div>
                 </div>
                 
-                <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Bis Datum</label>
-                    <input type="date" id="filter-end-date" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <div class="mt-4 flex justify-end">
+                    <button id="apply-filters-btn" class="btn-primary">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        Filter anwenden
+                    </button>
                 </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Link</label>
-                    <select id="filter-link" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">Alle Links</option>
-                    </select>
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Land</label>
-                    <select id="filter-country" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">Alle Länder</option>
-                    </select>
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Quelle</label>
-                    <select id="filter-referer" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">Alle Quellen</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="mt-4 flex justify-end">
-                <button id="apply-filters-btn" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-md font-medium transition-colors">
-                    <i data-lucide="check" class="w-4 h-4 inline mr-1"></i>
-                    Filter anwenden
-                </button>
             </div>
         </div>
 
         <div id="loading-spinner" class="flex justify-center items-center p-24">
-            <svg class="animate-spin h-12 w-12 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin h-12 w-12 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -86,53 +102,124 @@
         
         <div id="analytics-content" class="hidden space-y-8">
         
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                    <div class="flex items-center space-x-4">
-                        <div class="p-3 rounded-full bg-blue-600 text-white"><i data-lucide="mouse-pointer-click" class="w-6 h-6"></i></div>
-                        <div><p class="text-sm font-medium text-gray-400">Gesamte Klicks</p><p id="stat-total-clicks" class="text-3xl font-bold">0</p></div>
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="stat-card">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="mouse-pointer-click" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="stat-label">Gesamte Klicks</p>
+                            <p id="stat-total-clicks" class="stat-value">0</p>
+                        </div>
                     </div>
                 </div>
-                <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                    <div class="flex items-center space-x-4">
-                        <div class="p-3 rounded-full bg-teal-600 text-white"><i data-lucide="users" class="w-6 h-6"></i></div>
-                        <div><p class="text-sm font-medium text-gray-400">Abonnenten</p><p id="stat-total-subscribers" class="text-3xl font-bold">0</p></div>
+                <div class="stat-card">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-green-600 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="users" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="stat-label">Abonnenten</p>
+                            <p id="stat-total-subscribers" class="stat-value">0</p>
+                        </div>
                     </div>
                 </div>
-                <div class="bg-gray-800 p-6 rounded-lg shadow-lg flex items-center justify-between">
-                    <div><h3 class="text-lg font-semibold">Abonnenten-Export</h3><p class="text-sm text-gray-400 mt-1">Lade alle E-Mails als CSV oder Excel-Datei herunter.</p></div>
-                    <div class="flex space-x-2">
-                        <button id="export-csv-button" class="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
-                            <i data-lucide="download" class="w-4 h-4 mr-2"></i> CSV
-                        </button>
-                        <button id="export-excel-button" class="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50">
-                            <i data-lucide="file-spreadsheet" class="w-4 h-4 mr-2"></i> Excel
-                        </button>
+                <div class="admin-card">
+                    <div class="admin-card-body flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-semibold">Abonnenten-Export</h3>
+                            <p class="text-sm text-gray-400 mt-1">Lade alle E-Mails als CSV oder Excel-Datei herunter.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="export-csv-button" class="btn-secondary">
+                                <i data-lucide="download" class="w-4 h-4"></i> 
+                                CSV
+                            </button>
+                            <button id="export-excel-button" class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                                Excel
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
             
+            <!-- Charts -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                    <h2 class="text-xl font-semibold mb-4">Klicks pro Tag</h2>
-                    <div class="h-80"><canvas id="clicksPerDayChart"></canvas></div>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h2 class="flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-cyan-400"></i>
+                            Klicks pro Tag
+                        </h2>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="h-80"><canvas id="clicksPerDayChart"></canvas></div>
+                    </div>
                 </div>
                 
-                <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                    <h2 class="text-xl font-semibold mb-4">Klicks nach Stunde</h2>
-                    <div class="h-80"><canvas id="clicksPerHourChart"></canvas></div>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h2 class="flex items-center gap-2">
+                            <i data-lucide="clock" class="w-5 h-5 text-purple-400"></i>
+                            Klicks nach Stunde
+                        </h2>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="h-80"><canvas id="clicksPerHourChart"></canvas></div>
+                    </div>
                 </div>
             </div>
             
-            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                <h2 class="text-xl font-semibold mb-4">Klicks nach Wochentag</h2>
-                <div class="h-80"><canvas id="clicksPerWeekdayChart"></canvas></div>
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h2 class="flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-5 h-5 text-orange-400"></i>
+                        Klicks nach Wochentag
+                    </h2>
+                </div>
+                <div class="admin-card-body">
+                    <div class="h-80"><canvas id="clicksPerWeekdayChart"></canvas></div>
+                </div>
             </div>
             
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="bg-gray-800 p-6 rounded-lg shadow-lg"><h2 class="text-xl font-semibold mb-4">Top Links</h2><ul id="top-links-list" class="space-y-3"></ul></div>
-                <div class="bg-gray-800 p-6 rounded-lg shadow-lg"><h2 class="text-xl font-semibold mb-4">Top Quellen</h2><ul id="top-referers-list" class="space-y-3"></ul></div>
-                <div class="bg-gray-800 p-6 rounded-lg shadow-lg"><h2 class="text-xl font-semibold mb-4">Top Länder</h2><ul id="top-countries-list" class="space-y-3"></ul></div>
+            <!-- Top Lists -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h2 class="flex items-center gap-2">
+                            <i data-lucide="link" class="w-5 h-5 text-blue-400"></i>
+                            Top Links
+                        </h2>
+                    </div>
+                    <div class="admin-card-body">
+                        <ul id="top-links-list" class="space-y-3"></ul>
+                    </div>
+                </div>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h2 class="flex items-center gap-2">
+                            <i data-lucide="globe" class="w-5 h-5 text-green-400"></i>
+                            Top Quellen
+                        </h2>
+                    </div>
+                    <div class="admin-card-body">
+                        <ul id="top-referers-list" class="space-y-3"></ul>
+                    </div>
+                </div>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h2 class="flex items-center gap-2">
+                            <i data-lucide="map-pin" class="w-5 h-5 text-red-400"></i>
+                            Top Länder
+                        </h2>
+                    </div>
+                    <div class="admin-card-body">
+                        <ul id="top-countries-list" class="space-y-3"></ul>
+                    </div>
+                </div>
             </div>
             
         </div>

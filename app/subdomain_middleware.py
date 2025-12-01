@@ -80,6 +80,7 @@ ADMIN_PATH_MAPPINGS = {
     "/datenschutz": "/__admin__/datenschutz",
     "/ueber-mich": "/__admin__/ueber-mich",
     "/kontakt": "/__admin__/kontakt",
+    "/status": "/__admin__/status",
 }
 
 

@@ -7,16 +7,18 @@ These routes are accessed via path rewriting:
 - admin.domain.com/login -> /__admin__/login
 - admin.domain.com/analytics -> /__admin__/analytics
 - admin.domain.com/mediakit -> /__admin__/mediakit
+- admin.domain.com/status -> /__admin__/status
 - etc.
 
-All routes require authentication except /login.
+All routes require authentication except /login and /status.
 """
 
 import os
 from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from app.config import templates
 from app.auth_unified import require_auth
+from app.subdomain_middleware import ADMIN_PATH_MAPPINGS
 
 router = APIRouter(prefix="/__admin__")
 
@@ -119,3 +121,30 @@ async def admin_subdomain_ueber_mich(request: Request, user=Depends(require_auth
 async def admin_subdomain_kontakt(request: Request, user=Depends(require_auth)):
     """Kontakt admin - accessed via admin subdomain."""
     return render_special_page_admin(request, "kontakt")
+
+
+@router.get("/status", response_class=JSONResponse)
+async def admin_subdomain_status(request: Request):
+    """
+    Admin subdomain status endpoint - accessible without authentication.
+    Used to verify that the admin subdomain is correctly configured and reachable.
+    Access via: https://admin.festas-builds.com/status
+    """
+    host = request.headers.get("host", "unknown")
+    subdomain = request.scope.get("subdomain", "none")
+    is_admin = request.scope.get("is_admin_subdomain", False)
+
+    # Get available routes from the middleware mappings to avoid duplication
+    available_routes = list(ADMIN_PATH_MAPPINGS.keys()) if is_admin else []
+
+    return JSONResponse(
+        {
+            "status": "ok",
+            "subdomain_detected": subdomain,
+            "is_admin_subdomain": is_admin,
+            "host": host,
+            "message": "Admin subdomain is correctly configured!" if is_admin else "Not accessed via admin subdomain",
+            "available_routes": available_routes,
+            "main_domain": get_main_domain_url(),
+        }
+    )

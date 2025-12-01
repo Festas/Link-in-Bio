@@ -49,13 +49,13 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /var/www/app
+            cd /lib
             
             # Create .env.social on server
             echo "${{ secrets.INSTAGRAM_SECRET }}" > .env.social
             
             # Run the stats fetcher on the server to update the production database
-            docker compose exec -T web python fetch_instagram_stats.py || echo "Stats fetch completed"
+            docker compose exec -T linktree python fetch_instagram_stats.py || echo "Stats fetch completed"
             
       - name: Upload stats as artifact (for debugging)
         uses: actions/upload-artifact@v3

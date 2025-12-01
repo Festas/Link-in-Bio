@@ -7,7 +7,7 @@
     
     <!-- PWA Configuration -->
     <link rel="manifest" href="/manifest.json?v={{ version }}">
-    <meta name="theme-color" content="#111827">
+    <meta name="theme-color" content="#0a0a0f">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Admin">
@@ -19,60 +19,87 @@
     <link rel="stylesheet" href="/static/css/admin.css?v={{ version }}">
     <link rel="stylesheet" href="/static/css/admin-modern.css?v={{ version }}">
 </head>
-<body class="bg-gray-900 text-white min-h-screen p-4 md:p-8">
+<body class="bg-gray-900 text-white min-h-screen">
 
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <header class="flex justify-between items-center mb-6">
-            <div>
-                <h1 class="text-3xl font-bold">Admin-Panel</h1>
-                <p class="text-sm text-gray-400 mt-1">festas_builds Control Center</p>
-            </div>
-            <div class="flex space-x-4">
-                <button id="install-app-button" class="text-sm text-gray-400 hover:text-white flex items-center space-x-1" title="App installieren" style="display: none;">
-                    <i data-lucide="download" class="w-4 h-4"></i>
-                    <span class="hidden md:inline">App installieren</span>
-                </button>
+    <!-- Top Navigation Bar -->
+    <nav class="sticky top-0 z-50 bg-gray-900/80 backdrop-blur-xl border-b border-gray-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo/Brand -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                        <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold bg-gradient-to-r from-white to-cyan-400 bg-clip-text text-transparent">Admin-Panel</h1>
+                        <p class="text-xs text-gray-500">festas_builds</p>
+                    </div>
+                </div>
                 
-                <button id="qrcode-button" class="text-sm text-gray-400 hover:text-white flex items-center space-x-1" title="QR-Code anzeigen">
-                    <i data-lucide="qr-code" class="w-4 h-4"></i>
-                    <span class="hidden md:inline">QR-Code</span>
-                </button>
-                
-                <button id="logout-button" class="text-sm text-gray-400 hover:text-white flex items-center space-x-1">
-                    <i data-lucide="log-out" class="w-4 h-4"></i>
-                    <span>Logout</span>
-                </button>
+                <!-- Actions -->
+                <div class="flex items-center space-x-2">
+                    <button id="install-app-button" class="btn-icon" title="App installieren" style="display: none;">
+                        <i data-lucide="download" class="w-5 h-5"></i>
+                    </button>
+                    
+                    <button id="qrcode-button" class="btn-icon" title="QR-Code anzeigen">
+                        <i data-lucide="qr-code" class="w-5 h-5"></i>
+                    </button>
+                    
+                    <a href="/" target="_blank" class="btn-icon" title="Seite öffnen">
+                        <i data-lucide="external-link" class="w-5 h-5"></i>
+                    </a>
+                    
+                    <div class="w-px h-6 bg-gray-700 mx-2"></div>
+                    
+                    <button id="logout-button" class="btn-icon danger" title="Abmelden">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                    </button>
+                </div>
             </div>
-        </header>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         
         <!-- QR Code Modal -->
         <div id="qrcode-modal" class="modal" style="display: none; position: fixed; z-index: 60; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
-             <div class="bg-white p-6 rounded-lg text-center relative max-w-sm mx-auto mt-20">
+             <div class="bg-white p-6 rounded-2xl text-center relative max-w-sm mx-auto mt-20 shadow-2xl">
                  <h3 class="text-xl font-bold text-gray-900 mb-4">Dein QR-Code</h3>
                  <div class="flex justify-center mb-4">
-                     <img id="qrcode-image" src="" alt="QR Code wird geladen..." class="w-64 h-64 border border-gray-200">
+                     <img id="qrcode-image" src="" alt="QR Code wird geladen..." class="w-64 h-64 rounded-lg border border-gray-200">
                  </div>
-                 <a id="qrcode-download" href="" download="my_qrcode.png" class="text-blue-600 hover:underline text-sm font-bold">Herunterladen</a>
-                 <button onclick="document.getElementById('qrcode-modal').style.display='none'" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800">
+                 <a id="qrcode-download" href="" download="my_qrcode.png" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-bold">
+                     <i data-lucide="download" class="w-4 h-4"></i>
+                     Herunterladen
+                 </a>
+                 <button onclick="document.getElementById('qrcode-modal').style.display='none'" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors">
                      <i data-lucide="x" class="w-6 h-6"></i>
                  </button>
              </div>
         </div>
 
-        <!-- Page Selector -->
-        <div class="mb-6 bg-gray-800 p-4 rounded-lg">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4 flex-1">
-                    <label for="page-selector" class="text-sm font-medium text-gray-300">Aktive Seite:</label>
-                    <select id="page-selector" class="bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1 max-w-md">
-                        <option value="">Lade Seiten...</option>
-                    </select>
+        <!-- Page Selector Card -->
+        <div class="admin-card mb-6">
+            <div class="admin-card-body">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div class="flex items-center gap-3 flex-1">
+                        <div class="w-10 h-10 rounded-lg bg-gray-700 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="file-text" class="w-5 h-5 text-cyan-400"></i>
+                        </div>
+                        <div class="flex-1">
+                            <label for="page-selector" class="text-sm font-medium text-gray-400 block mb-1">Aktive Seite</label>
+                            <select id="page-selector" class="w-full bg-gray-700/50 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 border border-gray-600 cursor-pointer">
+                                <option value="">Lade Seiten...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="manage-pages-button" class="btn-primary">
+                        <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                        <span>Seiten verwalten</span>
+                    </button>
                 </div>
-                <button id="manage-pages-button" class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center space-x-2">
-                    <i data-lucide="layout" class="w-4 h-4"></i>
-                    <span>Seiten verwalten</span>
-                </button>
             </div>
         </div>
 
@@ -200,30 +227,49 @@
             </div>
         </div>
 
-        <!-- Tabs -->
-        <div class="mb-6 border-b border-gray-700">
-            <nav class="-mb-px flex space-x-6 overflow-x-auto" aria-label="Tabs">
-                <button data-tab="dashboard" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-400 text-blue-400">Dashboard</button>
-                <button data-tab="items" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Items verwalten</button>
-                <button data-tab="profile" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Profil & Design</button>
-                <button data-tab="media" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Medien</button>
-                <button data-tab="community" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Community</button>
-                <button data-tab="mediakit" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Besondere Seiten</button>
-                <button onclick="window.location.href='/analytics'" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">Analytics</button>
-            </nav>
+        <!-- Enhanced Tab Navigation -->
+        <div class="admin-tabs mb-6">
+            <button data-tab="dashboard" class="admin-tab active">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                <span>Dashboard</span>
+            </button>
+            <button data-tab="items" class="admin-tab">
+                <i data-lucide="link" class="w-4 h-4"></i>
+                <span>Items</span>
+            </button>
+            <button data-tab="profile" class="admin-tab">
+                <i data-lucide="palette" class="w-4 h-4"></i>
+                <span>Profil & Design</span>
+            </button>
+            <button data-tab="media" class="admin-tab">
+                <i data-lucide="image" class="w-4 h-4"></i>
+                <span>Medien</span>
+            </button>
+            <button data-tab="community" class="admin-tab">
+                <i data-lucide="users" class="w-4 h-4"></i>
+                <span>Community</span>
+            </button>
+            <button data-tab="mediakit" class="admin-tab">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+                <span>Seiten</span>
+            </button>
+            <button onclick="window.location.href='/analytics'" class="admin-tab">
+                <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+                <span>Analytics</span>
+            </button>
         </div>
 
-        <!-- TAB: DASHBOARD (NEW) -->
+        <!-- TAB: DASHBOARD -->
         <div id="tab-content-dashboard" class="tab-content active">
             <div class="space-y-6">
-                <!-- Welcome Card -->
-                <div class="bg-gradient-to-r from-blue-600 to-cyan-500 rounded-lg p-6 text-white shadow-lg">
-                    <h2 class="text-2xl font-bold mb-2">Willkommen zurück, festas_builds! 🎮</h2>
-                    <p class="text-blue-100">Hier ist dein Überblick über deine Link-in-Bio Performance</p>
+                <!-- Welcome Banner -->
+                <div class="welcome-banner">
+                    <h2>Willkommen zurück, festas_builds! 🎮</h2>
+                    <p>Hier ist dein Überblick über deine Link-in-Bio Performance</p>
                 </div>
 
                 <!-- Quick Stats Grid -->
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-value" id="total-clicks">-</div>
                         <div class="stat-label">Klicks gesamt</div>
@@ -253,47 +299,68 @@
                 <!-- Charts and Lists Grid -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Clicks Chart -->
-                    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                        <h3 class="text-lg font-semibold text-white mb-4">Klicks (7 Tage)</h3>
-                        <div style="height: 200px;">
-                            <canvas id="clicks-chart"></canvas>
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="flex items-center gap-2">
+                                <i data-lucide="trending-up" class="w-5 h-5 text-cyan-400"></i>
+                                Klicks (7 Tage)
+                            </h3>
+                        </div>
+                        <div class="admin-card-body">
+                            <div style="height: 200px;">
+                                <canvas id="clicks-chart"></canvas>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Top Performers -->
-                    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                        <h3 class="text-lg font-semibold text-white mb-4">Top Performer</h3>
-                        <div id="top-performers-list" class="space-y-3">
-                            <p class="text-gray-400 text-sm text-center py-4">Lade Daten...</p>
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="flex items-center gap-2">
+                                <i data-lucide="award" class="w-5 h-5 text-yellow-400"></i>
+                                Top Performer
+                            </h3>
+                        </div>
+                        <div class="admin-card-body">
+                            <div id="top-performers-list" class="space-y-3">
+                                <p class="text-gray-400 text-sm text-center py-4">Lade Daten...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Recent Activity -->
-                <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                    <h3 class="text-lg font-semibold text-white mb-4">Letzte Aktivität</h3>
-                    <div id="recent-activity-list">
-                        <p class="text-gray-400 text-sm text-center py-4">Lade Aktivität...</p>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="flex items-center gap-2">
+                            <i data-lucide="activity" class="w-5 h-5 text-green-400"></i>
+                            Letzte Aktivität
+                        </h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <div id="recent-activity-list">
+                            <p class="text-gray-400 text-sm text-center py-4">Lade Aktivität...</p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <button onclick="document.querySelector('[data-tab=items]').click()" class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-all">
+                <div class="quick-actions">
+                    <button onclick="document.querySelector('[data-tab=items]').click()" class="quick-action-btn primary">
                         <i data-lucide="plus-circle" class="w-8 h-8"></i>
-                        <span class="font-medium">Neues Item</span>
+                        <span>Neues Item</span>
                     </button>
-                    <button onclick="document.querySelector('[data-tab=profile]').click()" class="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-all">
+                    <button onclick="document.querySelector('[data-tab=profile]').click()" class="quick-action-btn">
                         <i data-lucide="user" class="w-8 h-8"></i>
-                        <span class="font-medium">Profil bearbeiten</span>
+                        <span>Profil bearbeiten</span>
                     </button>
-                    <button onclick="window.showScheduleCalendar()" class="bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-all">
+                    <button onclick="window.showScheduleCalendar()" class="quick-action-btn">
                         <i data-lucide="calendar" class="w-8 h-8"></i>
-                        <span class="font-medium">Zeitplan</span>
+                        <span>Zeitplan</span>
                     </button>
-                    <button onclick="window.location.href='/analytics'" class="bg-cyan-600 hover:bg-cyan-700 text-white p-4 rounded-lg flex flex-col items-center space-y-2 transition-all">
+                    <button onclick="window.location.href='/analytics'" class="quick-action-btn">
                         <i data-lucide="bar-chart-2" class="w-8 h-8"></i>
-                        <span class="font-medium">Analytics</span>
+                        <span>Analytics</span>
                     </button>
                 </div>
             </div>
@@ -639,7 +706,7 @@
     </div>
 
     <!-- Preview Button -->
-    <button id="preview-button" title="Live-Vorschau" class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-110">
+    <button id="preview-button" title="Live-Vorschau" class="btn-preview fixed bottom-6 right-6">
         <i data-lucide="eye" class="w-6 h-6"></i>
     </button>
 

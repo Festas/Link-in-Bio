@@ -110,43 +110,38 @@ jobs:
             echo "✓ .env erstellt"
             
             # Social Media Credentials (.env.social) erstellen
-            # Kombiniert Instagram und TikTok Secrets
-            if [ -n "${{ secrets.INSTAGRAM_SECRET }}" ] || [ -n "${{ secrets.TIKTOK_SECRET }}" ]; then
-              > .env.social
-              if [ -n "${{ secrets.INSTAGRAM_SECRET }}" ]; then
-                echo "${{ secrets.INSTAGRAM_SECRET }}" >> .env.social
-                echo "" >> .env.social
-              fi
-              if [ -n "${{ secrets.TIKTOK_SECRET }}" ]; then
-                echo "${{ secrets.TIKTOK_SECRET }}" >> .env.social
-              fi
-              echo "✓ .env.social erstellt"
+            # WICHTIG: Datei wird IMMER erstellt (auch leer), da docker-compose sie benötigt
+            > .env.social
+            if [ -n "${{ secrets.INSTAGRAM_SECRET }}" ]; then
+              echo "${{ secrets.INSTAGRAM_SECRET }}" >> .env.social
+              echo "" >> .env.social
             fi
+            if [ -n "${{ secrets.TIKTOK_SECRET }}" ]; then
+              echo "${{ secrets.TIKTOK_SECRET }}" >> .env.social
+            fi
+            echo "✓ .env.social erstellt"
             
             # Berechtigungen setzen
-            chmod 600 .env .env.social 2>/dev/null || true
+            chmod 600 .env .env.social
             
             echo "✓ Alle .env Dateien wurden aus GitHub Secrets geladen"
 
-      # 5. Datenbank-Verzeichnis und Datenbanken initialisieren
-      - name: Initialize data directory and databases
+      # 5. Verzeichnisse für persistente Daten erstellen
+      - name: Create data directories
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "=== Initialisiere Datenbanken ==="
+            echo "=== Erstelle Daten-Verzeichnisse ==="
             cd /lib
             
-            # Datenbank-Verzeichnis erstellen falls nicht vorhanden
+            # Verzeichnisse erstellen falls nicht vorhanden
             mkdir -p data
             mkdir -p static/uploads
             
-            # Datenbanken initialisieren (erstellt sie falls nicht vorhanden)
-            python3 init_databases.py
-            
-            echo "✓ Datenbanken initialisiert"
+            echo "✓ Verzeichnisse erstellt (Datenbanken werden vom Container initialisiert)"
 
       # 6. Docker Container neu bauen und starten
       - name: Build and start Docker containers

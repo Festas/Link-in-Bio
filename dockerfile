@@ -29,10 +29,18 @@ COPY . .
 # 4. Vendor laden
 RUN python download_vendor.py
 
+# 5. Make entrypoint script executable
+RUN chmod +x entrypoint.sh
+
+# 6. Create directories (will be overridden by volumes at startup)
+RUN mkdir -p /app/data /app/static/uploads
+
 EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
+# Entrypoint for initialization
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

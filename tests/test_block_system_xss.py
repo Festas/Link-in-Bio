@@ -32,7 +32,7 @@ class TestEscapeHtml:
 
     def test_escape_img_onerror(self):
         """Test that img onerror is escaped."""
-        result = escape_html('<img src=x onerror=alert(1)>')
+        result = escape_html("<img src=x onerror=alert(1)>")
         assert "onerror" not in result or "&" in result
         assert "<img" not in result
 
@@ -157,7 +157,7 @@ class TestImageBlockXSS:
 
     def test_image_blocks_dangerous_url(self):
         """Test that dangerous URLs (javascript:) are blocked."""
-        block = ImageBlock(content='javascript:alert(1)', caption="test")
+        block = ImageBlock(content="javascript:alert(1)", caption="test")
         html = block.to_html()
         # javascript: URLs should be completely removed (empty src)
         assert "javascript:" not in html
@@ -166,7 +166,7 @@ class TestImageBlockXSS:
 
     def test_image_escapes_caption(self):
         """Test that image caption is escaped."""
-        block = ImageBlock(content="/test.jpg", caption='<script>alert(1)</script>')
+        block = ImageBlock(content="/test.jpg", caption="<script>alert(1)</script>")
         html = block.to_html()
         assert "<script>" not in html
 
@@ -200,7 +200,7 @@ class TestQuoteBlockXSS:
 
     def test_quote_escapes_author(self):
         """Test that quote author is escaped."""
-        block = QuoteBlock(content="Test quote", author='<img src=x onerror=alert(1)>')
+        block = QuoteBlock(content="Test quote", author="<img src=x onerror=alert(1)>")
         html = block.to_html()
         assert "<img" not in html
 
@@ -210,14 +210,14 @@ class TestVideoBlockXSS:
 
     def test_video_blocks_javascript_url(self):
         """Test that javascript: URLs are blocked."""
-        block = VideoBlock(content='javascript:alert(1)')
+        block = VideoBlock(content="javascript:alert(1)")
         html = block.to_html()
         assert "javascript:" not in html
         assert "Video not available" in html
 
     def test_video_allows_youtube_url(self):
         """Test that YouTube URLs are allowed."""
-        block = VideoBlock(content='https://www.youtube.com/embed/abc123')
+        block = VideoBlock(content="https://www.youtube.com/embed/abc123")
         html = block.to_html()
         assert "youtube.com" in html
 
@@ -241,7 +241,8 @@ class TestGalleryBlockXSS:
     def test_gallery_blocks_dangerous_urls(self):
         """Test that dangerous gallery URLs are blocked."""
         import json
-        malicious_urls = ['javascript:alert(1)', '<script>alert(1)</script>']
+
+        malicious_urls = ["javascript:alert(1)", "<script>alert(1)</script>"]
         block = GalleryBlock(content=json.dumps(malicious_urls))
         html = block.to_html()
         # javascript: URLs are blocked (become empty)
@@ -256,11 +257,12 @@ class TestTimelineBlockXSS:
     def test_timeline_escapes_fields(self):
         """Test that timeline fields are escaped."""
         import json
+
         events = [
             {
                 "date": "<script>alert(1)</script>",
                 "title": "<img onerror=alert(1)>",
-                "description": "javascript:alert(1)"
+                "description": "javascript:alert(1)",
             }
         ]
         block = TimelineBlock(content=json.dumps(events))
@@ -274,21 +276,13 @@ class TestRenderBlockToHtml:
 
     def test_render_escapes_content(self):
         """Test that render_block_to_html escapes content."""
-        block = {
-            "block_type": "text",
-            "content": "<script>alert('XSS')</script>",
-            "settings": {}
-        }
+        block = {"block_type": "text", "content": "<script>alert('XSS')</script>", "settings": {}}
         html = render_block_to_html(block)
         assert "<script>" not in html
 
     def test_render_handles_invalid_settings(self):
         """Test that render handles invalid settings gracefully."""
-        block = {
-            "block_type": "text",
-            "content": "test",
-            "settings": "not-json"
-        }
+        block = {"block_type": "text", "content": "test", "settings": "not-json"}
         # Should not raise, should handle gracefully
         html = render_block_to_html(block)
         assert "test" in html or "error" in html.lower()

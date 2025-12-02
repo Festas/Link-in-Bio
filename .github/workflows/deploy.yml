@@ -191,7 +191,7 @@ jobs:
             cat > docker-compose.yml << EOF
             services:
               web:
-                image: ${REGISTRY}/${IMAGE_NAME_LOWER}:${IMAGE_TAG}
+                image: "${REGISTRY}/${IMAGE_NAME_LOWER}:${IMAGE_TAG}"
                 container_name: linktree_app
                 restart: unless-stopped
                 volumes:

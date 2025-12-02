@@ -5,7 +5,22 @@ Provides reusable block types for building custom pages.
 
 import html
 import json
+import re
 from typing import Dict, Any, List, Optional
+
+
+# Trusted iframe domains for video embeds
+TRUSTED_IFRAME_DOMAINS = frozenset([
+    'youtube.com',
+    'www.youtube.com',
+    'player.vimeo.com',
+    'vimeo.com',
+    'open.spotify.com',
+    'player.twitch.tv',
+    'www.twitch.tv',
+    'dailymotion.com',
+    'www.dailymotion.com',
+])
 
 
 def escape_html(text: str) -> str:
@@ -13,6 +28,52 @@ def escape_html(text: str) -> str:
     if text is None:
         return ""
     return html.escape(str(text), quote=True)
+
+
+def sanitize_url(url: str) -> str:
+    """Sanitize URL to prevent javascript: and other dangerous schemes."""
+    if url is None:
+        return ""
+    url = str(url).strip()
+    # Block dangerous URL schemes
+    lower_url = url.lower()
+    if lower_url.startswith(('javascript:', 'data:', 'vbscript:')):
+        return ""
+    return escape_html(url)
+
+
+def is_trusted_iframe_src(src: str) -> bool:
+    """Check if iframe src is from a trusted domain."""
+    if not src:
+        return False
+    src_lower = src.lower().strip()
+    for domain in TRUSTED_IFRAME_DOMAINS:
+        if f'//{domain}' in src_lower or f'//{domain}/' in src_lower:
+            return True
+    return False
+
+
+def sanitize_iframe(iframe_html: str) -> str:
+    """
+    Sanitize iframe HTML to only allow trusted video sources.
+    Returns empty string if the iframe is not from a trusted source.
+    """
+    if not iframe_html:
+        return ""
+    
+    # Extract src from iframe
+    src_match = re.search(r'src=["\']([^"\']+)["\']', iframe_html, re.IGNORECASE)
+    if not src_match:
+        return ""
+    
+    src = src_match.group(1)
+    
+    # Check if src is from trusted domain
+    if not is_trusted_iframe_src(src):
+        return ""
+    
+    # Return the original iframe (we've verified the src is trusted)
+    return iframe_html
 
 
 class BlockType:
@@ -84,12 +145,12 @@ class ImageBlock(BlockType):
         caption_html = (
             f'<figcaption class="text-sm text-gray-600 mt-2 text-center">{caption}</figcaption>' if caption else ""
         )
-        # Escape the src URL to prevent XSS
-        escaped_src = escape_html(self.content)
+        # Sanitize the src URL to prevent javascript: and other dangerous schemes
+        sanitized_src = sanitize_url(self.content)
 
         return f"""
         <figure class="{width_class} mb-6">
-            <img src="{escaped_src}" alt="{caption}" class="rounded-lg w-full">
+            <img src="{sanitized_src}" alt="{caption}" class="rounded-lg w-full">
             {caption_html}
         </figure>
         """
@@ -154,7 +215,7 @@ class GalleryBlock(BlockType):
 
         image_html = "".join(
             [
-                f'<div class="overflow-hidden rounded-lg"><img src="{escape_html(img)}" alt="Gallery image" class="w-full h-48 object-cover hover:scale-110 transition-transform duration-300"></div>'
+                f'<div class="overflow-hidden rounded-lg"><img src="{sanitize_url(img)}" alt="Gallery image" class="w-full h-48 object-cover hover:scale-110 transition-transform duration-300"></div>'
                 for img in images
             ]
         )
@@ -200,18 +261,21 @@ class VideoBlock(BlockType):
         super().__init__("video", content=content)
 
     def to_html(self) -> str:
-        # If it's already an iframe, we need to sanitize it to prevent XSS
-        # For now, we only allow the iframe if it's from trusted sources
+        # If it's already an iframe, sanitize it to only allow trusted sources
         if "<iframe" in self.content:
-            # Allow iframes but note that this could be a security risk
-            # In production, consider using a proper HTML sanitizer library like bleach
-            return f'<div class="aspect-video mb-6">{self.content}</div>'
+            sanitized_iframe = sanitize_iframe(self.content)
+            if sanitized_iframe:
+                return f'<div class="aspect-video mb-6">{sanitized_iframe}</div>'
+            # If iframe is not from trusted source, return empty
+            return '<div class="aspect-video mb-6"><p class="text-center text-gray-500">Video not available</p></div>'
 
-        # Otherwise assume it's a URL and create iframe with escaped src
-        escaped_src = escape_html(self.content)
+        # Otherwise assume it's a URL and create iframe with sanitized src
+        sanitized_src = sanitize_url(self.content)
+        if not sanitized_src:
+            return '<div class="aspect-video mb-6"><p class="text-center text-gray-500">Video not available</p></div>'
         return f"""
         <div class="aspect-video mb-6 rounded-lg overflow-hidden">
-            <iframe src="{escaped_src}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
+            <iframe src="{sanitized_src}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
         </div>
         """
 

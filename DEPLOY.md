@@ -77,9 +77,9 @@ Add the following secrets:
 
 | Secret Name | Description | Example Value |
 |-------------|-------------|---------------|
-| `HETZNER_HOST` | Your Hetzner server IP address | `185.207.250.174` |
-| `HETZNER_USER` | SSH username | `deploy` or `root` |
-| `HETZNER_SSH_PRIVATE_KEY` | Full SSH private key content | (see below) |
+| `HOST` | Your Hetzner server IP address | `185.207.250.174` |
+| `USERNAME` | SSH username | `deploy` or `root` |
+| `SSH_PRIVATE_KEY` | Full SSH private key content | (see below) |
 | `DOMAIN` | Your domain name (without https://) | `festas-builds.com` |
 | `ENV_FILE` | Main .env file contents | (see template below) |
 
@@ -276,8 +276,8 @@ If you see "unauthorized" errors when pulling images:
 
 ### Workflow Fails at SSH Step
 
-1. Verify `HETZNER_HOST` is the correct IP
-2. Verify `HETZNER_USER` can SSH into the server
+1. Verify `HOST` is the correct IP
+2. Verify `USERNAME` can SSH into the server
 3. Test SSH connection manually: `ssh -i private_key user@host`
 
 ---
@@ -286,9 +286,9 @@ If you see "unauthorized" errors when pulling images:
 
 | Secret | Required | Description |
 |--------|----------|-------------|
-| `HETZNER_HOST` | Yes | Server IP address |
-| `HETZNER_USER` | Yes | SSH username (`deploy` or `root`) |
-| `HETZNER_SSH_PRIVATE_KEY` | Yes | Full SSH private key |
+| `HOST` | Yes | Server IP address |
+| `USERNAME` | Yes | SSH username (`deploy` or `root`) |
+| `SSH_PRIVATE_KEY` | Yes | Full SSH private key |
 | `DOMAIN` | Yes | Your domain (e.g., `festas-builds.com`) |
 | `ENV_FILE` | Yes | Complete .env file contents |
 | `INSTAGRAM_SECRET` | No | Instagram API credentials |

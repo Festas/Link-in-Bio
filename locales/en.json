@@ -1,0 +1,176 @@
+{
+  "meta": {
+    "language": "en",
+    "name": "English",
+    "version": "1.0.0"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information",
+    "yes": "Yes",
+    "no": "No",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "refresh": "Refresh",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "reset": "Reset",
+    "upload": "Upload",
+    "download": "Download",
+    "preview": "Preview",
+    "settings": "Settings",
+    "help": "Help",
+    "logout": "Logout",
+    "login": "Login"
+  },
+  "navigation": {
+    "home": "Home",
+    "admin": "Admin",
+    "analytics": "Analytics",
+    "links": "Links",
+    "pages": "Pages",
+    "mediakit": "Media Kit",
+    "settings": "Settings",
+    "subscribers": "Subscribers",
+    "messages": "Messages"
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Dashboard",
+      "welcome": "Welcome back!",
+      "totalClicks": "Total Clicks",
+      "totalSubscribers": "Subscribers",
+      "recentActivity": "Recent Activity",
+      "quickActions": "Quick Actions"
+    },
+    "items": {
+      "title": "Links & Elements",
+      "addLink": "Add Link",
+      "addHeader": "Add Header",
+      "addDivider": "Add Divider",
+      "addVideo": "Add Video",
+      "addProduct": "Add Product",
+      "addFaq": "Add FAQ",
+      "visibility": "Visibility",
+      "visible": "Visible",
+      "hidden": "Hidden"
+    },
+    "pages": {
+      "title": "Pages",
+      "createPage": "Create New Page",
+      "slug": "URL Slug",
+      "mainPage": "Main Page",
+      "activePage": "Active Page",
+      "deletePage": "Delete Page",
+      "deleteConfirm": "Are you sure you want to delete this page?"
+    },
+    "profile": {
+      "title": "Profile",
+      "name": "Name",
+      "bio": "Biography",
+      "avatar": "Profile Picture",
+      "socialLinks": "Social Media Links"
+    },
+    "settings": {
+      "title": "Settings",
+      "theme": "Theme",
+      "language": "Language",
+      "customCSS": "Custom CSS",
+      "customHTML": "Custom HTML",
+      "advanced": "Advanced"
+    }
+  },
+  "public": {
+    "subscribe": {
+      "title": "Subscribe to Newsletter",
+      "email": "Email Address",
+      "placeholder": "your@email.com",
+      "button": "Subscribe",
+      "privacy": "I agree to the Privacy Policy",
+      "success": "Successfully subscribed!",
+      "alreadySubscribed": "You are already subscribed."
+    },
+    "contact": {
+      "title": "Contact",
+      "name": "Name",
+      "email": "Email",
+      "message": "Message",
+      "send": "Send Message",
+      "success": "Message sent!",
+      "error": "Error sending message."
+    }
+  },
+  "mediakit": {
+    "title": "Media Kit",
+    "stats": {
+      "followers": "Followers",
+      "engagement": "Engagement",
+      "reach": "Reach",
+      "views": "Views"
+    },
+    "platforms": {
+      "instagram": "Instagram",
+      "tiktok": "TikTok",
+      "youtube": "YouTube",
+      "twitter": "X (Twitter)",
+      "twitch": "Twitch"
+    },
+    "access": {
+      "requestAccess": "Request Access",
+      "approved": "Approved",
+      "pending": "Pending",
+      "rejected": "Rejected"
+    }
+  },
+  "errors": {
+    "notFound": "Page Not Found",
+    "notFoundMessage": "The page you are looking for does not exist.",
+    "serverError": "Server Error",
+    "serverErrorMessage": "An unexpected error occurred.",
+    "unauthorized": "Unauthorized",
+    "forbidden": "Access Denied",
+    "validation": "Validation Error",
+    "network": "Network Error",
+    "timeout": "Request Timeout"
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content",
+    "mainNavigation": "Main navigation",
+    "closeMenu": "Close menu",
+    "openMenu": "Open menu",
+    "expandSection": "Expand section",
+    "collapseSection": "Collapse section",
+    "externalLink": "External link (opens in new tab)",
+    "loadingContent": "Loading content",
+    "contentLoaded": "Content loaded"
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Please enter a valid email address",
+    "url": "Please enter a valid URL",
+    "minLength": "Minimum {min} characters required",
+    "maxLength": "Maximum {max} characters allowed",
+    "passwordMatch": "Passwords do not match"
+  },
+  "dates": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "lastWeek": "Last Week",
+    "lastMonth": "Last Month",
+    "dateFormat": "MM/dd/yyyy",
+    "timeFormat": "h:mm a"
+  }
+}

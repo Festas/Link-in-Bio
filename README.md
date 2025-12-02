@@ -45,6 +45,15 @@ Eine moderne, selbst-gehostete Link-in-Bio Lösung die **besser als Linktree & B
 - 🎨 **Event System**: Custom event tracking for any action
 - 🔄 **Session Management**: Secure session-based authentication
 
+### 🛡️ NEW: Security & Infrastructure (v2.1)
+- 🔒 **Input Sanitization**: Comprehensive input validation helpers (`app/sanitization.py`)
+- 📋 **Audit Logging**: Track all admin actions with database-backed logging (`app/audit_log.py`)
+- 🌍 **i18n Foundation**: Translation system with German and English locales
+- 📡 **Enhanced Offline Mode**: Improved PWA with request queueing
+- 🚨 **Custom Error Pages**: User-friendly 404 and 500 error pages
+- 🔧 **Modular Routers**: Extracted special pages and mediakit into separate modules
+- 📦 **Asset Optimization**: Makefile targets for CSS/JS minification
+
 👉 **[See all enhanced features](./docs/ENHANCED_FEATURES.md)** | **[Competitive Analysis 2025](./docs/COMPETITIVE_ANALYSIS_2025.md)** | **[Migrate from Linktree/Beacons](./docs/MIGRATION_GUIDE.md)**
 
 ## 🚀 Quick Start
@@ -185,10 +194,16 @@ Link-in-Bio/
 │   ├── models.py             # Pydantic Models
 │   ├── auth_unified.py       # Authentifizierung
 │   ├── cache_unified.py      # Caching
+│   ├── sanitization.py       # 🆕 Input-Validierung & Sanitization
+│   ├── audit_log.py          # 🆕 Audit Logging für Admin-Aktionen
+│   ├── i18n.py               # 🆕 Internationalisierung
+│   ├── exceptions.py         # Custom Error Handling
 │   ├── routers/              # Modulare API Router
 │   │   ├── pages.py
 │   │   ├── items.py
 │   │   ├── analytics.py
+│   │   ├── special_pages.py  # 🆕 Extrahierte Special Pages API
+│   │   ├── mediakit.py       # 🆕 Extrahierte MediaKit API
 │   │   └── ...
 │   └── scraper/              # Web Scraping Module
 │       ├── scraper.py        # Haupt-Scraper
@@ -197,25 +212,41 @@ Link-in-Bio/
 │   ├── linktree.db           # Hauptdatenbank
 │   ├── special_pages.db      # Spezielle Seiten
 │   ├── pages.db              # Custom Pages
-│   └── mediakit.db           # MediaKit
+│   ├── mediakit.db           # MediaKit
+│   └── audit.db              # 🆕 Audit Log
+├── locales/                  # 🆕 Übersetzungsdateien
+│   ├── de.json               # Deutsch
+│   └── en.json               # English
 ├── templates/                # Jinja2 Templates
+│   ├── errors/               # 🆕 Custom Error Pages
+│   │   ├── 404.html
+│   │   └── 500.html
+│   └── ...
 ├── static/                   # Statische Assets
 │   ├── css/
 │   ├── js/
+│   │   ├── logger.js         # 🆕 Debug-aware Logging
+│   │   ├── sw.js             # 🆕 Enhanced Service Worker
+│   │   └── ...
 │   ├── uploads/              # User Uploads
 │   └── vendor/               # Frontend Libraries
 ├── tests/                    # Test Suite
+│   ├── test_sanitization.py  # 🆕 Sanitization Tests
+│   ├── test_audit_log.py     # 🆕 Audit Log Tests
+│   └── ...
 ├── docs/                     # 📚 Dokumentation
 │   ├── API_REFERENCE.md      # API Dokumentation
 │   ├── ARCHITECTURE.md       # Architektur
 │   ├── DATABASE_ARCHITECTURE.md
 │   ├── guides/               # Anleitungen
+│   │   └── DEPLOY_CHECKLIST.md # 🆕 Erweiterte Deployment-Anleitung
 │   └── archive/              # Archivierte Docs
 ├── .github/workflows/        # CI/CD Workflows
 │   ├── ci.yml                # Tests & Linting
 │   └── deploy.yml            # Auto-Deploy zu Hetzner
 ├── docker-compose.yml        # Docker Compose Config
 ├── dockerfile                # Docker Image
+├── Makefile                  # 🆕 Build-Targets inkl. Asset-Minifizierung
 ├── requirements.txt          # Python Dependencies
 ├── README.md
 ├── CHANGELOG.md

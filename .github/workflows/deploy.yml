@@ -203,8 +203,8 @@ jobs:
               "    container_name: caddy_server" \
               "    restart: unless-stopped" \
               "    ports:" \
-              "      - \"80:80\"" \
-              "      - \"443:443\"" \
+              "      - \"8080:80\"" \
+              "      - \"8443:443\"" \
               "    volumes:" \
               "      - ./Caddyfile:/etc/caddy/Caddyfile:ro" \
               "      - ./caddy_data:/data" \
@@ -286,8 +286,9 @@ jobs:
             echo "=========================================="
             docker compose ps
             echo ""
-            echo "Application URL: https://${DOMAIN:-localhost}"
-            echo "Admin URL: https://admin.${DOMAIN:-localhost}"
+            echo "Application URL: https://${DOMAIN:-localhost}:8443"
+            echo "Admin URL: https://admin.${DOMAIN:-localhost}:8443"
+            echo "Note: HTTP available on port 8080, HTTPS on port 8443"
             
             # Cleanup old images
             docker image prune -f || true

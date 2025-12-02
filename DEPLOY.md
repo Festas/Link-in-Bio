@@ -16,7 +16,7 @@ The deployment workflow:
 ### Hetzner Server Requirements
 
 - **OS**: Ubuntu 22.04 LTS or later recommended
-- **Open Ports**: 22 (SSH), 80 (HTTP), 443 (HTTPS)
+- **Open Ports**: 22 (SSH), 8080 (HTTP), 8443 (HTTPS)
 - **Docker**: Installed (or run bootstrap script once)
 - **Minimum Specs**: 2GB RAM, 20GB disk recommended
 
@@ -175,7 +175,7 @@ docker compose ps
 Expected output:
 ```
 NAME            IMAGE                                    STATUS                  PORTS
-caddy_server    caddy:latest                            Up X minutes            0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp
+caddy_server    caddy:latest                            Up X minutes            0.0.0.0:8080->80/tcp, 0.0.0.0:8443->443/tcp
 linktree_app    ghcr.io/festas/link-in-bio:abc1234     Up X minutes (healthy)
 ```
 
@@ -195,17 +195,20 @@ docker compose logs -f caddy
 ### Test Endpoints
 
 ```bash
-# Health check
-curl -s https://your-domain.com/health
+# Health check (using port 8443 for HTTPS)
+curl -s https://your-domain.com:8443/health
 # Expected: {"status":"healthy","version":"..."}
 
 # Main page
-curl -s -o /dev/null -w "%{http_code}" https://your-domain.com/
+curl -s -o /dev/null -w "%{http_code}" https://your-domain.com:8443/
 # Expected: 200
 
 # Admin page
-curl -s -o /dev/null -w "%{http_code}" https://admin.your-domain.com/
+curl -s -o /dev/null -w "%{http_code}" https://admin.your-domain.com:8443/
 # Expected: 200
+
+# Or using HTTP on port 8080
+curl -s http://your-domain.com:8080/health
 ```
 
 ### Check Files

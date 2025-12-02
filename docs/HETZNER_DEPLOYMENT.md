@@ -259,7 +259,7 @@ docker compose -f /lib/docker-compose.yml ps
 Expected output:
 ```
 NAME                IMAGE               STATUS              PORTS
-caddy_server        caddy:latest        Up X minutes        0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp
+caddy_server        caddy:latest        Up X minutes        0.0.0.0:8080->80/tcp, 0.0.0.0:8443->443/tcp
 linktree_app        lib-linktree        Up X minutes (healthy)
 ```
 
@@ -363,10 +363,12 @@ chmod 600 /lib/.env.social
 ### Port conflicts
 
 ```bash
-# Check what's using ports 80 and 443
-netstat -tlnp | grep -E ':(80|443)'
+# Check what's using ports 8080 and 8443
+netstat -tlnp | grep -E ':(8080|8443)'
 
-# Stop conflicting services (e.g., Apache, nginx)
+# Note: The application uses ports 8080 (HTTP) and 8443 (HTTPS) to avoid
+# conflicts with other services that may be using standard ports 80/443.
+# Stop conflicting services if needed (e.g., Apache, nginx)
 systemctl stop apache2 nginx || true
 ```
 

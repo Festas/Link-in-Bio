@@ -257,9 +257,15 @@ jobs:
             # ==========================================
             echo "[6/6] Running database migrations..."
             
-            # Try alembic first, fallback to init_databases.py
-            if docker compose exec -T web alembic upgrade head 2>/dev/null; then
-              echo "✓ Alembic migrations completed"
+            # Check if alembic is available in the container
+            if docker compose exec -T web which alembic > /dev/null 2>&1; then
+              echo "ℹ Alembic found, running migrations..."
+              if docker compose exec -T web alembic upgrade head; then
+                echo "✓ Alembic migrations completed"
+              else
+                echo "⚠ Alembic migration failed, falling back to init_databases.py..."
+                docker compose exec -T web python init_databases.py || echo "⚠ init_databases.py also failed"
+              fi
             else
               echo "ℹ Alembic not available, running init_databases.py..."
               if docker compose exec -T web python init_databases.py; then

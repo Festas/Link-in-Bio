@@ -165,11 +165,14 @@ if command -v ufw &> /dev/null; then
     ufw allow 80/tcp comment 'HTTP' || true
     ufw allow 443/tcp comment 'HTTPS' || true
     
-    # Enable ufw if not already enabled (without prompting)
-    if ufw status | grep -q "Status: inactive"; then
+    # Check ufw status safely (may fail if ufw not properly configured)
+    UFW_STATUS=$(ufw status 2>/dev/null || echo "unknown")
+    if echo "${UFW_STATUS}" | grep -q "Status: inactive"; then
         log_warn "UFW is not enabled. Enable it manually with: ufw --force enable"
-    else
+    elif echo "${UFW_STATUS}" | grep -q "Status: active"; then
         log_info "UFW is already enabled"
+    else
+        log_warn "Could not determine UFW status. Check manually with: ufw status"
     fi
 else
     log_warn "UFW not found. Please configure firewall manually to allow ports 22, 80, 443"

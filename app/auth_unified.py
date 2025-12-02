@@ -148,7 +148,8 @@ def validate_admin_password():
             "⚠️  CRITICAL SECURITY WARNING: You are using a weak or default password! "
             "Please change ADMIN_PASSWORD in your .env file immediately!"
         )
-        logger.error(f"Current password: {ADMIN_PASSWORD}")
+        # Never log actual password - this is a security vulnerability
+        logger.error("The configured password is a known weak/default password.")
     elif len(ADMIN_PASSWORD) < 12:
         logger.warning(
             "⚠️  Security Warning: Admin password is shorter than 12 characters. "

@@ -199,7 +199,6 @@ class SmartScraper:
         if cached:
             return cached
 
-        parsed = urlparse(url)
         domain = self.url_normalizer.get_domain(url)
         data = {"title": domain, "image_url": None, "url": url}
 
@@ -486,11 +485,11 @@ class SmartScraper:
                                 largest_url = list(img_data.keys())[-1]
                                 if largest_url:
                                     data["image_url"] = largest_url
-                                    logger.info(f"Extracted Amazon image from data-a-dynamic-image")
+                                    logger.info("Extracted Amazon image from data-a-dynamic-image")
                                     break
                         except (json.JSONDecodeError, IndexError, KeyError) as e:
                             # Log parsing errors for debugging
-                            logger.debug(f"Failed to parse Amazon dynamic image data: {e}")
+                            logger.debug("Failed to parse Amazon dynamic image data: %s", e)
 
                     # Fallback to src attribute
                     img_src = img_elem.get("src")
@@ -559,10 +558,6 @@ class SmartScraper:
         except Exception as e:
             logger.error(f"Browser scraping error: {e}", exc_info=True)
             return None
-
-    def get_google_favicon(self, domain: str) -> str:
-        """Get Google favicon URL for domain - kept for backward compatibility."""
-        return f"https://www.google.com/s2/favicons?domain={domain}&sz=128"
 
 
 scraper = SmartScraper()

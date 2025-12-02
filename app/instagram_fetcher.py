@@ -73,7 +73,7 @@ class InstagramFetcher:
                 expires_in = data.get("expires_in", 5184000)  # Default: 60 days
 
                 logger.info(
-                    f"Token refreshed successfully. Expires in {expires_in} seconds (~{expires_in/86400:.0f} days)"
+                    f"Token refreshed successfully. Expires in {expires_in} seconds (~{expires_in / 86400:.0f} days)"
                 )
 
                 return new_token

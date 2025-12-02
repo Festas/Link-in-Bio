@@ -172,6 +172,8 @@ jobs:
                 reverse_proxy web:8000
             }
             EOF
+              # Remove leading whitespace from heredoc (12 spaces of indentation)
+              sed -i 's/^            //' Caddyfile
               echo "✓ Caddyfile created for domain: ${DOMAIN}"
             else
               echo "⚠ Warning: DOMAIN secret is not set, using localhost"
@@ -180,6 +182,8 @@ jobs:
                 reverse_proxy web:8000
             }
             EOF
+              # Remove leading whitespace from heredoc (12 spaces of indentation)
+              sed -i 's/^            //' Caddyfile
               echo "✓ Caddyfile created for localhost"
             fi
             
@@ -223,6 +227,8 @@ jobs:
                   web:
                     condition: service_healthy
             EOF
+            # Remove leading whitespace from heredoc (12 spaces of indentation)
+            sed -i 's/^            //' docker-compose.yml
             
             echo "✓ docker-compose.yml created"
             

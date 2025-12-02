@@ -66,6 +66,9 @@ jobs:
     name: Deploy to Hetzner Server
     needs: build-and-push
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     
     steps:
       - name: Checkout repository (for Caddyfile)

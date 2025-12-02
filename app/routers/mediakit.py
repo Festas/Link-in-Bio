@@ -52,6 +52,9 @@ logger = logging.getLogger(__name__)
 
 
 # --- Media Kit Data Endpoints ---
+# Note: These use "-data" suffix (e.g., GET /api/mediakit-data) to maintain
+# backward compatibility with the original API paths from endpoints.py.
+# The router prefix is "/mediakit" so "-data" creates "/mediakit-data".
 
 
 @router.get("-data", dependencies=[Depends(require_auth)])

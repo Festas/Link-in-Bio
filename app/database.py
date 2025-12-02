@@ -182,7 +182,8 @@ def init_main_db():
             if col not in columns_items:
                 try:
                     cursor.execute(sql)
-                except:
+                except sqlite3.OperationalError:
+                    # Column may already exist, ignore
                     pass
 
         # Clicks Migration

@@ -90,7 +90,8 @@ async def track_click(item_id: int, request: Request):
                 "INSERT INTO clicks (item_id, referer, country_code) VALUES (?, ?, ?)", (item_id, domain, country)
             )
             conn.commit()
-    except:
+    except Exception:
+        # Silently ignore click tracking errors to not affect user experience
         pass
     return Response(status_code=204)
 

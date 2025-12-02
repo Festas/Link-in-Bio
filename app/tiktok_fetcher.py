@@ -77,7 +77,7 @@ class TikTokFetcher:
                 expires_in = data.get("expires_in", 86400)  # Default: 24 hours
 
                 logger.info(
-                    f"Token refreshed successfully. Expires in {expires_in} seconds (~{expires_in/3600:.0f} hours)"
+                    f"Token refreshed successfully. Expires in {expires_in} seconds (~{expires_in / 3600:.0f} hours)"
                 )
 
                 return (new_access_token, new_refresh_token)

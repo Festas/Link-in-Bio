@@ -3,8 +3,77 @@ Special Page Block System
 Provides reusable block types for building custom pages.
 """
 
-from typing import Dict, Any, List, Optional
+import html
 import json
+import re
+from typing import Dict, Any, List, Optional
+
+
+# Trusted iframe domains for video embeds
+TRUSTED_IFRAME_DOMAINS = frozenset([
+    'youtube.com',
+    'www.youtube.com',
+    'player.vimeo.com',
+    'vimeo.com',
+    'open.spotify.com',
+    'player.twitch.tv',
+    'www.twitch.tv',
+    'dailymotion.com',
+    'www.dailymotion.com',
+])
+
+
+def escape_html(text: str) -> str:
+    """Escape HTML special characters to prevent XSS attacks."""
+    if text is None:
+        return ""
+    return html.escape(str(text), quote=True)
+
+
+def sanitize_url(url: str) -> str:
+    """Sanitize URL to prevent javascript: and other dangerous schemes."""
+    if url is None:
+        return ""
+    url = str(url).strip()
+    # Block dangerous URL schemes
+    lower_url = url.lower()
+    if lower_url.startswith(('javascript:', 'data:', 'vbscript:')):
+        return ""
+    return escape_html(url)
+
+
+def is_trusted_iframe_src(src: str) -> bool:
+    """Check if iframe src is from a trusted domain."""
+    if not src:
+        return False
+    src_lower = src.lower().strip()
+    for domain in TRUSTED_IFRAME_DOMAINS:
+        if f'//{domain}' in src_lower or f'//{domain}/' in src_lower:
+            return True
+    return False
+
+
+def sanitize_iframe(iframe_html: str) -> str:
+    """
+    Sanitize iframe HTML to only allow trusted video sources.
+    Returns empty string if the iframe is not from a trusted source.
+    """
+    if not iframe_html:
+        return ""
+    
+    # Extract src from iframe
+    src_match = re.search(r'src=["\']([^"\']+)["\']', iframe_html, re.IGNORECASE)
+    if not src_match:
+        return ""
+    
+    src = src_match.group(1)
+    
+    # Check if src is from trusted domain
+    if not is_trusted_iframe_src(src):
+        return ""
+    
+    # Return the original iframe (we've verified the src is trusted)
+    return iframe_html
 
 
 class BlockType:
@@ -38,7 +107,12 @@ class HeadingBlock(BlockType):
 
     def to_html(self) -> str:
         level = self.settings.get("level", "h2")
-        return f'<{level} class="text-2xl font-bold mb-4">{self.content}</{level}>'
+        # Validate level to prevent XSS via tag injection
+        valid_levels = {"h1", "h2", "h3", "h4", "h5", "h6"}
+        if level not in valid_levels:
+            level = "h2"
+        escaped_content = escape_html(self.content)
+        return f'<{level} class="text-2xl font-bold mb-4">{escaped_content}</{level}>'
 
 
 class TextBlock(BlockType):
@@ -48,7 +122,8 @@ class TextBlock(BlockType):
         super().__init__("text", content=content)
 
     def to_html(self) -> str:
-        formatted_content = self.content.replace("\n", "<br>")
+        escaped_content = escape_html(self.content)
+        formatted_content = escaped_content.replace("\n", "<br>")
         return f'<p class="text-base leading-relaxed mb-4">{formatted_content}</p>'
 
 
@@ -66,14 +141,16 @@ class ImageBlock(BlockType):
             "small": "max-w-md mx-auto",
         }.get(self.settings.get("width", "full"), "w-full")
 
-        caption = self.settings.get("caption", "")
+        caption = escape_html(self.settings.get("caption", ""))
         caption_html = (
             f'<figcaption class="text-sm text-gray-600 mt-2 text-center">{caption}</figcaption>' if caption else ""
         )
+        # Sanitize the src URL to prevent javascript: and other dangerous schemes
+        sanitized_src = sanitize_url(self.content)
 
         return f"""
         <figure class="{width_class} mb-6">
-            <img src="{self.content}" alt="{caption}" class="rounded-lg w-full">
+            <img src="{sanitized_src}" alt="{caption}" class="rounded-lg w-full">
             {caption_html}
         </figure>
         """
@@ -87,7 +164,10 @@ class ListBlock(BlockType):
 
     def to_html(self) -> str:
         list_type = self.settings.get("type", "ul")
-        items = [item.strip() for item in self.content.split("\n") if item.strip()]
+        # Validate list type to prevent injection
+        if list_type not in ("ul", "ol"):
+            list_type = "ul"
+        items = [escape_html(item.strip()) for item in self.content.split("\n") if item.strip()]
 
         if not items:
             return ""
@@ -124,7 +204,7 @@ class GalleryBlock(BlockType):
     def to_html(self) -> str:
         try:
             images = json.loads(self.content) if isinstance(self.content, str) else self.content
-        except:
+        except (json.JSONDecodeError, TypeError):
             images = []
 
         if not images:
@@ -135,7 +215,7 @@ class GalleryBlock(BlockType):
 
         image_html = "".join(
             [
-                f'<div class="overflow-hidden rounded-lg"><img src="{img}" alt="Gallery image" class="w-full h-48 object-cover hover:scale-110 transition-transform duration-300"></div>'
+                f'<div class="overflow-hidden rounded-lg"><img src="{sanitize_url(img)}" alt="Gallery image" class="w-full h-48 object-cover hover:scale-110 transition-transform duration-300"></div>'
                 for img in images
             ]
         )
@@ -150,7 +230,7 @@ class QuoteBlock(BlockType):
         super().__init__("quote", content=content, settings={"author": author, "style": style})
 
     def to_html(self) -> str:
-        author = self.settings.get("author", "")
+        author = escape_html(self.settings.get("author", ""))
         style = self.settings.get("style", "default")
 
         style_classes = {
@@ -163,10 +243,11 @@ class QuoteBlock(BlockType):
 
         block_class = style_classes.get(style, style_classes["default"])
         author_html = f'<cite class="block text-sm font-semibold mt-2">— {author}</cite>' if author else ""
+        escaped_content = escape_html(self.content)
 
         return f"""
         <blockquote class="{block_class} p-4 mb-6 rounded-r-lg">
-            <p class="text-base italic">{self.content}</p>
+            <p class="text-base italic">{escaped_content}</p>
             {author_html}
         </blockquote>
         """
@@ -180,14 +261,21 @@ class VideoBlock(BlockType):
         super().__init__("video", content=content)
 
     def to_html(self) -> str:
-        # If it's already an iframe, use it directly
+        # If it's already an iframe, sanitize it to only allow trusted sources
         if "<iframe" in self.content:
-            return f'<div class="aspect-video mb-6">{self.content}</div>'
+            sanitized_iframe = sanitize_iframe(self.content)
+            if sanitized_iframe:
+                return f'<div class="aspect-video mb-6">{sanitized_iframe}</div>'
+            # If iframe is not from trusted source, return empty
+            return '<div class="aspect-video mb-6"><p class="text-center text-gray-500">Video not available</p></div>'
 
-        # Otherwise assume it's a URL and create iframe
+        # Otherwise assume it's a URL and create iframe with sanitized src
+        sanitized_src = sanitize_url(self.content)
+        if not sanitized_src:
+            return '<div class="aspect-video mb-6"><p class="text-center text-gray-500">Video not available</p></div>'
         return f"""
         <div class="aspect-video mb-6 rounded-lg overflow-hidden">
-            <iframe src="{self.content}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
+            <iframe src="{sanitized_src}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
         </div>
         """
 
@@ -202,7 +290,7 @@ class ColumnsBlock(BlockType):
     def to_html(self) -> str:
         try:
             column_contents = json.loads(self.content) if isinstance(self.content, str) else self.content
-        except:
+        except (json.JSONDecodeError, TypeError):
             column_contents = []
 
         if not column_contents:
@@ -211,7 +299,8 @@ class ColumnsBlock(BlockType):
         columns = min(self.settings.get("columns", 2), 4)
         grid_class = f"md:grid-cols-{columns}"
 
-        column_html = "".join([f'<div class="mb-4 md:mb-0">{content}</div>' for content in column_contents])
+        # Escape column contents
+        column_html = "".join([f'<div class="mb-4 md:mb-0">{escape_html(content)}</div>' for content in column_contents])
 
         return f'<div class="grid grid-cols-1 {grid_class} gap-6 mb-6">{column_html}</div>'
 
@@ -226,7 +315,7 @@ class TimelineBlock(BlockType):
     def to_html(self) -> str:
         try:
             events = json.loads(self.content) if isinstance(self.content, str) else self.content
-        except:
+        except (json.JSONDecodeError, TypeError):
             events = []
 
         if not events:
@@ -234,9 +323,9 @@ class TimelineBlock(BlockType):
 
         event_html = ""
         for i, event in enumerate(events):
-            date = event.get("date", "")
-            title = event.get("title", "")
-            description = event.get("description", "")
+            date = escape_html(event.get("date", ""))
+            title = escape_html(event.get("title", ""))
+            description = escape_html(event.get("description", ""))
 
             event_html += f"""
             <div class="flex gap-4 mb-6">
@@ -283,7 +372,7 @@ def render_block_to_html(block: Dict[str, Any]) -> str:
     if isinstance(settings, str):
         try:
             settings = json.loads(settings)
-        except:
+        except (json.JSONDecodeError, TypeError):
             settings = {}
 
     # Get block class
@@ -297,8 +386,8 @@ def render_block_to_html(block: Dict[str, Any]) -> str:
         block_instance = block_class(content=content, **settings)
         return block_instance.to_html()
     except Exception as e:
-        logger.error(f"Error rendering block {block_type}: {e}")
-        return f'<div class="error">Error rendering block</div>'
+        logger.error("Error rendering block %s: %s", block_type, e)
+        return '<div class="error">Error rendering block</div>'
 
 
 def render_blocks_to_html(blocks: List[Dict[str, Any]]) -> str:

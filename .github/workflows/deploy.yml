@@ -172,8 +172,8 @@ jobs:
                 reverse_proxy web:8000
             }
             EOF
-              # Remove leading whitespace from heredoc (12 spaces of indentation)
-              sed -i 's/^            //' Caddyfile
+              # Remove leading whitespace from heredoc (up to 12 spaces/tabs)
+              sed -i 's/^[[:space:]]\{0,12\}//' Caddyfile || true
               echo "✓ Caddyfile created for domain: ${DOMAIN}"
             else
               echo "⚠ Warning: DOMAIN secret is not set, using localhost"
@@ -182,8 +182,8 @@ jobs:
                 reverse_proxy web:8000
             }
             EOF
-              # Remove leading whitespace from heredoc (12 spaces of indentation)
-              sed -i 's/^            //' Caddyfile
+              # Remove leading whitespace from heredoc (up to 12 spaces/tabs)
+              sed -i 's/^[[:space:]]\{0,12\}//' Caddyfile || true
               echo "✓ Caddyfile created for localhost"
             fi
             
@@ -227,8 +227,17 @@ jobs:
                   web:
                     condition: service_healthy
             EOF
-            # Remove leading whitespace from heredoc (12 spaces of indentation)
-            sed -i 's/^            //' docker-compose.yml
+            # Remove leading whitespace from heredoc (up to 12 spaces/tabs)
+            sed -i 's/^[[:space:]]\{0,12\}//' docker-compose.yml || true
+            
+            # Validate docker-compose.yml and show contents on error
+            if ! docker compose -f docker-compose.yml config > /dev/null 2>&1; then
+              echo "⚠ Invalid docker-compose.yml generated, dumping contents for debugging:"
+              sed -n '1,300p' docker-compose.yml || true
+              echo "--- docker-compose config output (parser error details): ---"
+              docker compose -f docker-compose.yml config || true
+              exit 1
+            fi
             
             echo "✓ docker-compose.yml created"
             

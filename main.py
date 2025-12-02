@@ -53,7 +53,7 @@ from app.exceptions import custom_http_exception_handler, general_exception_hand
 
 # Import new modular routers
 from app.routers import pages, items, media, settings, analytics, subscribers, public, tools
-from app.routers import admin_subdomain
+from app.routers import admin_subdomain, special_pages, mediakit
 
 
 @asynccontextmanager
@@ -96,6 +96,11 @@ app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"]
 app.include_router(subscribers.router, prefix="/api/subscribers", tags=["Subscribers"])
 app.include_router(public.router, prefix="/api", tags=["Public"])
 app.include_router(tools.router, prefix="/api", tags=["Tools"])
+
+# Include special pages and mediakit routers
+app.include_router(special_pages.router, prefix="/api", tags=["Special Pages"])
+app.include_router(special_pages.block_router, prefix="/api", tags=["Special Page Blocks"])
+app.include_router(mediakit.router, prefix="/api", tags=["Media Kit"])
 
 # Include admin subdomain router (accessible only on admin.domain.com)
 app.include_router(admin_subdomain.router, tags=["Admin Subdomain"])

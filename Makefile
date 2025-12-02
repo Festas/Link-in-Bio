@@ -1,4 +1,4 @@
-.PHONY: help install dev test lint format clean run docker-build docker-up docker-down ensure-db
+.PHONY: help install dev test lint format clean run docker-build docker-up docker-down ensure-db minify
 
 help:  ## Show this help message
 	@echo 'Usage: make [target]'
@@ -37,6 +37,7 @@ clean:  ## Clean up generated files
 	find . -type f -name "*.pyc" -delete
 	find . -type f -name ".coverage" -delete
 	rm -rf data/*.db
+	rm -rf static/dist
 
 run:  ## Run development server
 	python main.py
@@ -77,3 +78,70 @@ init:  ## Initialize project (install deps + vendor files + data dir)
 	make vendor
 	@mkdir -p data
 	@echo "Project initialized! Run 'make run' to start the server."
+
+# --- Asset Optimization ---
+
+minify-css:  ## Minify CSS files for production
+	@echo "Minifying CSS files..."
+	@mkdir -p static/dist/css
+	@for file in static/css/*.css; do \
+		if [ -f "$$file" ]; then \
+			filename=$$(basename "$$file" .css); \
+			cat "$$file" | sed 's/\/\*.*\*\///g' | tr -d '\n' | sed 's/  */ /g' > "static/dist/css/$${filename}.min.css"; \
+			echo "  Minified: $$file -> static/dist/css/$${filename}.min.css"; \
+		fi \
+	done
+	@echo "CSS minification complete!"
+
+minify-js:  ## Minify JS files for production (requires terser: npm install -g terser)
+	@echo "Minifying JS files..."
+	@mkdir -p static/dist/js
+	@if command -v terser >/dev/null 2>&1; then \
+		for file in static/js/*.js; do \
+			if [ -f "$$file" ]; then \
+				filename=$$(basename "$$file" .js); \
+				terser "$$file" -o "static/dist/js/$${filename}.min.js" --compress --mangle 2>/dev/null || \
+					cp "$$file" "static/dist/js/$${filename}.min.js"; \
+				echo "  Minified: $$file -> static/dist/js/$${filename}.min.js"; \
+			fi \
+		done; \
+	else \
+		echo "  Warning: terser not found. Install with: npm install -g terser"; \
+		echo "  Copying JS files without minification..."; \
+		for file in static/js/*.js; do \
+			if [ -f "$$file" ]; then \
+				filename=$$(basename "$$file" .js); \
+				cp "$$file" "static/dist/js/$${filename}.min.js"; \
+			fi \
+		done; \
+	fi
+	@echo "JS processing complete!"
+
+minify: minify-css minify-js  ## Minify all static assets for production
+	@echo ""
+	@echo "=========================================="
+	@echo "Asset optimization complete!"
+	@echo "Minified files are in static/dist/"
+	@echo ""
+	@echo "For production, configure Caddy to serve"
+	@echo "from static/dist/ with gzip compression"
+	@echo "=========================================="
+
+build-assets: minify  ## Build and optimize static assets
+	@echo "Generating asset manifest..."
+	@echo '{"generated":"'$$(date -u +"%Y-%m-%dT%H:%M:%SZ")'","files":{' > static/dist/manifest.json
+	@first=true; \
+	for file in static/dist/css/*.min.css static/dist/js/*.min.js; do \
+		if [ -f "$$file" ]; then \
+			hash=$$(md5sum "$$file" | cut -c1-8); \
+			relpath=$$(echo "$$file" | sed 's|static/dist/||'); \
+			if [ "$$first" = true ]; then \
+				first=false; \
+			else \
+				echo ',' >> static/dist/manifest.json; \
+			fi; \
+			echo -n "\"$$relpath\":\"$$hash\"" >> static/dist/manifest.json; \
+		fi \
+	done
+	@echo '}}' >> static/dist/manifest.json
+	@echo "Asset manifest generated: static/dist/manifest.json"

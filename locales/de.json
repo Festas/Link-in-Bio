@@ -1,0 +1,176 @@
+{
+  "meta": {
+    "language": "de",
+    "name": "Deutsch",
+    "version": "1.0.0"
+  },
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "add": "Hinzufügen",
+    "close": "Schließen",
+    "confirm": "Bestätigen",
+    "loading": "Laden...",
+    "error": "Fehler",
+    "success": "Erfolgreich",
+    "warning": "Warnung",
+    "info": "Information",
+    "yes": "Ja",
+    "no": "Nein",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "sort": "Sortieren",
+    "refresh": "Aktualisieren",
+    "back": "Zurück",
+    "next": "Weiter",
+    "previous": "Zurück",
+    "submit": "Absenden",
+    "reset": "Zurücksetzen",
+    "upload": "Hochladen",
+    "download": "Herunterladen",
+    "preview": "Vorschau",
+    "settings": "Einstellungen",
+    "help": "Hilfe",
+    "logout": "Abmelden",
+    "login": "Anmelden"
+  },
+  "navigation": {
+    "home": "Startseite",
+    "admin": "Admin",
+    "analytics": "Statistiken",
+    "links": "Links",
+    "pages": "Seiten",
+    "mediakit": "Media Kit",
+    "settings": "Einstellungen",
+    "subscribers": "Abonnenten",
+    "messages": "Nachrichten"
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Dashboard",
+      "welcome": "Willkommen zurück!",
+      "totalClicks": "Klicks gesamt",
+      "totalSubscribers": "Abonnenten",
+      "recentActivity": "Letzte Aktivität",
+      "quickActions": "Schnellaktionen"
+    },
+    "items": {
+      "title": "Links & Elemente",
+      "addLink": "Link hinzufügen",
+      "addHeader": "Überschrift hinzufügen",
+      "addDivider": "Trennlinie hinzufügen",
+      "addVideo": "Video hinzufügen",
+      "addProduct": "Produkt hinzufügen",
+      "addFaq": "FAQ hinzufügen",
+      "visibility": "Sichtbarkeit",
+      "visible": "Sichtbar",
+      "hidden": "Versteckt"
+    },
+    "pages": {
+      "title": "Seiten",
+      "createPage": "Neue Seite erstellen",
+      "slug": "URL-Slug",
+      "mainPage": "Hauptseite",
+      "activePage": "Aktive Seite",
+      "deletePage": "Seite löschen",
+      "deleteConfirm": "Möchten Sie diese Seite wirklich löschen?"
+    },
+    "profile": {
+      "title": "Profil",
+      "name": "Name",
+      "bio": "Biografie",
+      "avatar": "Profilbild",
+      "socialLinks": "Social Media Links"
+    },
+    "settings": {
+      "title": "Einstellungen",
+      "theme": "Design",
+      "language": "Sprache",
+      "customCSS": "Benutzerdefiniertes CSS",
+      "customHTML": "Benutzerdefiniertes HTML",
+      "advanced": "Erweitert"
+    }
+  },
+  "public": {
+    "subscribe": {
+      "title": "Newsletter abonnieren",
+      "email": "E-Mail-Adresse",
+      "placeholder": "ihre@email.de",
+      "button": "Abonnieren",
+      "privacy": "Ich stimme der Datenschutzerklärung zu",
+      "success": "Erfolgreich abonniert!",
+      "alreadySubscribed": "Sie sind bereits abonniert."
+    },
+    "contact": {
+      "title": "Kontakt",
+      "name": "Name",
+      "email": "E-Mail",
+      "message": "Nachricht",
+      "send": "Nachricht senden",
+      "success": "Nachricht gesendet!",
+      "error": "Fehler beim Senden."
+    }
+  },
+  "mediakit": {
+    "title": "Media Kit",
+    "stats": {
+      "followers": "Follower",
+      "engagement": "Engagement",
+      "reach": "Reichweite",
+      "views": "Aufrufe"
+    },
+    "platforms": {
+      "instagram": "Instagram",
+      "tiktok": "TikTok",
+      "youtube": "YouTube",
+      "twitter": "X (Twitter)",
+      "twitch": "Twitch"
+    },
+    "access": {
+      "requestAccess": "Zugang anfordern",
+      "approved": "Genehmigt",
+      "pending": "Ausstehend",
+      "rejected": "Abgelehnt"
+    }
+  },
+  "errors": {
+    "notFound": "Seite nicht gefunden",
+    "notFoundMessage": "Die gesuchte Seite existiert nicht.",
+    "serverError": "Serverfehler",
+    "serverErrorMessage": "Ein unerwarteter Fehler ist aufgetreten.",
+    "unauthorized": "Nicht autorisiert",
+    "forbidden": "Zugriff verweigert",
+    "validation": "Validierungsfehler",
+    "network": "Netzwerkfehler",
+    "timeout": "Zeitüberschreitung"
+  },
+  "accessibility": {
+    "skipToContent": "Zum Inhalt springen",
+    "mainNavigation": "Hauptnavigation",
+    "closeMenu": "Menü schließen",
+    "openMenu": "Menü öffnen",
+    "expandSection": "Abschnitt erweitern",
+    "collapseSection": "Abschnitt einklappen",
+    "externalLink": "Externer Link (öffnet in neuem Tab)",
+    "loadingContent": "Inhalt wird geladen",
+    "contentLoaded": "Inhalt geladen"
+  },
+  "validation": {
+    "required": "Dieses Feld ist erforderlich",
+    "email": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+    "url": "Bitte geben Sie eine gültige URL ein",
+    "minLength": "Mindestens {min} Zeichen erforderlich",
+    "maxLength": "Maximal {max} Zeichen erlaubt",
+    "passwordMatch": "Passwörter stimmen nicht überein"
+  },
+  "dates": {
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "lastWeek": "Letzte Woche",
+    "lastMonth": "Letzter Monat",
+    "dateFormat": "dd.MM.yyyy",
+    "timeFormat": "HH:mm"
+  }
+}

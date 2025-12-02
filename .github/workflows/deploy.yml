@@ -1,177 +1,325 @@
-name: Deploy to Hetzner
+name: Deploy to Hetzner via GHCR
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  deploy:
+  build-and-push:
+    name: Build and Push Docker Image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      image_digest: ${{ steps.build.outputs.digest }}
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # 1. Alte Docker Container stoppen und entfernen
-      - name: Stop and remove existing Docker containers
-        uses: appleboy/ssh-action@master
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output image details
+        run: |
+          echo "Image pushed successfully!"
+          echo "Tags: ${{ steps.meta.outputs.tags }}"
+          echo "Digest: ${{ steps.build.outputs.digest }}"
+
+  deploy:
+    name: Deploy to Hetzner Server
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    
+    steps:
+      - name: Checkout repository (for Caddyfile)
+        uses: actions/checkout@v4
+
+      - name: Deploy to Hetzner via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          REGISTRY: ghcr.io
+          IMAGE_NAME: ${{ github.repository }}
+          DOMAIN: ${{ secrets.DOMAIN }}
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+          INSTAGRAM_SECRET: ${{ secrets.INSTAGRAM_SECRET }}
+          TIKTOK_SECRET: ${{ secrets.TIKTOK_SECRET }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_ACTOR: ${{ github.actor }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: IMAGE_TAG,REGISTRY,IMAGE_NAME,DOMAIN,ENV_FILE,INSTAGRAM_SECRET,TIKTOK_SECRET,GHCR_TOKEN,GHCR_ACTOR
+          script_stop: true
           script: |
-            echo "=== Stoppe existierende Docker Container ==="
-            cd /lib 2>/dev/null || true
+            set -euo pipefail
             
-            # Stoppe und entferne Container falls vorhanden
-            if [ -f docker-compose.yml ]; then
-              docker compose down --remove-orphans 2>/dev/null || true
-              echo "✓ Container gestoppt"
+            # Convert image name to lowercase (GHCR requirement)
+            IMAGE_NAME_LOWER=$(echo "${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')
+            
+            echo "=========================================="
+            echo "Starting Link-in-Bio Deployment"
+            echo "=========================================="
+            echo "Image: ${REGISTRY}/${IMAGE_NAME_LOWER}:${IMAGE_TAG}"
+            echo "Domain: ${DOMAIN:-not set}"
+            echo ""
+            
+            # ==========================================
+            # 1. Setup deployment directory
+            # ==========================================
+            echo "[1/6] Setting up deployment directory..."
+            APP_DIR="/srv/link-in-bio"
+            
+            # Create directory if missing (handles empty server)
+            sudo mkdir -p "${APP_DIR}"
+            sudo mkdir -p "${APP_DIR}/data"
+            sudo mkdir -p "${APP_DIR}/static/uploads"
+            sudo mkdir -p "${APP_DIR}/caddy_data"
+            sudo mkdir -p "${APP_DIR}/caddy_config"
+            
+            # Ensure current user owns the directory
+            sudo chown -R $(whoami):$(whoami) "${APP_DIR}"
+            
+            cd "${APP_DIR}"
+            echo "✓ Directory setup complete"
+            
+            # ==========================================
+            # 2. Write .env file from secrets
+            # ==========================================
+            echo "[2/6] Writing .env file..."
+            
+            if [[ -n "${ENV_FILE:-}" ]]; then
+              echo "${ENV_FILE}" > .env
+              chmod 600 .env
+              echo "✓ .env file created"
             else
-              echo "ℹ Keine bestehenden Container gefunden"
-            fi
-
-      # 2. Zielverzeichnis vorbereiten und alte Dateien bereinigen
-      - name: Prepare target directory and cleanup old files
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            echo "=== Bereite Zielverzeichnis vor ==="
-            
-            # Erstelle /lib falls nicht vorhanden
-            mkdir -p /lib
-            
-            # Sichere persistente Daten (data/, static/uploads/, .env Dateien)
-            echo "ℹ Sichere persistente Daten..."
-            if [ -d /lib/data ]; then
-              mv /lib/data /tmp/lib_data_backup 2>/dev/null || true
-            fi
-            if [ -d /lib/static/uploads ] && [ "$(ls -A /lib/static/uploads 2>/dev/null)" ]; then
-              mkdir -p /tmp/lib_uploads_backup
-              cp -r /lib/static/uploads/* /tmp/lib_uploads_backup/
-            fi
-            if [ -f /lib/.env ]; then
-              cp /lib/.env /tmp/lib_env_backup 2>/dev/null || true
-            fi
-            if [ -f /lib/.env.social ]; then
-              cp /lib/.env.social /tmp/lib_env_social_backup 2>/dev/null || true
+              echo "⚠ Warning: ENV_FILE secret is not set"
+              # Create minimal .env if not exists
+              if [[ ! -f .env ]]; then
+                echo "APP_DOMAIN=${DOMAIN:-localhost}" > .env
+                chmod 600 .env
+                echo "✓ Minimal .env file created"
+              fi
             fi
             
-            # Bereinige alle alten Dateien (außer versteckte)
-            echo "ℹ Bereinige alte Dateien..."
-            find /lib -mindepth 1 -maxdepth 1 ! -name '.*' -exec rm -rf {} + 2>/dev/null || true
-            
-            # Stelle persistente Daten wieder her
-            echo "ℹ Stelle persistente Daten wieder her..."
-            if [ -d /tmp/lib_data_backup ]; then
-              mv /tmp/lib_data_backup /lib/data 2>/dev/null || true
-            fi
-            if [ -d /tmp/lib_uploads_backup ] && [ "$(ls -A /tmp/lib_uploads_backup 2>/dev/null)" ]; then
-              mkdir -p /lib/static/uploads
-              cp -r /tmp/lib_uploads_backup/* /lib/static/uploads/
-              rm -rf /tmp/lib_uploads_backup
-            fi
-            if [ -f /tmp/lib_env_backup ]; then
-              mv /tmp/lib_env_backup /lib/.env 2>/dev/null || true
-            fi
-            if [ -f /tmp/lib_env_social_backup ]; then
-              mv /tmp/lib_env_social_backup /lib/.env.social 2>/dev/null || true
-            fi
-            
-            echo "✓ Zielverzeichnis vorbereitet"
-
-      # 3. Nur benötigte Dateien auf den Server kopieren
-      - name: Copy files via SCP
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "."
-          target: "/lib"
-          rm: false
-          # Ausschließen: DB-Dateien, Uploads, Git, Tests, Dev-Dateien, Archiv-Docs, nicht benötigte Dateien
-          exclude: "data/,static/uploads/,venv/,.git/,.github/,tests/,docs/archive/,.pytest_cache/,.mypy_cache/,htmlcov/,*.pyc,__pycache__/,.env,.env.example,.env.social,.env.social.example,Makefile,.flake8,pyproject.toml,mediakit/Instagram/,mediakit/generated/,test_*.py,*_test.py,setup_enhanced.py,setup_social_media.py,CONTRIBUTING.md,CHANGELOG.md,LICENSE,*.log,*.tmp,*.temp,.coverage,.coverage.*,.hypothesis/,.tox/,.nox/,coverage.xml,*.cover,.DS_Store,Thumbs.db,*.swp,*.swo,alembic/"
-
-      # 4. Alle .env Dateien aus GitHub Secrets erstellen (ersetzt existierende)
-      - name: Create all .env files from secrets
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            echo "=== Erstelle .env Dateien ==="
-            cd /lib
-            
-            # Haupt-.env Datei erstellen (wird immer ersetzt)
-            echo "${{ secrets.ENV_FILE }}" > .env
-            echo "✓ .env erstellt"
-            
-            # Social Media Credentials (.env.social) erstellen
-            # WICHTIG: Datei wird IMMER erstellt (auch leer), da docker-compose sie benötigt
+            # Create .env.social file
             > .env.social
-            if [ -n "${{ secrets.INSTAGRAM_SECRET }}" ]; then
-              echo "${{ secrets.INSTAGRAM_SECRET }}" >> .env.social
+            if [[ -n "${INSTAGRAM_SECRET:-}" ]]; then
+              echo "${INSTAGRAM_SECRET}" >> .env.social
               echo "" >> .env.social
             fi
-            if [ -n "${{ secrets.TIKTOK_SECRET }}" ]; then
-              echo "${{ secrets.TIKTOK_SECRET }}" >> .env.social
+            if [[ -n "${TIKTOK_SECRET:-}" ]]; then
+              echo "${TIKTOK_SECRET}" >> .env.social
             fi
-            echo "✓ .env.social erstellt"
+            chmod 600 .env.social
+            echo "✓ .env.social file created"
             
-            # Berechtigungen setzen
-            chmod 600 .env .env.social
+            # ==========================================
+            # 3. Write Caddyfile
+            # ==========================================
+            echo "[3/6] Writing Caddyfile..."
             
-            echo "✓ Alle .env Dateien wurden aus GitHub Secrets geladen"
-
-      # 5. Verzeichnisse für persistente Daten erstellen
-      - name: Create data directories
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            echo "=== Erstelle Daten-Verzeichnisse ==="
-            cd /lib
+            if [[ -n "${DOMAIN:-}" ]]; then
+              cat > Caddyfile << EOF
+            # Main domain - public-facing Link-in-Bio site
+            ${DOMAIN} {
+                reverse_proxy web:8000
+            }
             
-            # Verzeichnisse erstellen falls nicht vorhanden
-            mkdir -p data
-            mkdir -p static/uploads
-            
-            echo "✓ Verzeichnisse erstellt (Datenbanken werden vom Container initialisiert)"
-
-      # 6. Docker Container neu bauen und starten
-      - name: Build and start Docker containers
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            echo "=== Starte Docker Container ==="
-            cd /lib
-            
-            # Container neu bauen und starten
-            docker compose up -d --build --force-recreate --remove-orphans
-            
-            # Warte kurz auf Container-Start
-            sleep 5
-            
-            # Prüfe ob Container laufen
-            RUNNING_CONTAINERS=$(docker compose ps --services --filter status=running | wc -l)
-            if [ "$RUNNING_CONTAINERS" -ge 2 ]; then
-              echo "✓ Docker Container laufen ($RUNNING_CONTAINERS Services aktiv)"
+            # Admin subdomain - administrative interface
+            admin.${DOMAIN} {
+                reverse_proxy web:8000
+            }
+            EOF
+              echo "✓ Caddyfile created for domain: ${DOMAIN}"
             else
-              echo "⚠ Warnung: Nicht alle Container laufen (nur $RUNNING_CONTAINERS von 2)"
+              echo "⚠ Warning: DOMAIN secret is not set, using localhost"
+              cat > Caddyfile << EOF
+            :80 {
+                reverse_proxy web:8000
+            }
+            EOF
+              echo "✓ Caddyfile created for localhost"
+            fi
+            
+            # ==========================================
+            # 4. Write docker-compose.yml
+            # ==========================================
+            echo "[4/6] Writing docker-compose.yml..."
+            
+            cat > docker-compose.yml << EOF
+            services:
+              web:
+                image: ${REGISTRY}/${IMAGE_NAME_LOWER}:${IMAGE_TAG}
+                container_name: linktree_app
+                restart: unless-stopped
+                volumes:
+                  # Persistent data
+                  - ./data:/app/data
+                  - ./static/uploads:/app/static/uploads
+                  # Configuration
+                  - ./.env:/app/.env:ro
+                  - ./.env.social:/app/.env.social:ro
+                healthcheck:
+                  test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
+                  start_period: 40s
+            
+              caddy:
+                image: caddy:latest
+                container_name: caddy_server
+                restart: unless-stopped
+                ports:
+                  - "80:80"
+                  - "443:443"
+                volumes:
+                  - ./Caddyfile:/etc/caddy/Caddyfile:ro
+                  - ./caddy_data:/data
+                  - ./caddy_config:/config
+                depends_on:
+                  web:
+                    condition: service_healthy
+            EOF
+            
+            echo "✓ docker-compose.yml created"
+            
+            # ==========================================
+            # 5. Pull and deploy containers
+            # ==========================================
+            echo "[5/6] Pulling and deploying containers..."
+            
+            # Login to GHCR using GitHub token passed via env
+            echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_ACTOR}" --password-stdin
+            
+            # Pull the new image
+            docker compose pull
+            
+            # Start/update containers
+            docker compose up -d --remove-orphans
+            
+            # Wait for containers to be healthy
+            echo "Waiting for containers to be healthy..."
+            sleep 10
+            
+            # Check container status
+            RUNNING_CONTAINERS=$(docker compose ps --services --filter status=running | wc -l)
+            if [[ "$RUNNING_CONTAINERS" -ge 2 ]]; then
+              echo "✓ All containers are running ($RUNNING_CONTAINERS services)"
+            else
+              echo "⚠ Not all containers are running (only $RUNNING_CONTAINERS of 2)"
               docker compose ps
               docker compose logs --tail=50
               exit 1
             fi
             
-            # Alte, ungenutzte Docker Images entfernen
-            docker image prune -f
+            # ==========================================
+            # 6. Run database migrations
+            # ==========================================
+            echo "[6/6] Running database migrations..."
             
-            echo "✓ Deployment erfolgreich abgeschlossen"
+            # Check if alembic is available in the container
+            if docker compose exec -T web which alembic > /dev/null 2>&1; then
+              echo "ℹ Alembic found, running migrations..."
+              if docker compose exec -T web alembic upgrade head; then
+                echo "✓ Alembic migrations completed"
+              else
+                echo "⚠ Alembic migration failed, falling back to init_databases.py..."
+                docker compose exec -T web python init_databases.py || echo "⚠ init_databases.py also failed"
+              fi
+            else
+              echo "ℹ Alembic not available, running init_databases.py..."
+              if docker compose exec -T web python init_databases.py; then
+                echo "✓ Database initialization completed"
+              else
+                echo "⚠ Database initialization failed (may already be initialized)"
+              fi
+            fi
+            
+            # ==========================================
+            # Final status
+            # ==========================================
+            echo ""
+            echo "=========================================="
+            echo "Deployment completed successfully!"
+            echo "=========================================="
+            docker compose ps
+            echo ""
+            echo "Application URL: https://${DOMAIN:-localhost}"
+            echo "Admin URL: https://admin.${DOMAIN:-localhost}"
+            
+            # Cleanup old images
+            docker image prune -f || true
+
+      - name: Show deployment failure logs
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "=========================================="
+            echo "Deployment failed - showing logs"
+            echo "=========================================="
+            cd /srv/link-in-bio || exit 0
+            echo ""
+            echo "=== Container Status ==="
+            docker compose ps || true
+            echo ""
+            echo "=== Web Container Logs ==="
+            docker compose logs --tail=100 web || true
+            echo ""
+            echo "=== Caddy Container Logs ==="
+            docker compose logs --tail=50 caddy || true
+            echo ""
+            echo "=== Directory Contents ==="
+            ls -la || true
+            echo ""
+            echo "=== .env file exists? ==="
+            test -f .env && echo "Yes" || echo "No"
+            echo ""
+            echo "=== .env.social file exists? ==="
+            test -f .env.social && echo "Yes" || echo "No"

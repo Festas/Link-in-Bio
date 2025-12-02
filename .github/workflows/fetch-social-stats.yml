@@ -76,7 +76,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /lib
+            cd /srv/link-in-bio
             
             # Create .env.social on server with both Instagram and TikTok credentials
             echo "${{ secrets.INSTAGRAM_SECRET }}" > .env.social
@@ -84,8 +84,8 @@ jobs:
             echo "${{ secrets.TIKTOK_SECRET }}" >> .env.social
             
             # Run both stats fetchers on the server to update the production database
-            docker compose exec -T linktree python fetch_instagram_stats.py || echo "⚠️ Instagram stats fetch failed on server, continuing..."
-            docker compose exec -T linktree python fetch_tiktok_stats.py || echo "⚠️ TikTok stats fetch failed on server, continuing..."
+            docker compose exec -T web python fetch_instagram_stats.py || echo "⚠️ Instagram stats fetch failed on server, continuing..."
+            docker compose exec -T web python fetch_tiktok_stats.py || echo "⚠️ TikTok stats fetch failed on server, continuing..."
             
       - name: Upload stats as artifact (for debugging)
         uses: actions/upload-artifact@v3

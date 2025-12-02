@@ -77,7 +77,8 @@ jobs:
       - name: Deploy to Hetzner via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
-          IMAGE_TAG: ${{ github.sha }}
+          # Full SHA - will be truncated in script to match docker/metadata-action short SHA format
+          IMAGE_SHA: ${{ github.sha }}
           REGISTRY: ghcr.io
           IMAGE_NAME: ${{ github.repository }}
           DOMAIN: ${{ secrets.DOMAIN }}
@@ -90,13 +91,16 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: IMAGE_TAG,REGISTRY,IMAGE_NAME,DOMAIN,ENV_FILE,INSTAGRAM_SECRET,TIKTOK_SECRET,GHCR_TOKEN,GHCR_ACTOR
+          envs: IMAGE_SHA,REGISTRY,IMAGE_NAME,DOMAIN,ENV_FILE,INSTAGRAM_SECRET,TIKTOK_SECRET,GHCR_TOKEN,GHCR_ACTOR
           script_stop: true
           script: |
             set -euo pipefail
             
             # Convert image name to lowercase (GHCR requirement)
             IMAGE_NAME_LOWER=$(echo "${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')
+            
+            # Use short SHA (7 chars) to match docker/metadata-action output
+            IMAGE_TAG="${IMAGE_SHA:0:7}"
             
             echo "=========================================="
             echo "Starting Link-in-Bio Deployment"

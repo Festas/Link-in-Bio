@@ -10,17 +10,19 @@ from typing import Dict, Any, List, Optional
 
 
 # Trusted iframe domains for video embeds
-TRUSTED_IFRAME_DOMAINS = frozenset([
-    'youtube.com',
-    'www.youtube.com',
-    'player.vimeo.com',
-    'vimeo.com',
-    'open.spotify.com',
-    'player.twitch.tv',
-    'www.twitch.tv',
-    'dailymotion.com',
-    'www.dailymotion.com',
-])
+TRUSTED_IFRAME_DOMAINS = frozenset(
+    [
+        "youtube.com",
+        "www.youtube.com",
+        "player.vimeo.com",
+        "vimeo.com",
+        "open.spotify.com",
+        "player.twitch.tv",
+        "www.twitch.tv",
+        "dailymotion.com",
+        "www.dailymotion.com",
+    ]
+)
 
 
 def escape_html(text: str) -> str:
@@ -37,7 +39,7 @@ def sanitize_url(url: str) -> str:
     url = str(url).strip()
     # Block dangerous URL schemes
     lower_url = url.lower()
-    if lower_url.startswith(('javascript:', 'data:', 'vbscript:')):
+    if lower_url.startswith(("javascript:", "data:", "vbscript:")):
         return ""
     return escape_html(url)
 
@@ -48,7 +50,7 @@ def is_trusted_iframe_src(src: str) -> bool:
         return False
     src_lower = src.lower().strip()
     for domain in TRUSTED_IFRAME_DOMAINS:
-        if f'//{domain}' in src_lower or f'//{domain}/' in src_lower:
+        if f"//{domain}" in src_lower or f"//{domain}/" in src_lower:
             return True
     return False
 
@@ -60,18 +62,18 @@ def sanitize_iframe(iframe_html: str) -> str:
     """
     if not iframe_html:
         return ""
-    
+
     # Extract src from iframe
     src_match = re.search(r'src=["\']([^"\']+)["\']', iframe_html, re.IGNORECASE)
     if not src_match:
         return ""
-    
+
     src = src_match.group(1)
-    
+
     # Check if src is from trusted domain
     if not is_trusted_iframe_src(src):
         return ""
-    
+
     # Return the original iframe (we've verified the src is trusted)
     return iframe_html
 
@@ -300,7 +302,9 @@ class ColumnsBlock(BlockType):
         grid_class = f"md:grid-cols-{columns}"
 
         # Escape column contents
-        column_html = "".join([f'<div class="mb-4 md:mb-0">{escape_html(content)}</div>' for content in column_contents])
+        column_html = "".join(
+            [f'<div class="mb-4 md:mb-0">{escape_html(content)}</div>' for content in column_contents]
+        )
 
         return f'<div class="grid grid-cols-1 {grid_class} gap-6 mb-6">{column_html}</div>'
 

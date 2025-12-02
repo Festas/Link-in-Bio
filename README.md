@@ -310,7 +310,19 @@ Das Repository enthält einen Deployment-Workflow (`.github/workflows/deploy.yml
 
 ### Manuelles Deployment
 
-Siehe `DEPLOY_CHECKLIST.md` für eine Schritt-für-Schritt-Anleitung.
+Siehe `docs/guides/DEPLOY_CHECKLIST.md` für eine Schnell-Checkliste.
+
+### 📚 Umfassende Deployment-Anleitung
+
+Für eine vollständige Schritt-für-Schritt-Anleitung zur Hetzner-Server-Konfiguration:
+👉 **[HETZNER_DEPLOYMENT.md](./docs/HETZNER_DEPLOYMENT.md)**
+
+Diese Anleitung enthält:
+- Server-Setup mit Docker
+- DNS-Konfiguration
+- GitHub Secrets einrichten
+- Sicherheits-Konfiguration (Passwort-Hash, 2FA)
+- Troubleshooting-Tipps
 
 ## 🤝 Contributing
 

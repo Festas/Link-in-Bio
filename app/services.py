@@ -15,7 +15,7 @@ from .scraper.scraper import scraper
 load_dotenv()
 JSONLINK_API_KEY = os.getenv("JSONLINK_API_KEY", None)
 APP_DOMAIN = os.getenv("APP_DOMAIN", "127.0.0.1")
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent  # Project root
 FONTS_DIR = BASE_DIR / "static" / "fonts"
 
 

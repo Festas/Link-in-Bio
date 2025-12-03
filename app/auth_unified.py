@@ -29,7 +29,7 @@ totp_secrets: Dict[str, str] = {}
 
 # Configuration
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "super-sicheres-passwort-123")  # Legacy
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")  # No default - must be set if ADMIN_PASSWORD_HASH is not set
 ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")  # Preferred
 SESSION_EXPIRY_HOURS = int(os.getenv("SESSION_EXPIRY_HOURS", "24"))
 REQUIRE_2FA = os.getenv("REQUIRE_2FA", "false").lower() in ("true", "1", "yes")
@@ -69,7 +69,6 @@ WEAK_PASSWORDS = {
     "michael",
     "football",
     "password1",
-    "super-sicheres-passwort-123",
 }
 
 
@@ -161,7 +160,18 @@ def validate_admin_password_on_startup():
     """
     Validate admin password configuration on startup.
     This should be called during application initialization.
+    Raises RuntimeError if no password is configured.
     """
+    if not ADMIN_PASSWORD_HASH and not ADMIN_PASSWORD:
+        error_msg = (
+            "CRITICAL: No admin password configured! "
+            "You must set either ADMIN_PASSWORD_HASH (recommended) or ADMIN_PASSWORD in your environment. "
+            "Generate a password hash with: python -c "
+            "'from app.auth_unified import hash_password; print(hash_password(\"your-password\"))'"
+        )
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
+
     if not ADMIN_PASSWORD_HASH:
         logger.warning(
             "⚠️  SECURITY WARNING: No password hash configured! "

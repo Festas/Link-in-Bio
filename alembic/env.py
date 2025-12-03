@@ -1,3 +1,4 @@
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -24,6 +25,12 @@ target_metadata = None
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+
+# Override sqlalchemy.url with environment-based configuration
+# This follows the pattern in .env.example: DATABASE_FILE=data/linktree.db
+_database_file = os.getenv("DATABASE_FILE", "data/linktree.db")
+_database_url = f"sqlite:///{_database_file}"
+config.set_main_option("sqlalchemy.url", _database_url)
 
 
 def run_migrations_offline() -> None:

@@ -165,7 +165,7 @@ jobs:
             echo "[3/6] Writing Caddyfile..."
             
             if [[ -n "${DOMAIN:-}" ]]; then
-              printf '%s\n' "# Main domain - public-facing Link-in-Bio site" "${DOMAIN} {" "    reverse_proxy web:8000" "}" "" "# Admin subdomain - administrative interface" "admin.${DOMAIN} {" "    reverse_proxy web:8000" "}" > Caddyfile
+              printf '%s\n' "# Main domain - public-facing Link-in-Bio site" "${DOMAIN} {" "    tls eric@festas-builds.com" "    reverse_proxy web:8000" "}" "" "# Admin subdomain - administrative interface" "admin.${DOMAIN} {" "    tls eric@festas-builds.com" "    reverse_proxy web:8000" "}" > Caddyfile
               echo "✓ Caddyfile created for domain: ${DOMAIN}"
             else
               echo "⚠ Warning: DOMAIN secret is not set, using localhost"
@@ -181,6 +181,8 @@ jobs:
             # Use printf to avoid heredoc line injection by SSH action
             COMPOSE_IMAGE="${REGISTRY}/${IMAGE_NAME_LOWER}:${IMAGE_TAG}"
             printf '%s\n' \
+              "version: '3.8'" \
+              "" \
               "services:" \
               "  web:" \
               "    image: \"${COMPOSE_IMAGE}\"" \
@@ -203,15 +205,14 @@ jobs:
               "    container_name: caddy_server" \
               "    restart: unless-stopped" \
               "    ports:" \
-              "      - \"8080:80\"" \
-              "      - \"8443:443\"" \
+              "      - \"80:80\"" \
+              "      - \"443:443\"" \
               "    volumes:" \
               "      - ./Caddyfile:/etc/caddy/Caddyfile:ro" \
               "      - ./caddy_data:/data" \
               "      - ./caddy_config:/config" \
               "    depends_on:" \
-              "      web:" \
-              "        condition: service_healthy" \
+              "      - web" \
               > docker-compose.yml
             
             # Validate docker-compose.yml and show contents on error
@@ -286,9 +287,8 @@ jobs:
             echo "=========================================="
             docker compose ps
             echo ""
-            echo "Application URL: https://${DOMAIN:-localhost}:8443"
-            echo "Admin URL: https://admin.${DOMAIN:-localhost}:8443"
-            echo "Note: HTTP available on port 8080, HTTPS on port 8443"
+            echo "Application URL: https://${DOMAIN:-localhost}"
+            echo "Admin URL: https://admin.${DOMAIN:-localhost}"
             
             # Cleanup old images
             docker image prune -f || true

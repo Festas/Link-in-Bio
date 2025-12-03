@@ -49,7 +49,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./dockerfile
+          file: ./Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -181,8 +181,6 @@ jobs:
             # Use printf to avoid heredoc line injection by SSH action
             COMPOSE_IMAGE="${REGISTRY}/${IMAGE_NAME_LOWER}:${IMAGE_TAG}"
             printf '%s\n' \
-              "version: '3.8'" \
-              "" \
               "services:" \
               "  web:" \
               "    image: \"${COMPOSE_IMAGE}\"" \

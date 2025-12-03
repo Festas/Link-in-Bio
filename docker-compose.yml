@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     build: .
@@ -11,8 +9,8 @@ services:
       # Uploads
       - ./static/uploads:/app/static/uploads
       # Konfiguration
-      - ./.env:/app/.env
-      - ./.env.social:/app/.env.social
+      - ./.env:/app/.env:ro
+      - ./.env.social:/app/.env.social:ro
     # Kein Port-Mapping nach außen nötig, Caddy übernimmt das intern
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

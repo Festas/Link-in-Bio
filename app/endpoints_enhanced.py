@@ -46,7 +46,7 @@ def get_cookie_domain() -> Optional[str]:
     Returns None for localhost/127.0.0.1 (default browser behavior).
     Returns domain with leading dot (e.g., '.festas-builds.com') for production.
     """
-    if APP_DOMAIN and APP_DOMAIN not in ("127.0.0.1", "localhost"):
+    if APP_DOMAIN not in ("127.0.0.1", "localhost"):
         return f".{APP_DOMAIN}"
     return None
 

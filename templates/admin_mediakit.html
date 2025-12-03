@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Kit - Admin</title>
+    
+    <script src="{{ vendor.tailwindcss }}?v={{ version }}"></script>
+    <script src="{{ vendor.sortable }}?v={{ version }}"></script>
+    
+    <link rel="stylesheet" href="/static/css/admin.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/admin-modern.css?v={{ version }}">
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    
+    <!-- Navigation Header -->
+    <nav class="sticky top-0 z-50 bg-gray-900/80 backdrop-blur-xl border-b border-gray-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Left: Back to main admin + Page Title -->
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="btn-icon" title="Zurück zum Admin">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </a>
+                    <div class="h-6 w-px bg-gray-700"></div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                            <i data-lucide="briefcase" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold">Media Kit</h1>
+                            <p class="text-xs text-gray-500">Verwalte dein Media Kit, Statistiken und Kooperationen</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right: Quick Navigation to other special pages -->
+                <div class="flex items-center space-x-2">
+                    <div class="hidden md:flex items-center gap-1 mr-2">
+                        <a href="/mediakit" class="admin-tab active" title="Media Kit Admin">
+                            <i data-lucide="briefcase" class="w-4 h-4"></i>
+                            <span class="hidden lg:inline">Media Kit</span>
+                        </a>
+                        <a href="/impressum" class="admin-tab" title="Impressum Admin">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                            <span class="hidden lg:inline">Impressum</span>
+                        </a>
+                        <a href="/datenschutz" class="admin-tab" title="Datenschutz Admin">
+                            <i data-lucide="shield" class="w-4 h-4"></i>
+                            <span class="hidden lg:inline">Datenschutz</span>
+                        </a>
+                        <a href="/ueber-mich" class="admin-tab" title="Über mich Admin">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                            <span class="hidden lg:inline">Über mich</span>
+                        </a>
+                        <a href="/kontakt" class="admin-tab" title="Kontakt Admin">
+                            <i data-lucide="mail" class="w-4 h-4"></i>
+                            <span class="hidden lg:inline">Kontakt</span>
+                        </a>
+                    </div>
+                    
+                    <!-- Mobile dropdown for page navigation -->
+                    <div class="md:hidden relative">
+                        <button id="mobile-nav-toggle" class="btn-icon">
+                            <i data-lucide="menu" class="w-5 h-5"></i>
+                        </button>
+                        <div id="mobile-nav-menu" class="hidden absolute right-0 mt-2 w-56 bg-gray-800 rounded-xl shadow-xl border border-gray-700 z-50 overflow-hidden">
+                            <a href="/mediakit" class="block px-4 py-3 hover:bg-gray-700 bg-cyan-600/20 border-l-2 border-cyan-400">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="briefcase" class="w-4 h-4 text-cyan-400"></i>
+                                    <div>
+                                        <div class="font-medium text-cyan-400">Media Kit</div>
+                                        <div class="text-xs text-gray-500">Verwalte dein Media Kit</div>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="/impressum" class="block px-4 py-3 hover:bg-gray-700">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="file-text" class="w-4 h-4 text-gray-400"></i>
+                                    <div>
+                                        <div class="font-medium">Impressum</div>
+                                        <div class="text-xs text-gray-500">Bearbeite die Impressum-Seite</div>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="/datenschutz" class="block px-4 py-3 hover:bg-gray-700">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="shield" class="w-4 h-4 text-gray-400"></i>
+                                    <div>
+                                        <div class="font-medium">Datenschutz</div>
+                                        <div class="text-xs text-gray-500">Bearbeite die Datenschutzerklärung</div>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="/ueber-mich" class="block px-4 py-3 hover:bg-gray-700">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="user" class="w-4 h-4 text-gray-400"></i>
+                                    <div>
+                                        <div class="font-medium">Über mich</div>
+                                        <div class="text-xs text-gray-500">Bearbeite die Über-mich-Seite</div>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="/kontakt" class="block px-4 py-3 hover:bg-gray-700">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="mail" class="w-4 h-4 text-gray-400"></i>
+                                    <div>
+                                        <div class="font-medium">Kontakt</div>
+                                        <div class="text-xs text-gray-500">Bearbeite die Kontakt-Seite</div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- View Public Page Button -->
+                    <a href="{{ main_domain_url }}/mediakit" target="_blank" class="btn-primary" title="Vorschau">
+                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                        <span class="hidden lg:inline">Vorschau</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Page-specific content -->
+        <div id="page-content" class="space-y-6">
+            
+            <!-- Status Messages -->
+            <div id="status-message" class="hidden rounded-xl p-4 bg-green-500/10 border border-green-500/30">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+                    <span id="status-text" class="text-green-300"></span>
+                </div>
+            </div>
+            
+            <!-- Social Media Stats Display -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div>
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <i data-lucide="bar-chart-2" class="w-5 h-5 text-cyan-400"></i>
+                            Social Media Statistiken
+                        </h2>
+                        <p class="text-sm text-gray-400 mt-1">Deine aktuellen Social Media Kennzahlen</p>
+                    </div>
+                    <button id="refresh-social-stats" class="btn-secondary">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        <span>Aktualisieren</span>
+                    </button>
+                </div>
+                <div class="admin-card-body">
+                    <div id="social-stats-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Social stats will be loaded dynamically -->
+                        <div class="stat-card">
+                            <div class="stat-value" id="stat-instagram-followers">-</div>
+                            <div class="stat-label">Instagram Follower</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="stat-tiktok-followers">-</div>
+                            <div class="stat-label">TikTok Follower</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="stat-youtube-subs">-</div>
+                            <div class="stat-label">YouTube Abonnenten</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="stat-total-reach">-</div>
+                            <div class="stat-label">Gesamtreichweite</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Media Kit Settings -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h3 class="flex items-center gap-2">
+                        <i data-lucide="settings" class="w-5 h-5 text-cyan-400"></i>
+                        Media Kit Einstellungen
+                    </h3>
+                </div>
+                <div class="admin-card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="form-group">
+                            <label class="block text-sm font-medium mb-2">Zugriffskontrolle</label>
+                            <select id="mediakit-access-control" class="w-full">
+                                <option value="public">🌍 Öffentlich - Jeder kann ansehen</option>
+                                <option value="gated">🔐 Gated - Anfrage erforderlich</option>
+                                <option value="private">🔒 Privat - Nur mit Link</option>
+                            </select>
+                            <p class="help-text">Bestimme, wer dein Media Kit sehen kann</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="block text-sm font-medium mb-2">Video Pitch URL (optional)</label>
+                            <input type="url" id="mediakit-video-pitch" placeholder="https://youtube.com/watch?v=...">
+                            <p class="help-text">Füge ein persönliches Vorstellungsvideo hinzu</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Media Kit Analytics -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h3 class="flex items-center gap-2">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-green-400"></i>
+                        Analytics
+                    </h3>
+                </div>
+                <div class="admin-card-body">
+                    <div id="mediakit-analytics" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="stat-card">
+                            <div class="stat-value" id="stat-total-views">-</div>
+                            <div class="stat-label">Aufrufe (gesamt)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="stat-week-views">-</div>
+                            <div class="stat-label">Aufrufe (7 Tage)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="stat-access-requests">-</div>
+                            <div class="stat-label">Zugriffs-Anfragen</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Block-Based Content Editor -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div>
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <i data-lucide="edit-3" class="w-5 h-5 text-cyan-400"></i>
+                            Inhalt bearbeiten
+                        </h2>
+                        <p class="text-sm text-gray-400 mt-1">Bearbeite dein Media Kit mit dem Block-Editor</p>
+                    </div>
+                    <button id="save-page" class="btn-primary">
+                        <i data-lucide="save" class="w-4 h-4"></i>
+                        <span>Speichern</span>
+                    </button>
+                </div>
+                
+                <!-- Blocks Container -->
+                <div class="admin-card-body">
+                    <div id="blocks-container" class="space-y-4 mb-6">
+                        <!-- Dynamic blocks will be loaded here -->
+                    </div>
+                    
+                    <!-- Add Block Toolbar -->
+                    <div class="border-t border-gray-700 pt-6">
+                        <p class="text-sm text-gray-400 mb-3 font-medium">Block hinzufügen:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="add-block-btn btn-secondary" data-block-type="heading">
+                                <i data-lucide="heading" class="w-4 h-4"></i>
+                                <span>Überschrift</span>
+                            </button>
+                            <button class="add-block-btn btn-secondary" data-block-type="text">
+                                <i data-lucide="type" class="w-4 h-4"></i>
+                                <span>Text</span>
+                            </button>
+                            <button class="add-block-btn btn-secondary" data-block-type="image">
+                                <i data-lucide="image" class="w-4 h-4"></i>
+                                <span>Bild</span>
+                            </button>
+                            <button class="add-block-btn btn-secondary" data-block-type="list">
+                                <i data-lucide="list" class="w-4 h-4"></i>
+                                <span>Liste</span>
+                            </button>
+                            <button class="add-block-btn btn-secondary" data-block-type="divider">
+                                <i data-lucide="minus" class="w-4 h-4"></i>
+                                <span>Trennlinie</span>
+                            </button>
+                            <!-- Media Kit specific blocks -->
+                            <button class="add-block-btn btn-primary" data-block-type="stats">
+                                <i data-lucide="bar-chart" class="w-4 h-4"></i>
+                                <span>Statistiken</span>
+                            </button>
+                            <button class="add-block-btn btn-primary" data-block-type="platforms">
+                                <i data-lucide="share-2" class="w-4 h-4"></i>
+                                <span>Plattformen</span>
+                            </button>
+                            <button class="add-block-btn btn-primary" data-block-type="rates">
+                                <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                                <span>Preise</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Platform/Pricing Configuration -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h3 class="flex items-center gap-2">
+                        <i data-lucide="dollar-sign" class="w-5 h-5 text-yellow-400"></i>
+                        Plattformen & Preise
+                    </h3>
+                </div>
+                <div class="admin-card-body">
+                    <div id="platforms-config" class="space-y-4">
+                        <p class="text-sm text-gray-400">Konfiguriere deine Plattformen und Kooperationspreise in den Blöcken oben.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Download/Export Section -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h3 class="flex items-center gap-2">
+                        <i data-lucide="download" class="w-5 h-5 text-purple-400"></i>
+                        Export
+                    </h3>
+                </div>
+                <div class="admin-card-body">
+                    <div class="flex flex-wrap gap-4">
+                        <button id="export-pdf" class="btn-secondary">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                            <span>Als PDF exportieren</span>
+                        </button>
+                        <a href="{{ main_domain_url }}/mediakit" target="_blank" class="btn-primary">
+                            <i data-lucide="external-link" class="w-4 h-4"></i>
+                            <span>Media Kit ansehen</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ vendor.lucide }}?v={{ version }}"></script>
+    <script>
+        // Initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        // Mobile navigation toggle
+        const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+        const mobileNavMenu = document.getElementById('mobile-nav-menu');
+        
+        if (mobileNavToggle && mobileNavMenu) {
+            mobileNavToggle.addEventListener('click', () => {
+                mobileNavMenu.classList.toggle('hidden');
+            });
+        }
+        
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('mobile-nav-menu');
+            const toggle = document.getElementById('mobile-nav-toggle');
+            if (menu && toggle && !menu.contains(e.target) && !toggle.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+    </script>
+    
+    <!-- Page-specific JavaScript -->
+    <script>
+        const PAGE_KEY = "mediakit";
+    </script>
+    <script src="/static/js/admin_special_pages_editor.js?v={{ version }}"></script>
+    <script src="/static/js/admin_mediakit_enhanced.js?v={{ version }}"></script>
+</body>
+</html>

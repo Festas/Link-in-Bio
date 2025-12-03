@@ -87,6 +87,50 @@ class TestAdminSubdomainRoutes:
         assert response.status_code == 200
 
 
+class TestDedicatedAdminTemplates:
+    """Test that each special page uses its own dedicated admin template with unique features."""
+
+    def test_mediakit_admin_has_social_stats(self, client: TestClient, auth_headers):
+        """Media Kit admin should have social stats section."""
+        response = client.get("/mediakit", headers={**auth_headers, "Host": "admin.festas-builds.com"})
+        assert response.status_code == 200
+        assert "Social Media Statistiken" in response.text
+        assert "mediakit-access-control" in response.text
+        assert "admin_mediakit.js" in response.text or "admin_mediakit_enhanced.js" in response.text
+
+    def test_impressum_admin_has_legal_form(self, client: TestClient, auth_headers):
+        """Impressum admin should have legal information form fields."""
+        response = client.get("/impressum", headers={**auth_headers, "Host": "admin.festas-builds.com"})
+        assert response.status_code == 200
+        assert "Rechtliche Angaben" in response.text
+        assert "legal-company-name" in response.text
+        assert "admin_impressum.js" in response.text
+
+    def test_datenschutz_admin_has_gdpr_settings(self, client: TestClient, auth_headers):
+        """Datenschutz admin should have GDPR/privacy settings."""
+        response = client.get("/datenschutz", headers={**auth_headers, "Host": "admin.festas-builds.com"})
+        assert response.status_code == 200
+        assert "DSGVO" in response.text or "Cookie" in response.text
+        assert "cookie-analytics" in response.text
+        assert "admin_datenschutz.js" in response.text
+
+    def test_kontakt_admin_has_form_settings(self, client: TestClient, auth_headers):
+        """Kontakt admin should have contact form configuration."""
+        response = client.get("/kontakt", headers={**auth_headers, "Host": "admin.festas-builds.com"})
+        assert response.status_code == 200
+        assert "Formular-Einstellungen" in response.text or "E-Mail-Empfänger" in response.text
+        assert "contact-recipient-email" in response.text
+        assert "admin_kontakt.js" in response.text
+
+    def test_ueber_mich_admin_has_profile_settings(self, client: TestClient, auth_headers):
+        """Über mich admin should have profile and bio settings."""
+        response = client.get("/ueber-mich", headers={**auth_headers, "Host": "admin.festas-builds.com"})
+        assert response.status_code == 200
+        assert "Profilbild" in response.text or "Persönliche Informationen" in response.text
+        assert "about-profile-image" in response.text
+        assert "admin_ueber_mich.js" in response.text
+
+
 class TestMainDomainRoutes:
     """Test that main domain routes still work."""
 

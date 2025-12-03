@@ -14,6 +14,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - caddy-network
 
   caddy:
     image: caddy:latest
@@ -28,7 +30,14 @@ services:
       - caddy_config:/config
     depends_on:
       - web
+    networks:
+      - caddy-network
 
 volumes:
   caddy_data:
   caddy_config:
+
+networks:
+  caddy-network:
+    name: caddy-network
+    driver: bridge

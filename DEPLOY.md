@@ -375,3 +375,37 @@ If you encounter issues:
 2. Review GitHub Actions workflow logs
 3. Check container logs on the server
 4. Consult the [Architecture documentation](./docs/ARCHITECTURE.md)
+
+---
+
+## Networking Architecture
+
+This repository hosts the **main Caddy reverse proxy** that handles all HTTP/HTTPS traffic for festas-builds.com and its subdomains.
+
+### External Network
+
+The deployment creates a shared Docker network called `caddy-network`. Other services (like PC-Builder) can join this network to be served through Caddy without binding their own ports.
+
+**For external services** (e.g., PC-Builder), configure docker-compose.yml like this:
+
+```yaml
+networks:
+  caddy-network:
+    external: true  # Join existing network
+
+services:
+  your-service:
+    container_name: your-service  # Name used in Caddyfile
+    networks:
+      - caddy-network
+    # Do NOT expose ports - Caddy handles all external traffic
+```
+
+### Adding New Subdomains
+
+1. Add a new block to the Caddyfile
+2. Update the deploy.yml workflow to include the new domain
+3. Add DNS A record for the subdomain
+4. Ensure the target service joins `caddy-network`
+
+For detailed instructions, see [docs/NETWORKING.md](./docs/NETWORKING.md).

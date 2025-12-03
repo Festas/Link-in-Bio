@@ -1030,7 +1030,23 @@ async def delete_mediakit_admin_data(request: Request):
 
 @router.post("/mediakit/refresh-social-stats", dependencies=[Depends(require_auth)])
 async def refresh_social_stats(request: Request):
-    """Fetch fresh social media statistics from Profile tab handles and update cache."""
+    """
+    Fetch fresh social media statistics from Profile tab handles and update cache.
+
+    DEPRECATION NOTICE:
+    This endpoint previously used web scraping which no longer works reliably.
+    It now attempts to use the official API fetchers if credentials are configured.
+
+    For reliable stats fetching, use:
+    - POST /api/mediakit/refresh-instagram-api (with Instagram API credentials)
+    - POST /api/mediakit/refresh-tiktok-api (with TikTok API credentials)
+
+    Or run the standalone scripts:
+    - fetch_instagram_stats.py
+    - fetch_tiktok_stats.py
+
+    See docs/INSTAGRAM_INTEGRATION.md and docs/TIKTOK_INTEGRATION.md for setup.
+    """
     # Get social handles from Profile tab (settings) instead of mediakit_data
     settings = get_settings_from_db()
 
@@ -1051,16 +1067,23 @@ async def refresh_social_stats(request: Request):
             "Keine Social Media Handles konfiguriert. Bitte zuerst im Profil-Tab Social Media Handles eingeben und speichern.",
         )
 
-    # Fetch stats
+    # Fetch stats (will use API fetchers if credentials are available)
     stats_service = get_stats_service()
     results = await stats_service.fetch_all_stats(config)
 
     # Check if we got any data
     if not results.get("platforms"):
-        # If scraping failed, provide helpful error message
-        error_msg = "Konnte keine Daten abrufen. "
+        # If fetching failed, provide helpful error message with guidance
+        error_msg = (
+            "Konnte keine Daten abrufen. Web-Scraping ist veraltet und funktioniert nicht mehr. "
+            "Bitte verwende stattdessen die offiziellen API-Integrationen:\n\n"
+            "• Instagram: POST /api/mediakit/refresh-instagram-api (benötigt Meta Graph API Credentials)\n"
+            "• TikTok: POST /api/mediakit/refresh-tiktok-api (benötigt TikTok API Credentials)\n\n"
+            "Oder führe die Skripte aus: fetch_instagram_stats.py / fetch_tiktok_stats.py\n\n"
+            "Siehe docs/INSTAGRAM_INTEGRATION.md und docs/TIKTOK_INTEGRATION.md für Setup-Anleitungen."
+        )
         if results.get("errors"):
-            error_msg += " Mögliche Gründe: " + ", ".join(results["errors"][:2])
+            error_msg += "\n\nDetails: " + "; ".join(results["errors"][:2])
         raise HTTPException(500, error_msg)
 
     # Save to cache with full analytics data

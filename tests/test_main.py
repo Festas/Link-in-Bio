@@ -24,12 +24,13 @@ def test_read_main():
     assert "text/html" in response.headers["content-type"]
 
 
-def test_admin_page():
-    """Test that the admin page returns 200 OK (authentication is handled client-side)."""
-    response = client.get("/admin")
-    # Admin page is served without server-side auth - client-side JS handles auth
-    assert response.status_code == 200
-    assert "text/html" in response.headers["content-type"]
+def test_admin_page_redirects_to_subdomain():
+    """Test that the admin page redirects to admin subdomain."""
+    client_no_redirect = TestClient(app, follow_redirects=False)
+    response = client_no_redirect.get("/admin")
+    # Admin page now redirects to admin subdomain
+    assert response.status_code == 301
+    assert "admin." in response.headers.get("location", "")
 
 
 def test_login_page():

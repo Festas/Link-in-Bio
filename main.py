@@ -137,11 +137,13 @@ async def get_manifest():
     if icon_src.startswith("http"):
         icon_src = "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/layout-grid.svg"
     theme_color = "#111827"
+    # Admin panel is accessible only via admin subdomain
+    admin_url = f"https://admin.{APP_DOMAIN}" if APP_DOMAIN != "127.0.0.1" else "http://admin.localhost:8000"
     return {
         "name": f"{title} - Admin Panel",
         "short_name": "Admin",
         "description": "Admin Panel für Link-in-Bio Verwaltung",
-        "start_url": "/admin",
+        "start_url": admin_url,
         "scope": "/",
         "display": "standalone",
         "orientation": "portrait-primary",
@@ -164,7 +166,7 @@ async def get_favicon():
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def get_robots_txt():
-    return f"User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\nDisallow: /login\n\nSitemap: https://{APP_DOMAIN}/sitemap.xml\n"
+    return f"User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /login\n\nSitemap: https://{APP_DOMAIN}/sitemap.xml\n"
 
 
 @app.get("/sitemap.xml", response_class=Response)
@@ -205,9 +207,11 @@ async def get_sitemap():
     return Response(content=xml_content, media_type="application/xml")
 
 
-@app.get("/admin", response_class=HTMLResponse)
-async def get_admin_page(request: Request):
-    return templates.TemplateResponse(request=request, name="admin.html")
+@app.get("/admin", response_class=RedirectResponse)
+async def redirect_admin_to_subdomain():
+    """Redirect /admin to the admin subdomain."""
+    admin_url = f"https://admin.{APP_DOMAIN}" if APP_DOMAIN != "127.0.0.1" else "http://admin.localhost:8000"
+    return RedirectResponse(url=admin_url, status_code=301)
 
 
 @app.get("/analytics", response_class=HTMLResponse)

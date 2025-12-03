@@ -95,11 +95,13 @@ class TestMainDomainRoutes:
         response = client.get("/")
         assert response.status_code == 200
 
-    def test_main_domain_admin(self, client: TestClient):
-        """Admin page should work on main domain."""
-        response = client.get("/admin")
-        assert response.status_code == 200
-        assert "Admin-Panel" in response.text
+    def test_main_domain_admin_redirects_to_subdomain(self, client: TestClient):
+        """Admin page on main domain should redirect to admin subdomain."""
+        # Test without following redirects to verify the redirect happens
+        client_no_redirect = TestClient(client.app, follow_redirects=False)
+        response = client_no_redirect.get("/admin")
+        assert response.status_code == 301
+        assert "admin." in response.headers.get("location", "")
 
     def test_main_domain_login(self, client: TestClient):
         """Login page should work on main domain."""

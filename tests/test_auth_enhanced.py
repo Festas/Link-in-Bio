@@ -247,5 +247,48 @@ class TestSessionCleanup:
         assert token2 not in sessions
 
 
+class TestCookieDomain:
+    """Test cookie domain configuration for subdomain sharing."""
+
+    @staticmethod
+    def _reload_endpoints_with_domain(monkeypatch, domain: str):
+        """Helper to reload endpoints module with a specific APP_DOMAIN value."""
+        monkeypatch.setenv("APP_DOMAIN", domain)
+        import importlib
+        import app.endpoints_enhanced as endpoints
+        importlib.reload(endpoints)
+        return endpoints
+
+    def test_get_cookie_domain_production(self, monkeypatch):
+        """Test that production domain returns domain with leading dot."""
+        endpoints = self._reload_endpoints_with_domain(monkeypatch, "festas-builds.com")
+        assert endpoints.get_cookie_domain() == ".festas-builds.com"
+
+    def test_get_cookie_domain_localhost(self, monkeypatch):
+        """Test that localhost returns None (default browser behavior)."""
+        endpoints = self._reload_endpoints_with_domain(monkeypatch, "localhost")
+        assert endpoints.get_cookie_domain() is None
+
+    def test_get_cookie_domain_127(self, monkeypatch):
+        """Test that 127.0.0.1 returns None (default browser behavior)."""
+        endpoints = self._reload_endpoints_with_domain(monkeypatch, "127.0.0.1")
+        assert endpoints.get_cookie_domain() is None
+
+    def test_is_secure_cookie_production(self, monkeypatch):
+        """Test that production domain uses secure cookies."""
+        endpoints = self._reload_endpoints_with_domain(monkeypatch, "festas-builds.com")
+        assert endpoints.is_secure_cookie() is True
+
+    def test_is_secure_cookie_localhost(self, monkeypatch):
+        """Test that localhost does not use secure cookies."""
+        endpoints = self._reload_endpoints_with_domain(monkeypatch, "localhost")
+        assert endpoints.is_secure_cookie() is False
+
+    def test_is_secure_cookie_127(self, monkeypatch):
+        """Test that 127.0.0.1 does not use secure cookies."""
+        endpoints = self._reload_endpoints_with_domain(monkeypatch, "127.0.0.1")
+        assert endpoints.is_secure_cookie() is False
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

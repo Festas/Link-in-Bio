@@ -17,10 +17,8 @@ admin.festas-builds.com {
 rigpilot.festas-builds.com {
     tls eric@festas-builds.com
     encode gzip zstd
-    
     # Cache static Next.js assets with immutable cache headers
     @static path /_next/static/*
     header @static Cache-Control "public, max-age=31536000, immutable"
-    
     reverse_proxy rigpilot:3000
 }

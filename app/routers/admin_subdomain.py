@@ -25,54 +25,12 @@ router = APIRouter(prefix="/__admin__")
 # Get main domain for public page links
 APP_DOMAIN = os.getenv("APP_DOMAIN", "127.0.0.1")
 
-# Define all special pages that have admin interfaces
-SPECIAL_PAGES = {
-    "mediakit": {
-        "title": "Media Kit",
-        "description": "Verwalte dein Media Kit, Statistiken und Kooperationen",
-        "icon": "briefcase",
-    },
-    "impressum": {
-        "title": "Impressum",
-        "description": "Bearbeite die Impressum-Seite",
-        "icon": "file-text",
-    },
-    "datenschutz": {
-        "title": "Datenschutz",
-        "description": "Bearbeite die Datenschutzerklärung",
-        "icon": "shield",
-    },
-    "ueber-mich": {
-        "title": "Über mich",
-        "description": "Bearbeite die Über-mich-Seite",
-        "icon": "user",
-    },
-    "kontakt": {
-        "title": "Kontakt",
-        "description": "Bearbeite die Kontakt-Seite",
-        "icon": "mail",
-    },
-}
-
 
 def get_main_domain_url() -> str:
     """Get the main domain URL for public page links."""
     if APP_DOMAIN == "127.0.0.1":
         return f"http://{APP_DOMAIN}"
     return f"https://{APP_DOMAIN}"
-
-
-def render_special_page_admin(request: Request, page_key: str):
-    """Helper to render a special page admin template."""
-    page_info = SPECIAL_PAGES[page_key]
-    context = {
-        "page_key": page_key,
-        "page_info": page_info,
-        "all_special_pages": SPECIAL_PAGES,
-        "is_subdomain": True,
-        "main_domain_url": get_main_domain_url(),
-    }
-    return templates.TemplateResponse(request=request, name="admin_special_page.html", context=context)
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
@@ -95,32 +53,47 @@ async def admin_subdomain_analytics(request: Request, user=Depends(require_auth)
 
 @router.get("/mediakit", response_class=HTMLResponse)
 async def admin_subdomain_mediakit(request: Request, user=Depends(require_auth)):
-    """Media Kit admin - accessed via admin subdomain."""
-    return render_special_page_admin(request, "mediakit")
+    """Media Kit admin - standalone admin panel with social stats, access control, and analytics."""
+    context = {
+        "main_domain_url": get_main_domain_url(),
+    }
+    return templates.TemplateResponse(request=request, name="admin_mediakit.html", context=context)
 
 
 @router.get("/impressum", response_class=HTMLResponse)
 async def admin_subdomain_impressum(request: Request, user=Depends(require_auth)):
-    """Impressum admin - accessed via admin subdomain."""
-    return render_special_page_admin(request, "impressum")
+    """Impressum admin - standalone admin panel with legal information form and preview."""
+    context = {
+        "main_domain_url": get_main_domain_url(),
+    }
+    return templates.TemplateResponse(request=request, name="admin_impressum.html", context=context)
 
 
 @router.get("/datenschutz", response_class=HTMLResponse)
 async def admin_subdomain_datenschutz(request: Request, user=Depends(require_auth)):
-    """Datenschutz admin - accessed via admin subdomain."""
-    return render_special_page_admin(request, "datenschutz")
+    """Datenschutz admin - standalone admin panel with GDPR settings and privacy policy editor."""
+    context = {
+        "main_domain_url": get_main_domain_url(),
+    }
+    return templates.TemplateResponse(request=request, name="admin_datenschutz.html", context=context)
 
 
 @router.get("/ueber-mich", response_class=HTMLResponse)
 async def admin_subdomain_ueber_mich(request: Request, user=Depends(require_auth)):
-    """Über mich admin - accessed via admin subdomain."""
-    return render_special_page_admin(request, "ueber-mich")
+    """Über mich admin - standalone admin panel with bio, profile, and timeline settings."""
+    context = {
+        "main_domain_url": get_main_domain_url(),
+    }
+    return templates.TemplateResponse(request=request, name="admin_ueber_mich.html", context=context)
 
 
 @router.get("/kontakt", response_class=HTMLResponse)
 async def admin_subdomain_kontakt(request: Request, user=Depends(require_auth)):
-    """Kontakt admin - accessed via admin subdomain."""
-    return render_special_page_admin(request, "kontakt")
+    """Kontakt admin - standalone admin panel with contact form and email settings."""
+    context = {
+        "main_domain_url": get_main_domain_url(),
+    }
+    return templates.TemplateResponse(request=request, name="admin_kontakt.html", context=context)
 
 
 @router.get("/status", response_class=JSONResponse)

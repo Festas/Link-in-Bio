@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datenschutz - Admin</title>
+    
+    <script src="{{ vendor.tailwindcss }}?v={{ version }}"></script>
+    <script src="{{ vendor.sortable }}?v={{ version }}"></script>
+    
+    <link rel="stylesheet" href="/static/css/admin.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/admin-modern.css?v={{ version }}">
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    
+    <!-- Navigation Header -->
+    <nav class="sticky top-0 z-50 bg-gray-900/80 backdrop-blur-xl border-b border-gray-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Left: Back to main admin + Page Title -->
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="btn-icon" title="Zurück zum Admin">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </a>
+                    <div class="h-6 w-px bg-gray-700"></div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                            <i data-lucide="shield" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold">Datenschutz</h1>
+                            <p class="text-xs text-gray-500">Bearbeite die Datenschutzerklärung</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right: Quick Navigation to other special pages -->
+                <div class="flex items-center space-x-2">
+                    <div class="hidden md:flex items-center gap-1 mr-2">
+                        <a href="/mediakit" class="admin-tab" title="Media Kit Admin">
+                            <i data-lucide="briefcase" class="w-4 h-4"></i>
+                            <span class="hidden lg:inline">Media Kit</span>
+                        </a>
+                        <a href="/impressum" class="admin-tab" title="Impressum Admin">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                            <span class="hidden lg:inline">Impressum</span>
+                        </a>
+                        <a href="/datenschutz" class="admin-tab active" title="Datenschutz Admin">
+                            <i data-lucide="shield" class="w-4 h-4"></i>
+                            <span class="hidden lg:inline">Datenschutz</span>
+                        </a>
+                        <a href="/ueber-mich" class="admin-tab" title="Über mich Admin">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                            <span class="hidden lg:inline">Über mich</span>
+                        </a>
+                        <a href="/kontakt" class="admin-tab" title="Kontakt Admin">
+                            <i data-lucide="mail" class="w-4 h-4"></i>
+                            <span class="hidden lg:inline">Kontakt</span>
+                        </a>
+                    </div>
+                    
+                    <!-- Mobile dropdown for page navigation -->
+                    <div class="md:hidden relative">
+                        <button id="mobile-nav-toggle" class="btn-icon">
+                            <i data-lucide="menu" class="w-5 h-5"></i>
+                        </button>
+                        <div id="mobile-nav-menu" class="hidden absolute right-0 mt-2 w-56 bg-gray-800 rounded-xl shadow-xl border border-gray-700 z-50 overflow-hidden">
+                            <a href="/mediakit" class="block px-4 py-3 hover:bg-gray-700">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="briefcase" class="w-4 h-4 text-gray-400"></i>
+                                    <div>
+                                        <div class="font-medium">Media Kit</div>
+                                        <div class="text-xs text-gray-500">Verwalte dein Media Kit</div>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="/impressum" class="block px-4 py-3 hover:bg-gray-700">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="file-text" class="w-4 h-4 text-gray-400"></i>
+                                    <div>
+                                        <div class="font-medium">Impressum</div>
+                                        <div class="text-xs text-gray-500">Bearbeite die Impressum-Seite</div>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="/datenschutz" class="block px-4 py-3 hover:bg-gray-700 bg-cyan-600/20 border-l-2 border-cyan-400">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="shield" class="w-4 h-4 text-cyan-400"></i>
+                                    <div>
+                                        <div class="font-medium text-cyan-400">Datenschutz</div>
+                                        <div class="text-xs text-gray-500">Bearbeite die Datenschutzerklärung</div>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="/ueber-mich" class="block px-4 py-3 hover:bg-gray-700">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="user" class="w-4 h-4 text-gray-400"></i>
+                                    <div>
+                                        <div class="font-medium">Über mich</div>
+                                        <div class="text-xs text-gray-500">Bearbeite die Über-mich-Seite</div>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="/kontakt" class="block px-4 py-3 hover:bg-gray-700">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="mail" class="w-4 h-4 text-gray-400"></i>
+                                    <div>
+                                        <div class="font-medium">Kontakt</div>
+                                        <div class="text-xs text-gray-500">Bearbeite die Kontakt-Seite</div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- View Public Page Button -->
+                    <a href="{{ main_domain_url }}/datenschutz" target="_blank" class="btn-primary" title="Vorschau">
+                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                        <span class="hidden lg:inline">Vorschau</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Page-specific content -->
+        <div id="page-content" class="space-y-6">
+            
+            <!-- Status Messages -->
+            <div id="status-message" class="hidden rounded-xl p-4 bg-green-500/10 border border-green-500/30">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+                    <span id="status-text" class="text-green-300"></span>
+                </div>
+            </div>
+            
+            <!-- GDPR Notice -->
+            <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+                <div class="flex items-start gap-3">
+                    <i data-lucide="info" class="w-5 h-5 text-blue-400 mt-0.5"></i>
+                    <div>
+                        <h3 class="font-medium text-blue-300">DSGVO-konforme Datenschutzerklärung</h3>
+                        <p class="text-sm text-blue-200/80 mt-1">Diese Vorlage hilft dir, eine DSGVO-konforme Datenschutzerklärung zu erstellen. Bitte passe alle Angaben an deine spezifische Datenverarbeitung an.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cookie Policy Configuration -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div>
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <i data-lucide="cookie" class="w-5 h-5 text-amber-400"></i>
+                            Cookie-Einstellungen
+                        </h2>
+                        <p class="text-sm text-gray-400 mt-1">Konfiguriere deine Cookie-Richtlinien</p>
+                    </div>
+                </div>
+                <div class="admin-card-body">
+                    <div class="space-y-4">
+                        <div class="form-group">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="cookie-essential" class="rounded bg-gray-700 border-gray-600" checked disabled>
+                                <span>Essentielle Cookies</span>
+                                <span class="text-xs text-gray-500 ml-2">(immer aktiv)</span>
+                            </label>
+                            <p class="help-text ml-6">Notwendig für die Grundfunktionalität der Website</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="cookie-analytics" class="rounded bg-gray-700 border-gray-600">
+                                <span>Analytics Cookies</span>
+                            </label>
+                            <p class="help-text ml-6">Für Besucherstatistiken und Nutzungsanalysen</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="cookie-marketing" class="rounded bg-gray-700 border-gray-600">
+                                <span>Marketing Cookies</span>
+                            </label>
+                            <p class="help-text ml-6">Für personalisierte Werbung und Tracking</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Third-Party Services -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div>
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <i data-lucide="plug" class="w-5 h-5 text-purple-400"></i>
+                            Drittanbieter-Dienste
+                        </h2>
+                        <p class="text-sm text-gray-400 mt-1">Wähle die Dienste aus, die du verwendest</p>
+                    </div>
+                </div>
+                <div class="admin-card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="service-google-analytics" class="rounded bg-gray-700 border-gray-600">
+                                <span>Google Analytics</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="service-google-fonts" class="rounded bg-gray-700 border-gray-600">
+                                <span>Google Fonts</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="service-youtube" class="rounded bg-gray-700 border-gray-600">
+                                <span>YouTube</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="service-instagram" class="rounded bg-gray-700 border-gray-600">
+                                <span>Instagram</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="service-tiktok" class="rounded bg-gray-700 border-gray-600">
+                                <span>TikTok</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="service-cloudflare" class="rounded bg-gray-700 border-gray-600">
+                                <span>Cloudflare</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium mb-2">Weitere Dienste (einer pro Zeile)</label>
+                        <textarea id="service-custom" rows="3" class="w-full bg-gray-700 text-white rounded px-3 py-2" placeholder="z.B. Mailchimp&#10;Stripe&#10;PayPal"></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Data Processing Documentation -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div>
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <i data-lucide="database" class="w-5 h-5 text-green-400"></i>
+                            Datenverarbeitung
+                        </h2>
+                        <p class="text-sm text-gray-400 mt-1">Dokumentiere deine Datenverarbeitungsprozesse</p>
+                    </div>
+                </div>
+                <div class="admin-card-body">
+                    <div class="space-y-4">
+                        <div class="form-group">
+                            <label class="block text-sm font-medium mb-2">Zweck der Datenverarbeitung</label>
+                            <textarea id="data-purpose" rows="3" class="w-full bg-gray-700 text-white rounded px-3 py-2" placeholder="Beschreibe, warum und wofür du personenbezogene Daten verarbeitest..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="block text-sm font-medium mb-2">Rechtsgrundlage</label>
+                            <select id="data-legal-basis" class="w-full bg-gray-700 text-white rounded px-3 py-2">
+                                <option value="">Bitte wählen...</option>
+                                <option value="consent">Einwilligung (Art. 6 Abs. 1 lit. a DSGVO)</option>
+                                <option value="contract">Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO)</option>
+                                <option value="legal">Rechtliche Verpflichtung (Art. 6 Abs. 1 lit. c DSGVO)</option>
+                                <option value="legitimate">Berechtigtes Interesse (Art. 6 Abs. 1 lit. f DSGVO)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="block text-sm font-medium mb-2">Speicherdauer</label>
+                            <input type="text" id="data-retention" placeholder="z.B. 12 Monate nach Löschung des Kontos" class="w-full bg-gray-700 text-white rounded px-3 py-2">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Block-Based Content Editor -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div>
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <i data-lucide="edit-3" class="w-5 h-5 text-cyan-400"></i>
+                            Datenschutzerklärung bearbeiten
+                        </h2>
+                        <p class="text-sm text-gray-400 mt-1">Bearbeite den Inhalt mit dem Block-Editor</p>
+                    </div>
+                    <button id="save-page" class="btn-primary">
+                        <i data-lucide="save" class="w-4 h-4"></i>
+                        <span>Speichern</span>
+                    </button>
+                </div>
+                
+                <!-- Blocks Container -->
+                <div class="admin-card-body">
+                    <div id="blocks-container" class="space-y-4 mb-6">
+                        <!-- Dynamic blocks will be loaded here -->
+                    </div>
+                    
+                    <!-- Add Block Toolbar -->
+                    <div class="border-t border-gray-700 pt-6">
+                        <p class="text-sm text-gray-400 mb-3 font-medium">Block hinzufügen:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="add-block-btn btn-secondary" data-block-type="heading">
+                                <i data-lucide="heading" class="w-4 h-4"></i>
+                                <span>Überschrift</span>
+                            </button>
+                            <button class="add-block-btn btn-secondary" data-block-type="text">
+                                <i data-lucide="type" class="w-4 h-4"></i>
+                                <span>Text</span>
+                            </button>
+                            <button class="add-block-btn btn-secondary" data-block-type="list">
+                                <i data-lucide="list" class="w-4 h-4"></i>
+                                <span>Liste</span>
+                            </button>
+                            <button class="add-block-btn btn-secondary" data-block-type="divider">
+                                <i data-lucide="minus" class="w-4 h-4"></i>
+                                <span>Trennlinie</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- GDPR Standard Sections -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h3 class="flex items-center gap-2">
+                        <i data-lucide="file-plus" class="w-5 h-5 text-blue-400"></i>
+                        DSGVO-Standardabschnitte
+                    </h3>
+                </div>
+                <div class="admin-card-body">
+                    <p class="text-sm text-gray-400 mb-4">Wähle die Standardabschnitte, die automatisch eingefügt werden sollen:</p>
+                    <div class="space-y-3">
+                        <div class="form-group">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="gdpr-rights" class="rounded bg-gray-700 border-gray-600" checked>
+                                <span>Betroffenenrechte (Art. 15-22 DSGVO)</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="gdpr-contact" class="rounded bg-gray-700 border-gray-600" checked>
+                                <span>Kontaktdaten des Verantwortlichen</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="gdpr-supervisory" class="rounded bg-gray-700 border-gray-600" checked>
+                                <span>Beschwerderecht bei Aufsichtsbehörde</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="gdpr-ssl" class="rounded bg-gray-700 border-gray-600" checked>
+                                <span>SSL-Verschlüsselung</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ vendor.lucide }}?v={{ version }}"></script>
+    <script>
+        // Initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        // Mobile navigation toggle
+        const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+        const mobileNavMenu = document.getElementById('mobile-nav-menu');
+        
+        if (mobileNavToggle && mobileNavMenu) {
+            mobileNavToggle.addEventListener('click', () => {
+                mobileNavMenu.classList.toggle('hidden');
+            });
+        }
+        
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('mobile-nav-menu');
+            const toggle = document.getElementById('mobile-nav-toggle');
+            if (menu && toggle && !menu.contains(e.target) && !toggle.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+    </script>
+    
+    <!-- Page-specific JavaScript -->
+    <script>
+        const PAGE_KEY = "datenschutz";
+    </script>
+    <script src="/static/js/admin_special_pages_editor.js?v={{ version }}"></script>
+    <script src="/static/js/admin_datenschutz.js?v={{ version }}"></script>
+</body>
+</html>

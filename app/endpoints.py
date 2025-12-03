@@ -75,7 +75,7 @@ from .database import (
     reorder_mediakit_blocks,
     check_access_approved,
 )
-from .auth_unified import require_auth, check_auth
+from .auth_unified import require_auth, check_auth, create_session
 from .services import (
     scrape_link_details,
     get_video_embed_url,
@@ -88,6 +88,7 @@ from .social_stats import get_stats_service
 from .rate_limit import limiter_strict, limiter_standard
 from .cache_unified import cache
 from .config import BASE_DIR, UPLOAD_DIR
+from .endpoints_enhanced import get_cookie_domain, is_secure_cookie
 
 router = APIRouter()
 
@@ -118,7 +119,25 @@ async def background_scrape_and_update(item_id: int, url: str):
 
 
 @router.get("/auth/check", dependencies=[Depends(limiter_strict)])
-async def check_login(username: str = Depends(require_auth)):
+async def check_login(request: Request, response: Response, username: str = Depends(require_auth)):
+    """
+    Check authentication and create a session.
+    On successful authentication, sets a session_token cookie for browser navigation.
+    """
+    # Create a session for the authenticated user
+    session_token = create_session(username, remember_me=False)
+
+    # Set session cookie with domain for subdomain sharing
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=is_secure_cookie(),
+        samesite="lax",
+        max_age=86400,  # 24 hours
+        domain=get_cookie_domain(),
+    )
+
     return {"status": "ok"}
 
 

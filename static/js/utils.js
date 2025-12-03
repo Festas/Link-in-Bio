@@ -50,7 +50,18 @@ export function isAuthenticated() {
     return !!getAuthToken();
 }
 
-export function logout() {
+export async function logout() {
+    // Call the server to invalidate the session and clear the cookie
+    try {
+        await fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include'  // Include cookies in the request
+        });
+    } catch (error) {
+        // Continue with logout even if the server call fails
+        console.warn('Logout request failed:', error);
+    }
+    
     removeAuthToken();
     window.location.href = '/login';
 }

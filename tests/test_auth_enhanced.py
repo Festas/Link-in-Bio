@@ -247,5 +247,64 @@ class TestSessionCleanup:
         assert token2 not in sessions
 
 
+class TestCookieDomain:
+    """Test cookie domain configuration for subdomain sharing."""
+
+    def test_get_cookie_domain_production(self, monkeypatch):
+        """Test that production domain returns domain with leading dot."""
+        monkeypatch.setenv("APP_DOMAIN", "festas-builds.com")
+        # Reimport to pick up new env value
+        import importlib
+        import app.endpoints_enhanced as endpoints
+        importlib.reload(endpoints)
+
+        assert endpoints.get_cookie_domain() == ".festas-builds.com"
+
+    def test_get_cookie_domain_localhost(self, monkeypatch):
+        """Test that localhost returns None (default browser behavior)."""
+        monkeypatch.setenv("APP_DOMAIN", "localhost")
+        import importlib
+        import app.endpoints_enhanced as endpoints
+        importlib.reload(endpoints)
+
+        assert endpoints.get_cookie_domain() is None
+
+    def test_get_cookie_domain_127(self, monkeypatch):
+        """Test that 127.0.0.1 returns None (default browser behavior)."""
+        monkeypatch.setenv("APP_DOMAIN", "127.0.0.1")
+        import importlib
+        import app.endpoints_enhanced as endpoints
+        importlib.reload(endpoints)
+
+        assert endpoints.get_cookie_domain() is None
+
+    def test_is_secure_cookie_production(self, monkeypatch):
+        """Test that production domain uses secure cookies."""
+        monkeypatch.setenv("APP_DOMAIN", "festas-builds.com")
+        import importlib
+        import app.endpoints_enhanced as endpoints
+        importlib.reload(endpoints)
+
+        assert endpoints.is_secure_cookie() is True
+
+    def test_is_secure_cookie_localhost(self, monkeypatch):
+        """Test that localhost does not use secure cookies."""
+        monkeypatch.setenv("APP_DOMAIN", "localhost")
+        import importlib
+        import app.endpoints_enhanced as endpoints
+        importlib.reload(endpoints)
+
+        assert endpoints.is_secure_cookie() is False
+
+    def test_is_secure_cookie_127(self, monkeypatch):
+        """Test that 127.0.0.1 does not use secure cookies."""
+        monkeypatch.setenv("APP_DOMAIN", "127.0.0.1")
+        import importlib
+        import app.endpoints_enhanced as endpoints
+        importlib.reload(endpoints)
+
+        assert endpoints.is_secure_cookie() is False
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

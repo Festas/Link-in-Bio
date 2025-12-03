@@ -3,6 +3,7 @@ Enhanced API Endpoints for New Features
 Provides REST API for enhanced analytics, authentication, and caching.
 """
 
+import os
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from typing import Optional, List
 from datetime import datetime, timedelta
@@ -34,6 +35,26 @@ from .database import get_db_connection
 
 # Initialize enhanced analytics
 analytics = EnhancedAnalytics(get_db_connection)
+
+# Domain configuration for cookie sharing across subdomains
+APP_DOMAIN = os.getenv("APP_DOMAIN", "127.0.0.1")
+
+
+def get_cookie_domain() -> Optional[str]:
+    """
+    Get the cookie domain for subdomain sharing.
+    Returns None for localhost/127.0.0.1 (default browser behavior).
+    Returns domain with leading dot (e.g., '.festas-builds.com') for production.
+    """
+    if APP_DOMAIN and APP_DOMAIN not in ("127.0.0.1", "localhost"):
+        return f".{APP_DOMAIN}"
+    return None
+
+
+def is_secure_cookie() -> bool:
+    """Determine if cookies should be secure (HTTPS only)."""
+    return APP_DOMAIN not in ("127.0.0.1", "localhost")
+
 
 router = APIRouter()
 
@@ -98,14 +119,15 @@ async def login(request: LoginRequest, http_request: Request, response: Response
     # Create session
     session_token = create_session(request.username, request.remember_me)
 
-    # Set session cookie
+    # Set session cookie with domain for subdomain sharing
     response.set_cookie(
         key="session_token",
         value=session_token,
         httponly=True,
-        secure=True,
+        secure=is_secure_cookie(),
         samesite="lax",
         max_age=86400 * 7 if request.remember_me else 86400,
+        domain=get_cookie_domain(),
     )
 
     return LoginResponse(success=True, session_token=session_token, message="Erfolgreich angemeldet")
@@ -118,7 +140,7 @@ async def logout(request: Request, response: Response):
     if session_token:
         invalidate_session(session_token)
 
-    response.delete_cookie("session_token")
+    response.delete_cookie("session_token", domain=get_cookie_domain())
     return {"success": True, "message": "Erfolgreich abgemeldet"}
 
 

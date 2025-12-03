@@ -88,6 +88,7 @@ from .social_stats import get_stats_service
 from .rate_limit import limiter_strict, limiter_standard
 from .cache_unified import cache
 from .config import BASE_DIR, UPLOAD_DIR
+from .endpoints_enhanced import get_cookie_domain, is_secure_cookie
 
 router = APIRouter()
 
@@ -114,24 +115,6 @@ async def background_scrape_and_update(item_id: int, url: str):
         logging.error(f"Background scraping failed for item {item_id}: {e}")
 
 
-# --- Cookie Configuration ---
-
-# Domain configuration for cookie sharing across subdomains
-_APP_DOMAIN = os.getenv("APP_DOMAIN", "127.0.0.1")
-
-
-def _get_cookie_domain() -> Optional[str]:
-    """Get the cookie domain for subdomain sharing."""
-    if _APP_DOMAIN not in ("127.0.0.1", "localhost"):
-        return f".{_APP_DOMAIN}"
-    return None
-
-
-def _is_secure_cookie() -> bool:
-    """Determine if cookies should be secure (HTTPS only)."""
-    return _APP_DOMAIN not in ("127.0.0.1", "localhost")
-
-
 # --- Auth Check ---
 
 
@@ -149,10 +132,10 @@ async def check_login(request: Request, response: Response, username: str = Depe
         key="session_token",
         value=session_token,
         httponly=True,
-        secure=_is_secure_cookie(),
+        secure=is_secure_cookie(),
         samesite="lax",
         max_age=86400,  # 24 hours
-        domain=_get_cookie_domain(),
+        domain=get_cookie_domain(),
     )
 
     return {"status": "ok"}

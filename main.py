@@ -56,6 +56,13 @@ from app.routers import pages, items, media, settings, analytics, subscribers, p
 from app.routers import admin_subdomain, special_pages, mediakit
 
 
+def get_admin_subdomain_url() -> str:
+    """Get the admin subdomain URL based on the current domain configuration."""
+    if APP_DOMAIN == "127.0.0.1":
+        return "http://admin.localhost:8000"
+    return f"https://admin.{APP_DOMAIN}"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.auth_unified import validate_admin_password_on_startup
@@ -137,13 +144,11 @@ async def get_manifest():
     if icon_src.startswith("http"):
         icon_src = "https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/layout-grid.svg"
     theme_color = "#111827"
-    # Admin panel is accessible only via admin subdomain
-    admin_url = f"https://admin.{APP_DOMAIN}" if APP_DOMAIN != "127.0.0.1" else "http://admin.localhost:8000"
     return {
         "name": f"{title} - Admin Panel",
         "short_name": "Admin",
         "description": "Admin Panel für Link-in-Bio Verwaltung",
-        "start_url": admin_url,
+        "start_url": get_admin_subdomain_url(),
         "scope": "/",
         "display": "standalone",
         "orientation": "portrait-primary",
@@ -210,8 +215,7 @@ async def get_sitemap():
 @app.get("/admin", response_class=RedirectResponse)
 async def redirect_admin_to_subdomain():
     """Redirect /admin to the admin subdomain."""
-    admin_url = f"https://admin.{APP_DOMAIN}" if APP_DOMAIN != "127.0.0.1" else "http://admin.localhost:8000"
-    return RedirectResponse(url=admin_url, status_code=301)
+    return RedirectResponse(url=get_admin_subdomain_url(), status_code=301)
 
 
 @app.get("/analytics", response_class=HTMLResponse)

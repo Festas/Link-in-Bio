@@ -95,6 +95,20 @@ class UeberMichAdmin {
         const file = e.target.files[0];
         if (!file) return;
 
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            this.showStatus('Nur Bilddateien (JPEG, PNG, GIF, WebP) sind erlaubt', 'error');
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        const maxSize = 5 * 1024 * 1024;
+        if (file.size > maxSize) {
+            this.showStatus('Das Bild darf maximal 5 MB groß sein', 'error');
+            return;
+        }
+
         try {
             const formData = new FormData();
             formData.append('file', file);

@@ -122,7 +122,9 @@ class KontaktAdmin {
             // Form fields
             if (settings.formFields) {
                 document.getElementById('field-phone').checked = settings.formFields.phone || false;
-                document.getElementById('field-subject').checked = settings.formFields.subject !== false;
+                // Default to true (checked) if subject is undefined or true
+                const subjectChecked = settings.formFields.subject === undefined || settings.formFields.subject === true;
+                document.getElementById('field-subject').checked = subjectChecked;
                 document.getElementById('field-company').checked = settings.formFields.company || false;
             }
 

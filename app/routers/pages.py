@@ -21,7 +21,10 @@ from ..cache_unified import cache
 
 router = APIRouter()
 
-# Slug validation pattern
+# Slug validation pattern - requires at least one character.
+# Note: The default page uses an empty slug (""), which is only created during
+# database initialization and cannot be created via the API. Empty slugs are
+# explicitly rejected by this pattern, which is the intended behavior.
 SLUG_PATTERN = re.compile(r"^[a-z0-9-]+$")
 
 

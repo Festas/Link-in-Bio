@@ -1,7 +1,7 @@
 import sqlite3
 import os
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from contextlib import contextmanager
 from dotenv import load_dotenv
 from datetime import datetime
@@ -25,6 +25,17 @@ DATABASE_FILE = os.getenv("DATABASE_FILE", _get_db_path("linktree.db"))
 SPECIAL_PAGES_DB = os.getenv("SPECIAL_PAGES_DB", _get_db_path("special_pages.db"))
 CUSTOM_PAGES_DB = os.getenv("CUSTOM_PAGES_DB", _get_db_path("pages.db"))
 MEDIAKIT_DB = os.getenv("MEDIAKIT_DB", _get_db_path("mediakit.db"))
+
+# Column whitelists for dynamic queries to prevent SQL injection
+ALLOWED_ITEM_COLUMNS = {
+    'item_type', 'title', 'url', 'image_url', 'display_order', 'parent_id',
+    'click_count', 'is_featured', 'is_active', 'is_affiliate',
+    'publish_on', 'expires_on', 'price', 'grid_columns', 'page_id'
+}
+
+ALLOWED_PAGE_COLUMNS = {
+    'slug', 'title', 'bio', 'image_url', 'bg_image_url', 'is_active', 'updated_at'
+}
 
 
 @contextmanager
@@ -200,10 +211,10 @@ def init_main_db():
 
         # Initialize default settings
         default_settings = {
-            "title": os.getenv("DEFAULT_PROFILE_NAME", "Eric | Tech & Gaming"),
+            "title": os.getenv("DEFAULT_PROFILE_NAME", "My Link-in-Bio"),
             "bio": os.getenv(
                 "DEFAULT_PROFILE_BIO",
-                "Tech & Gaming Influencer aus Hamburg 🎮⚡ | Ingenieur & Content Creator | Ästhetik trifft Innovation",
+                "Welcome to my link page!",
             ),
             "theme": "theme-dark",
             "button_style": "style-rounded",
@@ -264,21 +275,21 @@ def init_special_pages_db():
             default_special_pages = [
                 (
                     "ueber-mich",
-                    "Über mich",
-                    "Tech & Gaming Enthusiast aus Hamburg",
-                    """<section><h2>Hallo! 👋</h2><p>Willkommen auf meiner Seite! Ich bin Eric, Tech- und Gaming-Enthusiast aus der schönen Hansestadt Hamburg. Hier vereinen sich meine Leidenschaften für innovative Technologien, Gaming und ästhetisches Design.</p></section><section><h2>Was ich mache 🎮⚡</h2><p>Als Ingenieur und Content Creator verbinde ich technisches Know-how mit kreativer Leidenschaft. Mein Fokus liegt auf:</p><ul><li><strong>Gaming Content:</strong> Reviews, Streams und Gameplay-Highlights aus der Welt des Gaming</li><li><strong>Tech & Innovation:</strong> Neueste Technologietrends, Hardware-Tests und Software-Entwicklung</li><li><strong>Engineering:</strong> Einblicke in die Welt der Technik und innovative Lösungsansätze</li><li><strong>Design & Ästhetik:</strong> Wo Funktionalität auf visuelles Design trifft</li></ul></section>""",
+                    "About Me",
+                    "Welcome to my page",
+                    """<section><h2>Hello! 👋</h2><p>Welcome to my page! I'm excited to share my content and connect with you. Feel free to explore and reach out!</p></section><section><h2>What I Do</h2><p>I create content and share my passions with my community. My focus areas include:</p><ul><li><strong>Content Creation:</strong> Sharing my interests and expertise</li><li><strong>Community:</strong> Building connections with like-minded people</li><li><strong>Creativity:</strong> Exploring new ideas and projects</li></ul></section>""",
                 ),
                 (
                     "impressum",
-                    "Impressum",
-                    "Angaben gemäß § 5 TMG",
-                    """<section><h2>Angaben gemäß § 5 TMG</h2><p>Eric [Nachname]<br>[Straße und Hausnummer]<br>[PLZ] Hamburg<br>Deutschland</p></section><section><h2>Kontakt</h2><p><strong>E-Mail:</strong> kontakt@example.com</p></section>""",
+                    "Legal Notice",
+                    "Legal Information",
+                    """<section><h2>Legal Notice</h2><p>[Your Name]<br>[Your Address]<br>[Your City]<br>[Your Country]</p></section><section><h2>Contact</h2><p><strong>Email:</strong> contact@example.com</p></section>""",
                 ),
                 (
                     "datenschutz",
-                    "Datenschutzerklärung",
-                    "Ihre Privatsphäre ist uns wichtig",
-                    """<section><h2>1. Datenschutz auf einen Blick</h2><p>Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen.</p></section>""",
+                    "Privacy Policy",
+                    "Your privacy is important to us",
+                    """<section><h2>1. Privacy at a Glance</h2><p>The following information provides a simple overview of what happens to your personal data when you visit this website.</p></section>""",
                 ),
             ]
             for page_key, title, subtitle, content in default_special_pages:
@@ -321,10 +332,10 @@ def init_custom_pages_db():
         if cursor.fetchone()[0] == 0:
             # Try to get default values from main database settings if it exists
             # Otherwise use environment variables or hardcoded defaults
-            default_title = os.getenv("DEFAULT_PROFILE_NAME", "Eric | Tech & Gaming")
+            default_title = os.getenv("DEFAULT_PROFILE_NAME", "My Link-in-Bio")
             default_bio = os.getenv(
                 "DEFAULT_PROFILE_BIO",
-                "Tech & Gaming Influencer aus Hamburg 🎮⚡ | Ingenieur & Content Creator | Ästhetik trifft Innovation",
+                "Welcome to my link page!",
             )
             default_image = ""
             default_bg = ""
@@ -475,6 +486,10 @@ def create_item_in_db(item_data: tuple) -> dict:
 def update_item_in_db(item_id: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     if not data:
         return None
+    # Validate column names against whitelist
+    invalid_columns = set(data.keys()) - ALLOWED_ITEM_COLUMNS
+    if invalid_columns:
+        raise ValueError("Invalid column names provided")
     set_clauses = [f"{key} = ?" for key in data.keys()]
     query = f"UPDATE items SET {', '.join(set_clauses)} WHERE id = ?"
     with get_db_connection() as conn:
@@ -486,7 +501,7 @@ def update_item_in_db(item_id: int, data: Dict[str, Any]) -> Optional[Dict[str, 
         return dict(row) if row else None
 
 
-def delete_item_from_db(item_id: int):
+def delete_item_from_db(item_id: int) -> None:
     with get_db_connection() as conn:
         conn.execute("DELETE FROM items WHERE id = ?", (item_id,))
         conn.commit()
@@ -537,6 +552,10 @@ def update_page(page_id: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     if not data:
         return None
     data["updated_at"] = datetime.now().isoformat()
+    # Validate column names against whitelist
+    invalid_columns = set(data.keys()) - ALLOWED_PAGE_COLUMNS
+    if invalid_columns:
+        raise ValueError("Invalid column names provided")
     set_clauses = [f"{key} = ?" for key in data.keys()]
     query = f"UPDATE pages SET {', '.join(set_clauses)} WHERE id = ?"
     with get_custom_pages_db_connection() as conn:
@@ -548,7 +567,7 @@ def update_page(page_id: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         return dict(row) if row else None
 
 
-def delete_page(page_id: int):
+def delete_page(page_id: int) -> None:
     """Delete a page and all its items. Also handles cleanup of related records in main database."""
     # First, delete related items from the main database
     with get_db_connection() as main_conn:
@@ -641,7 +660,7 @@ def get_all_special_pages() -> list:
         return [dict(row) for row in cursor.fetchall()]
 
 
-def update_special_page(page_key: str, title: str, subtitle: str, content: str):
+def update_special_page(page_key: str, title: str, subtitle: str, content: str) -> None:
     """Update special page content."""
     with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
@@ -669,7 +688,7 @@ def get_special_page_blocks(page_key: str) -> list:
         return [dict(row) for row in cursor.fetchall()]
 
 
-def save_special_page_blocks(page_key: str, blocks: list):
+def save_special_page_blocks(page_key: str, blocks: list) -> None:
     """Save blocks for a special page. Replaces all existing blocks."""
     with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
@@ -692,7 +711,7 @@ def save_special_page_blocks(page_key: str, blocks: list):
         conn.commit()
 
 
-def update_special_page_block(block_id: int, content: str, settings: dict = None):
+def update_special_page_block(block_id: int, content: str, settings: dict = None) -> None:
     """Update a specific block."""
     with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
@@ -705,7 +724,7 @@ def update_special_page_block(block_id: int, content: str, settings: dict = None
         conn.commit()
 
 
-def delete_special_page_block(block_id: int):
+def delete_special_page_block(block_id: int) -> None:
     """Delete a specific block."""
     with get_special_pages_db_connection() as conn:
         cursor = conn.cursor()
@@ -731,7 +750,7 @@ def get_mediakit_data() -> Dict[str, Dict[str, str]]:
         return data
 
 
-def update_mediakit_data(section: str, key: str, value: str, display_order: int = 0):
+def update_mediakit_data(section: str, key: str, value: str, display_order: int = 0) -> None:
     """Update or insert media kit data."""
     with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
@@ -745,7 +764,7 @@ def update_mediakit_data(section: str, key: str, value: str, display_order: int 
         conn.commit()
 
 
-def delete_mediakit_entry(section: str, key: str):
+def delete_mediakit_entry(section: str, key: str) -> None:
     """Delete a media kit entry."""
     with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
@@ -753,7 +772,7 @@ def delete_mediakit_entry(section: str, key: str):
         conn.commit()
 
 
-def save_social_stats_cache(platform: str, username: str, stats_data: str):
+def save_social_stats_cache(platform: str, username: str, stats_data: str) -> None:
     """Save or update social media stats in cache."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -786,7 +805,7 @@ def get_social_stats_cache(platform: Optional[str] = None) -> Dict[str, Any]:
         return result
 
 
-def clear_social_stats_cache():
+def clear_social_stats_cache() -> None:
     """Clear all cached social media stats."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -804,7 +823,7 @@ def get_mediakit_setting(key: str) -> Optional[str]:
         return row[0] if row else None
 
 
-def update_mediakit_setting(key: str, value: str):
+def update_mediakit_setting(key: str, value: str) -> None:
     """Update or insert a media kit setting."""
     with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
@@ -833,7 +852,7 @@ def track_mediakit_view(
     viewer_ip: Optional[str] = None,
     viewer_country: Optional[str] = None,
     user_agent: Optional[str] = None,
-):
+) -> None:
     """Track a media kit view."""
     with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
@@ -945,7 +964,7 @@ def get_access_requests(status: Optional[str] = None) -> list:
         return [dict(row) for row in cursor.fetchall()]
 
 
-def update_access_request_status(request_id: int, status: str):
+def update_access_request_status(request_id: int, status: str) -> None:
     """Update access request status."""
     with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
@@ -1057,7 +1076,7 @@ def create_mediakit_block(
 
 def update_mediakit_block(
     block_id: int, title: str = None, content: str = None, settings: dict = None, is_visible: bool = None
-):
+) -> None:
     """Update a media kit block."""
     with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
@@ -1090,7 +1109,7 @@ def update_mediakit_block(
             conn.commit()
 
 
-def delete_mediakit_block(block_id: int):
+def delete_mediakit_block(block_id: int) -> None:
     """Delete a media kit block."""
     with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()
@@ -1098,7 +1117,7 @@ def delete_mediakit_block(block_id: int):
         conn.commit()
 
 
-def reorder_mediakit_blocks(block_positions: list):
+def reorder_mediakit_blocks(block_positions: list) -> None:
     """Reorder media kit blocks. Expects list of {'id': int, 'position': int}."""
     with get_mediakit_db_connection() as conn:
         cursor = conn.cursor()

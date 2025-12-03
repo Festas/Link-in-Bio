@@ -1,17 +1,14 @@
+version: "3.8"
 services:
   web:
     build: .
     container_name: linktree_app
     restart: unless-stopped
     volumes:
-      # Alle Datenbanken in einem zentralen Ordner
       - ./data:/app/data
-      # Uploads
       - ./static/uploads:/app/static/uploads
-      # Konfiguration
       - ./.env:/app/.env:ro
       - ./.env.social:/app/.env.social:ro
-    # Kein Port-Mapping nach außen nötig, Caddy übernimmt das intern
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s

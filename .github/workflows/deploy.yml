@@ -181,6 +181,7 @@ jobs:
             # Use printf to avoid heredoc line injection by SSH action
             COMPOSE_IMAGE="${REGISTRY}/${IMAGE_NAME_LOWER}:${IMAGE_TAG}"
             printf '%s\n' \
+              "version: \"3.8\"" \
               "services:" \
               "  web:" \
               "    image: \"${COMPOSE_IMAGE}\"" \
@@ -258,22 +259,14 @@ jobs:
             # ==========================================
             echo "[6/6] Running database migrations..."
             
-            # Check if alembic is available in the container
-            if docker compose exec -T web which alembic > /dev/null 2>&1; then
-              echo "ℹ Alembic found, running migrations..."
-              if docker compose exec -T web alembic upgrade head; then
-                echo "✓ Alembic migrations completed"
-              else
-                echo "⚠ Alembic migration failed, falling back to init_databases.py..."
-                docker compose exec -T web python init_databases.py || echo "⚠ init_databases.py also failed"
-              fi
+            # Run migrations, but make sure the container loads the mounted .env first.
+            MIGRATE_CMD='set -o allexport && test -f /app/.env && . /app/.env || true && set +o allexport && if which alembic > /dev/null 2>&1; then alembic upgrade head; else python init_databases.py; fi'
+            if docker compose exec -T web sh -lc "$MIGRATE_CMD"; then
+              echo "✓ Database migrations completed"
             else
-              echo "ℹ Alembic not available, running init_databases.py..."
-              if docker compose exec -T web python init_databases.py; then
-                echo "✓ Database initialization completed"
-              else
-                echo "⚠ Database initialization failed (may already be initialized)"
-              fi
+              echo "⚠ Database migrations failed. Showing web container logs for debugging:"
+              docker compose logs --tail=200 web || true
+              exit 1
             fi
             
             # ==========================================

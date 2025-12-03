@@ -31,16 +31,25 @@ if (requireAuth()) {
 
 async function initAdmin() {
     // 1. TABS SOFORT INITIALISIEREN (Damit sie klickbar sind)
-    document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    // Supports both old .tab-button and new .admin-tab classes
+    document.querySelectorAll('.tab-button, .admin-tab').forEach(btn => {
+        if (btn.dataset.tab) {
+            btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+        }
     });
 
     function switchTab(tabName) {
+        // Update old .tab-button styles (for backwards compatibility)
         document.querySelectorAll('.tab-button').forEach(b => {
              b.classList.toggle('border-blue-400', b.dataset.tab === tabName);
              b.classList.toggle('text-blue-400', b.dataset.tab === tabName);
              b.classList.toggle('border-transparent', b.dataset.tab !== tabName);
              b.classList.toggle('text-gray-400', b.dataset.tab !== tabName);
+        });
+        
+        // Update new .admin-tab styles
+        document.querySelectorAll('.admin-tab').forEach(b => {
+            b.classList.toggle('active', b.dataset.tab === tabName);
         });
         
         document.querySelectorAll('.tab-content').forEach(el => {

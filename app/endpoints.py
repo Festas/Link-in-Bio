@@ -75,7 +75,7 @@ from .database import (
     reorder_mediakit_blocks,
     check_access_approved,
 )
-from .auth_unified import require_auth, check_auth
+from .auth_unified import require_auth, check_auth, create_session
 from .services import (
     scrape_link_details,
     get_video_embed_url,
@@ -114,11 +114,47 @@ async def background_scrape_and_update(item_id: int, url: str):
         logging.error(f"Background scraping failed for item {item_id}: {e}")
 
 
+# --- Cookie Configuration ---
+
+# Domain configuration for cookie sharing across subdomains
+_APP_DOMAIN = os.getenv("APP_DOMAIN", "127.0.0.1")
+
+
+def _get_cookie_domain() -> Optional[str]:
+    """Get the cookie domain for subdomain sharing."""
+    if _APP_DOMAIN not in ("127.0.0.1", "localhost"):
+        return f".{_APP_DOMAIN}"
+    return None
+
+
+def _is_secure_cookie() -> bool:
+    """Determine if cookies should be secure (HTTPS only)."""
+    return _APP_DOMAIN not in ("127.0.0.1", "localhost")
+
+
 # --- Auth Check ---
 
 
 @router.get("/auth/check", dependencies=[Depends(limiter_strict)])
-async def check_login(username: str = Depends(require_auth)):
+async def check_login(request: Request, response: Response, username: str = Depends(require_auth)):
+    """
+    Check authentication and create a session.
+    On successful authentication, sets a session_token cookie for browser navigation.
+    """
+    # Create a session for the authenticated user
+    session_token = create_session(username, remember_me=False)
+
+    # Set session cookie with domain for subdomain sharing
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=_is_secure_cookie(),
+        samesite="lax",
+        max_age=86400,  # 24 hours
+        domain=_get_cookie_domain(),
+    )
+
     return {"status": "ok"}
 
 

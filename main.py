@@ -56,6 +56,13 @@ from app.routers import pages, items, media, settings, analytics, subscribers, p
 from app.routers import admin_subdomain, special_pages, mediakit
 
 
+def get_admin_subdomain_url() -> str:
+    """Get the admin subdomain URL based on the current domain configuration."""
+    if APP_DOMAIN == "127.0.0.1":
+        return "http://admin.localhost:8000"
+    return f"https://admin.{APP_DOMAIN}"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.auth_unified import validate_admin_password_on_startup
@@ -141,7 +148,7 @@ async def get_manifest():
         "name": f"{title} - Admin Panel",
         "short_name": "Admin",
         "description": "Admin Panel für Link-in-Bio Verwaltung",
-        "start_url": "/admin",
+        "start_url": get_admin_subdomain_url(),
         "scope": "/",
         "display": "standalone",
         "orientation": "portrait-primary",
@@ -164,7 +171,7 @@ async def get_favicon():
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def get_robots_txt():
-    return f"User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\nDisallow: /login\n\nSitemap: https://{APP_DOMAIN}/sitemap.xml\n"
+    return f"User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /login\n\nSitemap: https://{APP_DOMAIN}/sitemap.xml\n"
 
 
 @app.get("/sitemap.xml", response_class=Response)
@@ -205,9 +212,10 @@ async def get_sitemap():
     return Response(content=xml_content, media_type="application/xml")
 
 
-@app.get("/admin", response_class=HTMLResponse)
-async def get_admin_page(request: Request):
-    return templates.TemplateResponse(request=request, name="admin.html")
+@app.get("/admin", response_class=RedirectResponse)
+async def redirect_admin_to_subdomain():
+    """Redirect /admin to the admin subdomain."""
+    return RedirectResponse(url=get_admin_subdomain_url(), status_code=301)
 
 
 @app.get("/analytics", response_class=HTMLResponse)

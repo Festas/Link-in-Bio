@@ -489,7 +489,7 @@ def update_item_in_db(item_id: int, data: Dict[str, Any]) -> Optional[Dict[str, 
     # Validate column names against whitelist
     invalid_columns = set(data.keys()) - ALLOWED_ITEM_COLUMNS
     if invalid_columns:
-        raise ValueError(f"Invalid column names: {invalid_columns}")
+        raise ValueError("Invalid column names provided")
     set_clauses = [f"{key} = ?" for key in data.keys()]
     query = f"UPDATE items SET {', '.join(set_clauses)} WHERE id = ?"
     with get_db_connection() as conn:
@@ -555,7 +555,7 @@ def update_page(page_id: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     # Validate column names against whitelist
     invalid_columns = set(data.keys()) - ALLOWED_PAGE_COLUMNS
     if invalid_columns:
-        raise ValueError(f"Invalid column names: {invalid_columns}")
+        raise ValueError("Invalid column names provided")
     set_clauses = [f"{key} = ?" for key in data.keys()]
     query = f"UPDATE pages SET {', '.join(set_clauses)} WHERE id = ?"
     with get_custom_pages_db_connection() as conn:

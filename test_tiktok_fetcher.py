@@ -11,15 +11,15 @@ from pathlib import Path
 # Add app directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from app.tiktok_fetcher import TikTokFetcher
+from app.tiktok_fetcher import TikTokFetcher, MIN_TOKEN_LENGTH
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Use longer mock tokens to pass basic validation
-MOCK_ACCESS_TOKEN = "test_access_token_" + "x" * 20  # At least 20 chars
-MOCK_REFRESH_TOKEN = "test_refresh_token_" + "y" * 20
+# Use mock tokens that exceed MIN_TOKEN_LENGTH to pass validation
+MOCK_ACCESS_TOKEN = "test_access_token_" + "x" * MIN_TOKEN_LENGTH
+MOCK_REFRESH_TOKEN = "test_refresh_token_" + "y" * MIN_TOKEN_LENGTH
 
 
 def test_tiktok_fetcher_initialization():

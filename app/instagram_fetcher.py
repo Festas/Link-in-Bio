@@ -19,6 +19,8 @@ MAX_BACKOFF = 30.0  # seconds
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
 # Token validation configuration
+# Meta Graph API tokens are longer than TikTok tokens, typically 200+ characters
+# 50 is a conservative minimum to catch obvious placeholder values
 MIN_TOKEN_LENGTH = 50
 PLACEHOLDER_TOKENS = {"your_instagram_access_token_here", "your_token_here"}
 

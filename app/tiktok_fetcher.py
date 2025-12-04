@@ -19,6 +19,8 @@ MAX_BACKOFF = 30.0  # seconds
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
 # Token validation configuration
+# TikTok tokens are base64-encoded JWTs, typically 100+ characters
+# 20 is a conservative minimum to catch obvious placeholder values
 MIN_TOKEN_LENGTH = 20
 PLACEHOLDER_TOKENS = {"your_tiktok_access_token_here", "your_token_here"}
 

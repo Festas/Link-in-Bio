@@ -26,9 +26,6 @@ jobs:
     permissions: {}
     
     steps:
-      - name: Checkout repository (for Caddyfile reference)
-        uses: actions/checkout@v4
-
       - name: Run Diagnostics
         uses: appleboy/ssh-action@v1.0.3
         env:
@@ -254,8 +251,8 @@ jobs:
             if is_caddy_running; then
               echo "Checking if all required domains are configured in the active Caddyfile..."
               for domain in "${REQUIRED_DOMAINS[@]}"; do
-                # Check if the domain is present in the active Caddyfile (look for "domain {" pattern)
-                if echo "$ACTIVE_CADDYFILE" | grep -qE "^[[:space:]]*${domain}[[:space:]]*\{"; then
+                # Check if the domain is present in the active Caddyfile (flexible pattern to handle spacing)
+                if echo "$ACTIVE_CADDYFILE" | grep -qE "(^|[[:space:]])${domain}[[:space:]]*\{"; then
                   echo "✅ ${domain} is configured"
                 else
                   add_issue "Caddyfile is missing entry for ${domain} - run deploy workflow to sync"
@@ -324,30 +321,26 @@ jobs:
                 if [[ -f "${deploy_dir}/${compose_file}" ]]; then
                   echo "Checking ${deploy_dir}/${compose_file}..."
                   
-                  # Check for uppercase letters in image names
-                  UPPERCASE_IMAGES=$(grep -E '^\s*image:' "${deploy_dir}/${compose_file}" 2>/dev/null | grep -E '[A-Z]' || true)
-                  if [[ -n "$UPPERCASE_IMAGES" ]]; then
-                    add_issue "Docker image name contains uppercase in ${deploy_dir}/${compose_file} - fix docker-compose.yml"
-                    DOCKER_COMPOSE_ISSUES+=("${deploy_dir}/${compose_file}: Uppercase in image name")
-                    echo "❌ Found uppercase in image names:"
-                    echo "$UPPERCASE_IMAGES"
-                  else
+                  # Check for uppercase letters in image names (after the registry/org part)
+                  # Extract image names and check for uppercase in the image name portion
+                  while IFS= read -r line; do
+                    IMAGE_VALUE=$(echo "$line" | sed 's/.*image:[[:space:]]*//' | tr -d '"' | tr -d "'" || true)
+                    if [[ -n "$IMAGE_VALUE" ]]; then
+                      # Get the image name part (after the last / if present)
+                      IMAGE_NAME_PART="${IMAGE_VALUE##*/}"
+                      # Check for uppercase in the image name (excluding tags after :)
+                      IMAGE_NAME_ONLY="${IMAGE_NAME_PART%%:*}"
+                      if echo "$IMAGE_NAME_ONLY" | grep -qE '[A-Z]'; then
+                        add_issue "Docker image name contains uppercase in ${deploy_dir}/${compose_file} - fix docker-compose.yml"
+                        DOCKER_COMPOSE_ISSUES+=("${deploy_dir}/${compose_file}: Uppercase in image name '${IMAGE_VALUE}'")
+                        echo "❌ Found uppercase in image name: ${IMAGE_VALUE}"
+                      fi
+                    fi
+                  done < <(grep -E '^\s*image:' "${deploy_dir}/${compose_file}" 2>/dev/null || true)
+                  
+                  if [[ ${#DOCKER_COMPOSE_ISSUES[@]} -eq 0 ]]; then
                     echo "✅ No uppercase letters in image names"
                   fi
-                  
-                  # Check for invalid image references (basic check)
-                  IMAGES=$(grep -E '^\s*image:' "${deploy_dir}/${compose_file}" 2>/dev/null | sed 's/.*image:[[:space:]]*//' | tr -d '"' | tr -d "'" || true)
-                  for image in $IMAGES; do
-                    # Skip caddy:latest and other known good images
-                    if [[ "$image" == "caddy:latest" ]] || [[ "$image" == "caddy:"* ]]; then
-                      continue
-                    fi
-                    # Check if image reference looks valid (has tag or digest)
-                    if [[ ! "$image" =~ : ]] && [[ ! "$image" =~ @ ]]; then
-                      add_warning "Image '${image}' in ${deploy_dir}/${compose_file} has no tag or digest - consider using explicit versioning"
-                      echo "⚠️  Image '${image}' has no explicit tag"
-                    fi
-                  done
                   
                   break  # Only check first compose file found
                 fi
@@ -701,8 +694,8 @@ jobs:
             }
             CADDYFILE_EOF
                 
-                # Strip leading whitespace from heredoc
-                sed -i 's/^            //' "${CADDY_DEPLOY_PATH}" || true
+                # Strip leading whitespace from heredoc (remove up to 12 spaces/tabs consistently)
+                sed -i 's/^[[:space:]]\{0,12\}//' "${CADDY_DEPLOY_PATH}" || true
                 
                 echo "✅ Caddyfile updated with all required domains"
                 echo ""

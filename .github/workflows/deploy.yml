@@ -75,7 +75,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Copy Caddyfile to server
-        uses: appleboy/scp-action@v1
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
@@ -181,11 +181,7 @@ jobs:
             else
               echo "⚠ Warning: Caddyfile not found in /tmp/link-in-bio-deploy"
               echo "Creating fallback Caddyfile..."
-              if [[ -n "${DOMAIN:-}" ]]; then
-                printf '%s\n' ":80 {" "    reverse_proxy web:8000" "}" > Caddyfile
-              else
-                printf '%s\n' ":80 {" "    reverse_proxy web:8000" "}" > Caddyfile
-              fi
+              printf '%s\n' ":80 {" "    reverse_proxy web:8000" "}" > Caddyfile
               echo "✓ Fallback Caddyfile created"
             fi
             

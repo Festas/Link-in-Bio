@@ -17,6 +17,10 @@ from app.tiktok_fetcher import TikTokFetcher
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+# Use longer mock tokens to pass basic validation
+MOCK_ACCESS_TOKEN = "test_access_token_" + "x" * 20  # At least 20 chars
+MOCK_REFRESH_TOKEN = "test_refresh_token_" + "y" * 20
+
 
 def test_tiktok_fetcher_initialization():
     """Test TikTok fetcher initialization"""
@@ -25,14 +29,14 @@ def test_tiktok_fetcher_initialization():
     print("=" * 60)
 
     fetcher = TikTokFetcher(
-        access_token="test_access_token",
-        refresh_token="test_refresh_token",
+        access_token=MOCK_ACCESS_TOKEN,
+        refresh_token=MOCK_REFRESH_TOKEN,
         client_key="test_client_key",
         client_secret="test_client_secret",
     )
 
-    assert fetcher.access_token == "test_access_token"
-    assert fetcher.refresh_token == "test_refresh_token"
+    assert fetcher.access_token == MOCK_ACCESS_TOKEN
+    assert fetcher.refresh_token == MOCK_REFRESH_TOKEN
     assert fetcher.client_key == "test_client_key"
     assert fetcher.client_secret == "test_client_secret"
     assert fetcher.base_url == "https://open.tiktokapis.com/v2"
@@ -48,7 +52,7 @@ def test_engagement_calculation():
     print("=" * 60)
 
     fetcher = TikTokFetcher(
-        access_token="test_token", refresh_token="test_refresh", client_key="test_key", client_secret="test_secret"
+        access_token=MOCK_ACCESS_TOKEN, refresh_token=MOCK_REFRESH_TOKEN, client_key="test_key", client_secret="test_secret"
     )
 
     # Test with sample video data
@@ -79,7 +83,7 @@ def test_avg_views_calculation():
     print("=" * 60)
 
     fetcher = TikTokFetcher(
-        access_token="test_token", refresh_token="test_refresh", client_key="test_key", client_secret="test_secret"
+        access_token=MOCK_ACCESS_TOKEN, refresh_token=MOCK_REFRESH_TOKEN, client_key="test_key", client_secret="test_secret"
     )
 
     videos = [{"id": "1", "view_count": 10000}, {"id": "2", "view_count": 15000}, {"id": "3", "view_count": 12000}]
@@ -105,7 +109,7 @@ def test_format_stats():
     print("=" * 60)
 
     fetcher = TikTokFetcher(
-        access_token="test_token", refresh_token="test_refresh", client_key="test_key", client_secret="test_secret"
+        access_token=MOCK_ACCESS_TOKEN, refresh_token=MOCK_REFRESH_TOKEN, client_key="test_key", client_secret="test_secret"
     )
 
     user_data = {
@@ -148,7 +152,7 @@ def test_empty_videos():
     print("=" * 60)
 
     fetcher = TikTokFetcher(
-        access_token="test_token", refresh_token="test_refresh", client_key="test_key", client_secret="test_secret"
+        access_token=MOCK_ACCESS_TOKEN, refresh_token=MOCK_REFRESH_TOKEN, client_key="test_key", client_secret="test_secret"
     )
 
     # Test with empty videos list
@@ -165,6 +169,37 @@ def test_empty_videos():
     return True
 
 
+def test_token_validation():
+    """Test token validation logic"""
+    print("\n" + "=" * 60)
+    print("TEST 6: Token Validation")
+    print("=" * 60)
+
+    # Test with valid token (long enough)
+    fetcher = TikTokFetcher(
+        access_token=MOCK_ACCESS_TOKEN, refresh_token=MOCK_REFRESH_TOKEN, client_key="test_key", client_secret="test_secret"
+    )
+    assert fetcher._validate_token() is True
+    print("✅ Valid token passes validation")
+
+    # Test with placeholder token
+    fetcher_placeholder = TikTokFetcher(
+        access_token="your_tiktok_access_token_here", refresh_token=MOCK_REFRESH_TOKEN, client_key="test_key", client_secret="test_secret"
+    )
+    assert fetcher_placeholder._validate_token() is False
+    print("✅ Placeholder token fails validation")
+
+    # Test with short token
+    fetcher_short = TikTokFetcher(
+        access_token="short", refresh_token=MOCK_REFRESH_TOKEN, client_key="test_key", client_secret="test_secret"
+    )
+    assert fetcher_short._validate_token() is False
+    print("✅ Short token fails validation")
+
+    print("✅ Token validation test passed!")
+    return True
+
+
 def run_all_tests():
     """Run all tests"""
     print("\n" + "🧪 " + "=" * 58)
@@ -177,6 +212,7 @@ def run_all_tests():
         test_avg_views_calculation,
         test_format_stats,
         test_empty_videos,
+        test_token_validation,
     ]
 
     passed = 0

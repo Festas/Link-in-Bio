@@ -19,9 +19,94 @@ on:
         type: string
 
 jobs:
+  validate-secrets:
+    name: Validate Required Secrets
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check SSH secrets
+        run: |
+          echo "=========================================="
+          echo "🔐 Validating Required Secrets"
+          echo "=========================================="
+          
+          MISSING_SECRETS=false
+          
+          if [ -z "${{ secrets.HOST }}" ]; then
+            echo "❌ Missing secret: HOST (server IP address)"
+            MISSING_SECRETS=true
+          else
+            echo "✅ HOST is configured"
+          fi
+          
+          if [ -z "${{ secrets.USERNAME }}" ]; then
+            echo "❌ Missing secret: USERNAME (SSH username)"
+            MISSING_SECRETS=true
+          else
+            echo "✅ USERNAME is configured"
+          fi
+          
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+            echo "❌ Missing secret: SSH_PRIVATE_KEY"
+            MISSING_SECRETS=true
+          else
+            echo "✅ SSH_PRIVATE_KEY is configured"
+          fi
+          
+          echo ""
+          echo "Checking social media secrets for platform: ${{ inputs.platform }}"
+          echo ""
+          
+          if [ "${{ inputs.platform }}" = "instagram" ] || [ "${{ inputs.platform }}" = "both" ]; then
+            if [ -z "${{ secrets.INSTAGRAM_SECRET }}" ]; then
+              echo "⚠️ INSTAGRAM_SECRET not configured (Instagram tests may fail)"
+              echo ""
+              echo "💡 To configure Instagram:"
+              echo "   1. Go to Repository → Settings → Secrets → Actions"
+              echo "   2. Add 'INSTAGRAM_SECRET' with your credentials"
+              echo "   3. See docs/SOCIAL_TOKENS.md for token setup"
+            else
+              echo "✅ INSTAGRAM_SECRET is configured"
+            fi
+          fi
+          
+          if [ "${{ inputs.platform }}" = "tiktok" ] || [ "${{ inputs.platform }}" = "both" ]; then
+            if [ -z "${{ secrets.TIKTOK_SECRET }}" ]; then
+              echo "⚠️ TIKTOK_SECRET not configured (TikTok tests may fail)"
+              echo ""
+              echo "💡 To configure TikTok:"
+              echo "   1. Go to Repository → Settings → Secrets → Actions"
+              echo "   2. Add 'TIKTOK_SECRET' with your credentials"
+              echo "   3. See docs/SOCIAL_TOKENS.md for token setup"
+            else
+              echo "✅ TIKTOK_SECRET is configured"
+            fi
+          fi
+          
+          echo ""
+          
+          if [ "$MISSING_SECRETS" = "true" ]; then
+            echo "=========================================="
+            echo "❌ Required secrets are missing!"
+            echo "=========================================="
+            echo ""
+            echo "📚 Setup Guide: docs/SOCIAL_TOKENS.md"
+            echo ""
+            echo "Required secrets for SSH connection:"
+            echo "  • HOST - Server IP or hostname"
+            echo "  • USERNAME - SSH username (e.g., deploy)"
+            echo "  • SSH_PRIVATE_KEY - SSH private key for authentication"
+            exit 1
+          fi
+          
+          echo "=========================================="
+          echo "✅ All required secrets are configured"
+          echo "=========================================="
+
   test-fetch:
     name: Test Social Media Stats Fetching
     runs-on: ubuntu-latest
+    needs: validate-secrets
     
     permissions: {}
     
@@ -38,10 +123,14 @@ jobs:
 
       - name: Test Social Media Fetching via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          INSTAGRAM_SECRET: ${{ secrets.INSTAGRAM_SECRET }}
+          TIKTOK_SECRET: ${{ secrets.TIKTOK_SECRET }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: INSTAGRAM_SECRET,TIKTOK_SECRET
           script: |
             set -euo pipefail
             
@@ -54,16 +143,20 @@ jobs:
             echo "=========================================="
             echo ""
             
+            PROJECT_PATH="${{ inputs.project_path }}"
+            
             # ==========================================
             # 1. Navigate to project directory
             # ==========================================
-            echo "[1/5] 📂 Navigating to project directory..."
-            
-            PROJECT_PATH="${{ inputs.project_path }}"
+            echo "[1/6] 📂 Navigating to project directory..."
             
             if [ ! -d "$PROJECT_PATH" ]; then
               echo "❌ ERROR: Project directory does not exist: $PROJECT_PATH"
-              echo "Please verify the project_path input or deploy the application first."
+              echo ""
+              echo "💡 Possible solutions:"
+              echo "   1. Deploy the application first using the deploy workflow"
+              echo "   2. Verify the project_path input is correct"
+              echo "   3. Run: curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/deploy/bootstrap.sh | sudo bash"
               exit 1
             fi
             
@@ -74,11 +167,17 @@ jobs:
             # ==========================================
             # 2. Check Docker status
             # ==========================================
-            echo "[2/5] 🐳 Checking Docker status..."
+            echo "[2/6] 🐳 Checking Docker status..."
+            
+            if ! command -v docker &>/dev/null; then
+              echo "❌ ERROR: Docker is not installed"
+              echo "💡 Run: curl -fsSL https://get.docker.com | sh"
+              exit 1
+            fi
             
             if ! docker compose ps > /dev/null 2>&1; then
               echo "❌ ERROR: Docker Compose is not running or not available"
-              echo "Please ensure the application is deployed and Docker is running."
+              echo "💡 Please ensure the application is deployed and Docker is running."
               exit 1
             fi
             
@@ -88,6 +187,8 @@ jobs:
               echo ""
               echo "Current container status:"
               docker compose ps || true
+              echo ""
+              echo "💡 Run: docker compose up -d"
               exit 1
             fi
             
@@ -96,99 +197,140 @@ jobs:
             echo ""
             
             # ==========================================
-            # 3. Check .env.social credentials
+            # 3. Create/update .env.social from secrets
             # ==========================================
-            echo "[3/5] 🔑 Checking credentials configuration..."
+            echo "[3/6] 🔑 Setting up credentials..."
             
             ENV_SOCIAL_FILE="${PROJECT_PATH}/.env.social"
+            SECRETS_UPDATED=false
             
-            if [ ! -f "$ENV_SOCIAL_FILE" ]; then
-              echo "❌ ERROR: .env.social file does not exist"
-              echo "Please configure the INSTAGRAM_SECRET and/or TIKTOK_SECRET in GitHub Secrets"
-              echo "and run a deployment to create the .env.social file."
+            # Create or update .env.social from GitHub Secrets
+            if [ -n "${INSTAGRAM_SECRET:-}" ] || [ -n "${TIKTOK_SECRET:-}" ]; then
+              echo "📝 Creating .env.social from GitHub Secrets..."
+              
+              {
+                echo "# Auto-generated from GitHub Secrets"
+                echo "# Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+                echo "# DO NOT EDIT - Changes will be overwritten by GitHub Actions"
+                echo ""
+                
+                if [ -n "${INSTAGRAM_SECRET:-}" ]; then
+                  echo "# Instagram credentials"
+                  echo "${INSTAGRAM_SECRET}"
+                  echo ""
+                fi
+                
+                if [ -n "${TIKTOK_SECRET:-}" ]; then
+                  echo "# TikTok credentials"
+                  echo "${TIKTOK_SECRET}"
+                  echo ""
+                fi
+              } > "$ENV_SOCIAL_FILE"
+              
+              chmod 644 "$ENV_SOCIAL_FILE"
+              echo "✅ .env.social created/updated from secrets"
+              SECRETS_UPDATED=true
+            elif [ ! -f "$ENV_SOCIAL_FILE" ]; then
+              echo "❌ ERROR: .env.social is missing and no secrets are available"
+              echo ""
+              echo "💡 To fix this, configure GitHub Secrets:"
+              echo "   1. Go to Repository → Settings → Secrets → Actions"
+              echo "   2. Add 'INSTAGRAM_SECRET' for Instagram credentials"
+              echo "   3. Add 'TIKTOK_SECRET' for TikTok credentials"
+              echo ""
+              echo "   See docs/SOCIAL_TOKENS.md for detailed setup instructions."
               exit 1
+            else
+              echo "✅ Using existing .env.social file"
             fi
             
-            echo "✅ .env.social file exists"
-            
-            # Check for Instagram credentials (if testing Instagram)
+            # Validate credentials for requested platforms
             if [ "${{ inputs.platform }}" = "instagram" ] || [ "${{ inputs.platform }}" = "both" ]; then
               echo ""
               echo "📱 Checking Instagram credentials..."
-              if grep -q "INSTAGRAM_ACCESS_TOKEN=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
-                # Check if the value is not empty
-                if grep -E "^INSTAGRAM_ACCESS_TOKEN=.+" "$ENV_SOCIAL_FILE" > /dev/null 2>&1; then
-                  echo "  ✅ INSTAGRAM_ACCESS_TOKEN is configured"
-                else
-                  echo "  ⚠️ INSTAGRAM_ACCESS_TOKEN is empty"
-                fi
+              if grep -qE "^INSTAGRAM_ACCESS_TOKEN=.+" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+                echo "  ✅ INSTAGRAM_ACCESS_TOKEN is configured"
               else
-                echo "  ❌ INSTAGRAM_ACCESS_TOKEN not found"
+                echo "  ⚠️ INSTAGRAM_ACCESS_TOKEN is missing or empty"
               fi
               
               if grep -q "INSTAGRAM_USERNAME=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
-                INSTA_USER=$(grep "INSTAGRAM_USERNAME=" "$ENV_SOCIAL_FILE" | cut -d'=' -f2)
+                INSTA_USER=$(grep "INSTAGRAM_USERNAME=" "$ENV_SOCIAL_FILE" | head -n1 | cut -d'=' -f2)
                 echo "  ✅ INSTAGRAM_USERNAME: @$INSTA_USER"
               else
                 echo "  ⚠️ INSTAGRAM_USERNAME not found"
               fi
               
-              if grep -q "INSTAGRAM_APP_ID=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+              if grep -qE "^INSTAGRAM_APP_ID=.+" "$ENV_SOCIAL_FILE" 2>/dev/null; then
                 echo "  ✅ INSTAGRAM_APP_ID is configured"
               else
-                echo "  ⚠️ INSTAGRAM_APP_ID not found"
+                echo "  ⚠️ INSTAGRAM_APP_ID not found (token refresh disabled)"
               fi
               
-              if grep -q "INSTAGRAM_APP_SECRET=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+              if grep -qE "^INSTAGRAM_APP_SECRET=.+" "$ENV_SOCIAL_FILE" 2>/dev/null; then
                 echo "  ✅ INSTAGRAM_APP_SECRET is configured"
               else
-                echo "  ⚠️ INSTAGRAM_APP_SECRET not found"
+                echo "  ⚠️ INSTAGRAM_APP_SECRET not found (token refresh disabled)"
               fi
             fi
             
-            # Check for TikTok credentials (if testing TikTok)
             if [ "${{ inputs.platform }}" = "tiktok" ] || [ "${{ inputs.platform }}" = "both" ]; then
               echo ""
               echo "📱 Checking TikTok credentials..."
-              if grep -q "TIKTOK_ACCESS_TOKEN=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
-                if grep -E "^TIKTOK_ACCESS_TOKEN=.+" "$ENV_SOCIAL_FILE" > /dev/null 2>&1; then
-                  echo "  ✅ TIKTOK_ACCESS_TOKEN is configured"
-                else
-                  echo "  ⚠️ TIKTOK_ACCESS_TOKEN is empty"
-                fi
+              if grep -qE "^TIKTOK_ACCESS_TOKEN=.+" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+                echo "  ✅ TIKTOK_ACCESS_TOKEN is configured"
               else
-                echo "  ❌ TIKTOK_ACCESS_TOKEN not found"
+                echo "  ⚠️ TIKTOK_ACCESS_TOKEN is missing or empty"
               fi
               
-              if grep -q "TIKTOK_REFRESH_TOKEN=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
-                if grep -E "^TIKTOK_REFRESH_TOKEN=.+" "$ENV_SOCIAL_FILE" > /dev/null 2>&1; then
-                  echo "  ✅ TIKTOK_REFRESH_TOKEN is configured"
-                else
-                  echo "  ⚠️ TIKTOK_REFRESH_TOKEN is empty"
-                fi
+              if grep -qE "^TIKTOK_REFRESH_TOKEN=.+" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+                echo "  ✅ TIKTOK_REFRESH_TOKEN is configured"
               else
-                echo "  ⚠️ TIKTOK_REFRESH_TOKEN not found"
+                echo "  ⚠️ TIKTOK_REFRESH_TOKEN not found (token refresh disabled)"
               fi
               
-              if grep -q "TIKTOK_CLIENT_KEY=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+              if grep -qE "^TIKTOK_CLIENT_KEY=.+" "$ENV_SOCIAL_FILE" 2>/dev/null; then
                 echo "  ✅ TIKTOK_CLIENT_KEY is configured"
               else
-                echo "  ⚠️ TIKTOK_CLIENT_KEY not found"
+                echo "  ⚠️ TIKTOK_CLIENT_KEY not found (token refresh disabled)"
               fi
               
-              if grep -q "TIKTOK_CLIENT_SECRET=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+              if grep -qE "^TIKTOK_CLIENT_SECRET=.+" "$ENV_SOCIAL_FILE" 2>/dev/null; then
                 echo "  ✅ TIKTOK_CLIENT_SECRET is configured"
               else
-                echo "  ⚠️ TIKTOK_CLIENT_SECRET not found"
+                echo "  ⚠️ TIKTOK_CLIENT_SECRET not found (token refresh disabled)"
               fi
             fi
             
             echo ""
             
             # ==========================================
-            # 4. Run fetch scripts
+            # 4. Restart container if secrets were updated
             # ==========================================
-            echo "[4/5] 🚀 Running fetch scripts..."
+            echo "[4/6] 🔄 Ensuring container has latest credentials..."
+            
+            if [ "$SECRETS_UPDATED" = "true" ]; then
+              echo "Restarting web service to pick up new credentials..."
+              docker compose restart web
+              sleep 5
+              
+              # Verify service is healthy
+              if docker compose ps --services --filter status=running 2>/dev/null | grep -q "^web$"; then
+                echo "✅ Web service restarted successfully"
+              else
+                echo "⚠️ Web service may still be starting..."
+                sleep 10
+              fi
+            else
+              echo "✅ No credential updates, skipping restart"
+            fi
+            
+            echo ""
+            
+            # ==========================================
+            # 5. Run fetch scripts
+            # ==========================================
+            echo "[5/6] 🚀 Running fetch scripts..."
             echo ""
             
             INSTAGRAM_SUCCESS=false
@@ -210,8 +352,18 @@ jobs:
                 echo ""
                 echo "✅ Instagram fetch completed successfully"
               else
+                EXIT_CODE=$?
                 echo ""
-                echo "❌ Instagram fetch failed"
+                echo "❌ Instagram fetch failed (exit code: $EXIT_CODE)"
+                echo ""
+                echo "💡 Common issues and solutions:"
+                echo "   • 'No Instagram Business Account found':"
+                echo "      - Ensure account is Business/Creator (not Personal)"
+                echo "      - Link Instagram to a Facebook Page"
+                echo "      - Verify App has 'instagram_basic' permission"
+                echo "   • 'Token expired or invalid':"
+                echo "      - Regenerate token in Meta Developer Portal"
+                echo "      - Update INSTAGRAM_SECRET in GitHub Secrets"
               fi
               
               echo "⏰ Finished at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
@@ -233,8 +385,16 @@ jobs:
                 echo ""
                 echo "✅ TikTok fetch completed successfully"
               else
+                EXIT_CODE=$?
                 echo ""
-                echo "❌ TikTok fetch failed"
+                echo "❌ TikTok fetch failed (exit code: $EXIT_CODE)"
+                echo ""
+                echo "💡 Common issues and solutions:"
+                echo "   • '401 Unauthorized':"
+                echo "      - Access token expired (24h lifetime)"
+                echo "      - Regenerate via TikTok Developer Portal"
+                echo "   • 'Invalid client_key':"
+                echo "      - Verify TIKTOK_CLIENT_KEY matches your app"
               fi
               
               echo "⏰ Finished at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
@@ -243,9 +403,9 @@ jobs:
             fi
             
             # ==========================================
-            # 5. Summary
+            # 6. Summary
             # ==========================================
-            echo "[5/5] 📊 Test Summary"
+            echo "[6/6] 📊 Test Summary"
             echo "=========================================="
             echo "⏰ Completed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
             echo ""
@@ -282,5 +442,10 @@ jobs:
               exit 0
             else
               echo "⚠️ Some tests failed. Check the logs above for details."
+              echo ""
+              echo "📚 Resources for troubleshooting:"
+              echo "   - Setup guide: docs/SOCIAL_TOKENS.md"
+              echo "   - Instagram: docs/INSTAGRAM_INTEGRATION.md"
+              echo "   - TikTok: docs/TIKTOK_INTEGRATION.md"
               exit 1
             fi

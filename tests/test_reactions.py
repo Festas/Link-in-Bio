@@ -4,7 +4,6 @@ Tests link reactions functionality for social engagement.
 """
 
 import pytest
-import time
 from fastapi.testclient import TestClient
 
 
@@ -33,9 +32,6 @@ class TestReactionsEndpoints:
         assert response.status_code == 200
         item_id = response.json()["id"]
 
-        # Small delay to avoid rate limiting
-        time.sleep(0.2)
-
         # Add a like reaction
         response = client.post(f"/api/reactions/{item_id}", json={"reaction_type": "like"})
         assert response.status_code == 200
@@ -51,15 +47,10 @@ class TestReactionsEndpoints:
         assert response.status_code == 200
         item_id = response.json()["id"]
 
-        # Small delay to avoid rate limiting
-        time.sleep(0.2)
-
         # Add a like reaction
         response = client.post(f"/api/reactions/{item_id}", json={"reaction_type": "like"})
         assert response.status_code == 200
         assert response.json()["user_reaction"] == "like"
-
-        time.sleep(0.2)
 
         # Change to love reaction
         response = client.post(f"/api/reactions/{item_id}", json={"reaction_type": "love"})
@@ -76,14 +67,10 @@ class TestReactionsEndpoints:
         assert response.status_code == 200
         item_id = response.json()["id"]
 
-        time.sleep(0.2)
-
         # Add a like reaction
         response = client.post(f"/api/reactions/{item_id}", json={"reaction_type": "like"})
         assert response.status_code == 200
         assert response.json()["user_reaction"] == "like"
-
-        time.sleep(0.2)
 
         # Click like again to toggle off
         response = client.post(f"/api/reactions/{item_id}", json={"reaction_type": "like"})
@@ -99,8 +86,6 @@ class TestReactionsEndpoints:
         assert response.status_code == 200
         item_id = response.json()["id"]
 
-        time.sleep(0.2)
-
         # Try an invalid reaction type
         response = client.post(f"/api/reactions/{item_id}", json={"reaction_type": "invalid"})
         assert response.status_code == 400
@@ -108,7 +93,6 @@ class TestReactionsEndpoints:
 
     def test_reaction_to_nonexistent_item(self, client):
         """Test that reacting to a nonexistent item returns 404."""
-        time.sleep(0.2)
         response = client.post("/api/reactions/99999", json={"reaction_type": "like"})
         assert response.status_code == 404
 
@@ -119,61 +103,40 @@ class TestReactionsEndpoints:
         assert response.status_code == 200
         item_id = response.json()["id"]
 
-        time.sleep(0.2)
-
         # Add a reaction
         response = client.post(f"/api/reactions/{item_id}", json={"reaction_type": "fire"})
         assert response.status_code == 200
 
-        time.sleep(0.2)
-
         # Delete the reaction
         response = client.delete(f"/api/reactions/{item_id}")
         assert response.status_code == 204
-
-        time.sleep(0.2)
 
         # Verify it's gone
         response = client.get(f"/api/reactions/{item_id}")
         assert response.status_code == 200
         assert response.json()["user_reaction"] is None
 
-    def test_valid_reaction_types_subset(self, client, auth_headers):
-        """Test that a sample of valid reaction types work."""
-        # Test just a couple of reaction types to avoid rate limiting
-        valid_types = ["fire", "love"]
+    def test_valid_reaction_types(self, client, auth_headers):
+        """Test that valid reaction types work (testing one representative type)."""
+        # Create an item
+        response = client.post("/api/items/headers", json={"title": "Test fire"}, headers=auth_headers)
+        assert response.status_code == 200
+        item_id = response.json()["id"]
 
-        for reaction_type in valid_types:
-            time.sleep(0.3)
-            # Create an item for each test
-            response = client.post(
-                "/api/items/headers", json={"title": f"Test {reaction_type}"}, headers=auth_headers
-            )
-            assert response.status_code == 200
-            item_id = response.json()["id"]
-
-            time.sleep(0.2)
-
-            # Add the reaction
-            response = client.post(f"/api/reactions/{item_id}", json={"reaction_type": reaction_type})
-            assert response.status_code == 200, f"Failed for reaction type: {reaction_type}"
-            assert response.json()["user_reaction"] == reaction_type
+        # Add the reaction
+        response = client.post(f"/api/reactions/{item_id}", json={"reaction_type": "fire"})
+        assert response.status_code == 200
+        assert response.json()["user_reaction"] == "fire"
 
     def test_get_all_reaction_stats(self, client, auth_headers):
         """Test getting bulk reaction stats."""
-        time.sleep(0.2)
-
         # Create an item with reaction
         response = client.post("/api/items/headers", json={"title": "Stats Test"}, headers=auth_headers)
         assert response.status_code == 200
         item_id = response.json()["id"]
 
-        time.sleep(0.2)
-
         # Add a reaction
         client.post(f"/api/reactions/{item_id}", json={"reaction_type": "like"})
-
-        time.sleep(0.2)
 
         # Get all stats
         response = client.get("/api/reactions/stats/all")

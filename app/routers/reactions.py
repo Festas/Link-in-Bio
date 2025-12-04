@@ -29,8 +29,11 @@ class ReactionResponse(BaseModel):
 
 
 def get_ip_hash(ip: str) -> str:
-    """Hash the IP address for privacy while preventing duplicates."""
-    return hashlib.sha256(ip.encode()).hexdigest()[:16]
+    """Hash the IP address for privacy while preventing duplicates.
+    
+    Uses full SHA256 hash for security while maintaining privacy.
+    """
+    return hashlib.sha256(ip.encode()).hexdigest()
 
 
 @router.get("/{item_id}", response_model=ReactionResponse, dependencies=[Depends(limiter_standard)])

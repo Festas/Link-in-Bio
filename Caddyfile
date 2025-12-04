@@ -44,3 +44,14 @@ mc.festas-builds.com {
     header @static Cache-Control "public, max-age=31536000, immutable"
     reverse_proxy minecraft-web:80
 }
+
+# Cosmic Survivor Game - browser-based space survival game
+# The cosmic-survivor container must join the 'caddy-network' external network
+cs.festas-builds.com {
+    tls eric@festas-builds.com
+    encode gzip zstd
+    # Cache static game assets with long expiry
+    @static path *.css *.js *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2 *.mp3 *.ogg *.wav
+    header @static Cache-Control "public, max-age=31536000, immutable"
+    reverse_proxy cosmic-survivor:80
+}

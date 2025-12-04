@@ -1,253 +1,304 @@
 """
-Social Media Statistics Scraper
-Automatically fetches follower counts and engagement metrics from social platforms.
+Social Media Statistics Service
+
+DEPRECATION NOTICE:
+-------------------
+The web scraping methods in this module (fetch_instagram_stats, fetch_tiktok_stats)
+are DEPRECATED and no longer work reliably due to:
+
+Instagram Issues:
+- The `window._sharedData` pattern was deprecated by Instagram years ago
+- The `edge_followed_by` regex pattern no longer works - Instagram doesn't expose
+  this data in public HTML anymore
+- Instagram requires authentication and serves profile data via internal GraphQL
+  API which blocks unauthenticated requests
+
+TikTok Issues:
+- TikTok has heavy bot detection and CAPTCHAs
+- Data is loaded via JavaScript (not in initial HTML response)
+- The `__UNIVERSAL_DATA_FOR_REHYDRATION__` pattern is unreliable and fails most of the time
+- Rate limiting and IP blocking
+
+RECOMMENDED APPROACH:
+--------------------
+Use the official API-based fetchers instead:
+- app/instagram_fetcher.py - Uses Meta Graph API with OAuth tokens
+- app/tiktok_fetcher.py - Uses TikTok's official API with proper authentication
+
+These scripts are the primary way to update stats:
+- fetch_instagram_stats.py (via GitHub Actions or cron)
+- fetch_tiktok_stats.py (via GitHub Actions or cron)
+
+For API setup, see:
+- docs/INSTAGRAM_INTEGRATION.md
+- docs/TIKTOK_INTEGRATION.md
+
+Required environment variables in .env.social:
+- Instagram: INSTAGRAM_ACCESS_TOKEN, INSTAGRAM_USERNAME, INSTAGRAM_APP_ID, INSTAGRAM_APP_SECRET
+- TikTok: TIKTOK_ACCESS_TOKEN, TIKTOK_REFRESH_TOKEN, TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET
 """
 
 import asyncio
-import json
 import logging
-import re
-import httpx
+import os
+import warnings
 from typing import Dict, Optional, Any
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
+# Deprecation warning message
+SCRAPING_DEPRECATION_MSG = (
+    "Web scraping for social media stats is deprecated and no longer works. "
+    "Please use the official API fetchers (app/instagram_fetcher.py, app/tiktok_fetcher.py) "
+    "and run fetch_instagram_stats.py / fetch_tiktok_stats.py scripts instead. "
+    "See docs/INSTAGRAM_INTEGRATION.md and docs/TIKTOK_INTEGRATION.md for setup."
+)
+
 
 class SocialMediaStatsService:
-    """Service to fetch social media statistics from various platforms."""
+    """
+    Service to fetch social media statistics from various platforms.
+
+    DEPRECATION WARNING:
+    The scraping-based methods (fetch_instagram_stats, fetch_tiktok_stats) are deprecated
+    and will return None with an error. Use the official API fetchers instead:
+    - app/instagram_fetcher.py for Instagram (Meta Graph API)
+    - app/tiktok_fetcher.py for TikTok (TikTok Official API)
+
+    This service now primarily provides:
+    - format_number(): Utility for formatting large numbers
+    - fetch_all_stats(): Deprecated wrapper that logs warnings and returns cached data
+    - Integration with official API fetchers when credentials are available
+    """
 
     def __init__(self):
         self.timeout = 30.0
+        # Keep for potential future use or compatibility
         self.user_agents = [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15",
         ]
 
-    def _get_headers(self) -> Dict[str, str]:
-        """Get HTTP headers for requests."""
-        return {
-            "User-Agent": self.user_agents[0],
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Connection": "keep-alive",
-        }
-
     async def fetch_instagram_stats(self, username: str) -> Optional[Dict[str, Any]]:
         """
-        Fetch Instagram profile statistics.
-        Returns dict with: followers, following, posts, engagement_rate
+        DEPRECATED: Web scraping for Instagram no longer works.
+
+        This method previously attempted to scrape Instagram profile pages using
+        regex patterns to extract follower counts. This approach has been broken
+        since Instagram deprecated the window._sharedData pattern and moved to
+        a JavaScript-rendered architecture with authentication requirements.
+
+        Use instead:
+        - app/instagram_fetcher.py with Meta Graph API
+        - Run fetch_instagram_stats.py for automated updates
+
+        See docs/INSTAGRAM_INTEGRATION.md for setup instructions.
+
+        Returns:
+            None - Always returns None with a deprecation warning logged.
         """
-        try:
-            # Remove @ if present
-            username = username.lstrip("@")
-
-            # Try to fetch public profile data
-            url = f"https://www.instagram.com/{username}/"
-
-            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
-                response = await client.get(url, headers=self._get_headers())
-
-                if response.status_code != 200:
-                    logger.warning(f"Instagram request failed with status {response.status_code}")
-                    return None
-
-                html = response.text
-
-                # Instagram embeds profile data in JSON within script tags
-                # Look for shared_data pattern
-                pattern = r"window\._sharedData\s*=\s*({.+?});"
-                match = re.search(pattern, html)
-
-                if match:
-                    data = json.loads(match.group(1))
-                    user_data = (
-                        data.get("entry_data", {}).get("ProfilePage", [{}])[0].get("graphql", {}).get("user", {})
-                    )
-
-                    if user_data:
-                        followers = user_data.get("edge_followed_by", {}).get("count", 0)
-                        following = user_data.get("edge_follow", {}).get("count", 0)
-                        posts = user_data.get("edge_owner_to_timeline_media", {}).get("count", 0)
-
-                        return {
-                            "platform": "instagram",
-                            "username": username,
-                            "followers": followers,
-                            "following": following,
-                            "posts": posts,
-                            "engagement_rate": None,  # Would need post-level data
-                            "verified": user_data.get("is_verified", False),
-                            "fetched_at": datetime.now(timezone.utc).isoformat(),
-                        }
-
-                # Try alternative pattern for newer Instagram format
-                pattern2 = r'"edge_followed_by":\{"count":(\d+)\}'
-                match2 = re.search(pattern2, html)
-                if match2:
-                    followers = int(match2.group(1))
-
-                    # Try to get posts count
-                    posts_pattern = r'"edge_owner_to_timeline_media":\{"count":(\d+)\}'
-                    posts_match = re.search(posts_pattern, html)
-                    posts = int(posts_match.group(1)) if posts_match else 0
-
-                    return {
-                        "platform": "instagram",
-                        "username": username,
-                        "followers": followers,
-                        "following": None,
-                        "posts": posts,
-                        "engagement_rate": None,
-                        "verified": False,
-                        "fetched_at": datetime.now(timezone.utc).isoformat(),
-                    }
-
-                logger.warning(f"Could not extract Instagram data for @{username}")
-                return None
-
-        except Exception as e:
-            logger.error(f"Error fetching Instagram stats for @{username}: {e}")
-            return None
+        warnings.warn(
+            "fetch_instagram_stats() is deprecated. Use app/instagram_fetcher.py with Meta Graph API instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        username = username.lstrip("@")
+        logger.warning(
+            f"Instagram scraping for @{username} is deprecated and no longer works. "
+            "Instagram requires authentication via Meta Graph API. "
+            "Use fetch_instagram_stats.py script or app/instagram_fetcher.py instead. "
+            "See docs/INSTAGRAM_INTEGRATION.md for setup."
+        )
+        return None
 
     async def fetch_tiktok_stats(self, username: str) -> Optional[Dict[str, Any]]:
         """
-        Fetch TikTok profile statistics.
-        Returns dict with: followers, following, likes, videos
+        DEPRECATED: Web scraping for TikTok no longer works.
+
+        This method previously attempted to scrape TikTok profile pages using
+        regex patterns to extract follower counts. This approach fails due to:
+        - Heavy bot detection and CAPTCHAs
+        - Data loaded via JavaScript (not in initial HTML)
+        - Unreliable __UNIVERSAL_DATA_FOR_REHYDRATION__ pattern
+        - Rate limiting and IP blocking
+
+        Use instead:
+        - app/tiktok_fetcher.py with TikTok Official API
+        - Run fetch_tiktok_stats.py for automated updates
+
+        See docs/TIKTOK_INTEGRATION.md for setup instructions.
+
+        Returns:
+            None - Always returns None with a deprecation warning logged.
         """
-        try:
-            # Remove @ if present
-            username = username.lstrip("@")
-
-            url = f"https://www.tiktok.com/@{username}"
-
-            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
-                response = await client.get(url, headers=self._get_headers())
-
-                if response.status_code != 200:
-                    logger.warning(f"TikTok request failed with status {response.status_code}")
-                    return None
-
-                html = response.text
-
-                # TikTok embeds data in script tags
-                # Look for SIGI_STATE or similar
-                pattern = r'<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" type="application/json">(.+?)</script>'
-                match = re.search(pattern, html)
-
-                if match:
-                    data = json.loads(match.group(1))
-                    user_detail = data.get("__DEFAULT_SCOPE__", {}).get("webapp.user-detail", {})
-                    user_info = user_detail.get("userInfo", {}).get("stats", {})
-
-                    if user_info:
-                        return {
-                            "platform": "tiktok",
-                            "username": username,
-                            "followers": user_info.get("followerCount", 0),
-                            "following": user_info.get("followingCount", 0),
-                            "likes": user_info.get("heartCount", 0),
-                            "videos": user_info.get("videoCount", 0),
-                            "verified": False,
-                            "fetched_at": datetime.now(timezone.utc).isoformat(),
-                        }
-
-                # Try alternative pattern
-                follower_pattern = r'"followerCount":(\d+)'
-                match = re.search(follower_pattern, html)
-                if match:
-                    followers = int(match.group(1))
-
-                    likes_pattern = r'"heartCount":(\d+)'
-                    likes_match = re.search(likes_pattern, html)
-                    likes = int(likes_match.group(1)) if likes_match else 0
-
-                    videos_pattern = r'"videoCount":(\d+)'
-                    videos_match = re.search(videos_pattern, html)
-                    videos = int(videos_match.group(1)) if videos_match else 0
-
-                    return {
-                        "platform": "tiktok",
-                        "username": username,
-                        "followers": followers,
-                        "following": None,
-                        "likes": likes,
-                        "videos": videos,
-                        "verified": False,
-                        "fetched_at": datetime.now(timezone.utc).isoformat(),
-                    }
-
-                logger.warning(f"Could not extract TikTok data for @{username}")
-                return None
-
-        except Exception as e:
-            logger.error(f"Error fetching TikTok stats for @{username}: {e}")
-            return None
+        warnings.warn(
+            "fetch_tiktok_stats() is deprecated. Use app/tiktok_fetcher.py with TikTok Official API instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        username = username.lstrip("@")
+        logger.warning(
+            f"TikTok scraping for @{username} is deprecated and no longer works. "
+            "TikTok requires authentication via TikTok Official API. "
+            "Use fetch_tiktok_stats.py script or app/tiktok_fetcher.py instead. "
+            "See docs/TIKTOK_INTEGRATION.md for setup."
+        )
+        return None
 
     async def fetch_youtube_stats(self, channel_id_or_handle: str) -> Optional[Dict[str, Any]]:
         """
         Fetch YouTube channel statistics.
-        Note: This is a simplified version. For accurate stats, YouTube Data API v3 is recommended.
+
+        Note: This is not implemented. YouTube Data API v3 with an API key is required
+        for reliable data fetching.
+
+        Returns:
+            None - Always returns None as YouTube API integration is not implemented.
+        """
+        logger.info(f"YouTube stats fetching not yet implemented for {channel_id_or_handle}")
+        return None
+
+    async def _try_fetch_from_api(self, platform: str, handle: str) -> Optional[Dict[str, Any]]:
+        """
+        Try to fetch stats using the official API fetchers if credentials are available.
+
+        This method checks if API credentials are configured in environment variables
+        and uses the proper API fetcher if available.
+
+        Args:
+            platform: Platform name ('instagram' or 'tiktok')
+            handle: Username/handle for the platform
+
+        Returns:
+            Stats dict if successful, None otherwise
         """
         try:
-            # For now, return None as YouTube requires API key for reliable data
-            # This is a placeholder for future implementation
-            logger.info(f"YouTube stats fetching not yet implemented for {channel_id_or_handle}")
-            return None
+            if platform == "instagram":
+                # Check if Instagram API credentials are available
+                if os.getenv("INSTAGRAM_ACCESS_TOKEN") and os.getenv("INSTAGRAM_USERNAME"):
+                    from .instagram_fetcher import get_instagram_fetcher_from_env
+
+                    fetcher = get_instagram_fetcher_from_env()
+                    if fetcher:
+                        logger.info(f"Using Instagram Graph API for @{handle}")
+                        stats = await fetcher.fetch_stats()
+                        return stats
+                    else:
+                        logger.warning("Instagram API credentials found but fetcher initialization failed")
+                else:
+                    logger.info(
+                        "Instagram API credentials not configured. "
+                        "Set INSTAGRAM_ACCESS_TOKEN and INSTAGRAM_USERNAME in .env.social"
+                    )
+
+            elif platform == "tiktok":
+                # Check if TikTok API credentials are available
+                if os.getenv("TIKTOK_ACCESS_TOKEN") and os.getenv("TIKTOK_REFRESH_TOKEN"):
+                    from .tiktok_fetcher import get_tiktok_fetcher_from_env
+
+                    fetcher = get_tiktok_fetcher_from_env()
+                    if fetcher:
+                        logger.info(f"Using TikTok Official API for @{handle}")
+                        stats = await fetcher.fetch_stats()
+                        return stats
+                    else:
+                        logger.warning("TikTok API credentials found but fetcher initialization failed")
+                else:
+                    logger.info(
+                        "TikTok API credentials not configured. "
+                        "Set TIKTOK_ACCESS_TOKEN and TIKTOK_REFRESH_TOKEN in .env.social"
+                    )
+
+        except ImportError as e:
+            logger.error(f"Could not import {platform} fetcher: {e}")
         except Exception as e:
-            logger.error(f"Error fetching YouTube stats: {e}")
-            return None
+            logger.error(f"Error fetching {platform} stats via API: {e}")
+
+        return None
 
     async def fetch_all_stats(self, config: Dict[str, str]) -> Dict[str, Any]:
         """
         Fetch stats from all configured platforms.
 
+        DEPRECATION NOTICE:
+        This method previously used web scraping which no longer works.
+        It now attempts to use the official API fetchers if credentials are available.
+
+        For reliable stats fetching, use the dedicated scripts:
+        - fetch_instagram_stats.py (runs via GitHub Actions daily)
+        - fetch_tiktok_stats.py (runs via GitHub Actions daily)
+
         Args:
             config: Dict with platform keys (instagram_handle, tiktok_handle, etc.)
 
         Returns:
-            Dict with platform stats and total metrics
+            Dict with platform stats and total metrics. Platforms without API
+            credentials will have deprecation errors logged.
         """
         results = {
             "platforms": {},
             "total_followers": 0,
             "last_updated": datetime.now(timezone.utc).isoformat(),
             "errors": [],
+            "warnings": [],
         }
 
         tasks = []
         platforms = []
+        handles = []
 
         # Instagram
         if config.get("instagram_handle"):
-            tasks.append(self.fetch_instagram_stats(config["instagram_handle"]))
+            handle = config["instagram_handle"].lstrip("@")
+            tasks.append(self._try_fetch_from_api("instagram", handle))
             platforms.append("instagram")
+            handles.append(handle)
 
         # TikTok
         if config.get("tiktok_handle"):
-            tasks.append(self.fetch_tiktok_stats(config["tiktok_handle"]))
+            handle = config["tiktok_handle"].lstrip("@")
+            tasks.append(self._try_fetch_from_api("tiktok", handle))
             platforms.append("tiktok")
+            handles.append(handle)
 
-        # YouTube
+        # YouTube (not implemented)
         if config.get("youtube_handle"):
-            tasks.append(self.fetch_youtube_stats(config["youtube_handle"]))
+            handle = config["youtube_handle"]
+            tasks.append(self.fetch_youtube_stats(handle))
             platforms.append("youtube")
+            handles.append(handle)
 
         # Fetch all concurrently
         if tasks:
             stats_results = await asyncio.gather(*tasks, return_exceptions=True)
 
-            for platform, stats in zip(platforms, stats_results):
+            for platform, handle, stats in zip(platforms, handles, stats_results):
                 if isinstance(stats, Exception):
-                    results["errors"].append(f"{platform}: {str(stats)}")
+                    error_msg = f"{platform}: {str(stats)}"
+                    results["errors"].append(error_msg)
+                    logger.error(f"Error fetching {platform} stats: {stats}")
                 elif stats:
                     results["platforms"][platform] = stats
                     # Add to total followers
                     if "followers" in stats and stats["followers"]:
                         results["total_followers"] += stats["followers"]
                 else:
-                    results["errors"].append(f"{platform}: Could not fetch data")
+                    # Stats fetching failed - provide helpful error message
+                    if platform in ("instagram", "tiktok"):
+                        error_msg = (
+                            f"{platform}: API credentials not configured or fetching failed. "
+                            f"Run fetch_{platform}_stats.py or configure API credentials in .env.social. "
+                            f"See docs/{platform.upper()}_INTEGRATION.md"
+                        )
+                        results["errors"].append(error_msg)
+                        results["warnings"].append(SCRAPING_DEPRECATION_MSG)
+                    else:
+                        results["errors"].append(f"{platform}: Could not fetch data")
+
+        # Add general warning if any scraping would have been attempted
+        if not results["platforms"] and (config.get("instagram_handle") or config.get("tiktok_handle")):
+            results["warnings"].append(SCRAPING_DEPRECATION_MSG)
 
         return results
 

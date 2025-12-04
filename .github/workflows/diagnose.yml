@@ -52,6 +52,16 @@ jobs:
             SERVICE_CONFIG["cosmic-survivor"]="80,cs.festas-builds.com,/home/deploy/cosmic-survivor"
             SERVICE_CONFIG["minecraft-web"]="80,mc.festas-builds.com,/home/deploy/minecraft-server"
             
+            # Required domains that must be present in Caddyfile
+            REQUIRED_DOMAINS=(
+              "festas-builds.com"
+              "admin.festas-builds.com"
+              "rigpilot.festas-builds.com"
+              "immocalc.festas-builds.com"
+              "mc.festas-builds.com"
+              "cs.festas-builds.com"
+            )
+            
             # Track issues and warnings
             ISSUES=()
             WARNINGS=()
@@ -215,6 +225,47 @@ jobs:
             echo ""
             
             echo "=========================================="
+            echo "📦 4b. Active Caddyfile from Container"
+            echo "=========================================="
+            echo ""
+            
+            if is_caddy_running; then
+              echo "Reading active Caddyfile from Caddy container..."
+              echo "---"
+              ACTIVE_CADDYFILE=$(docker exec caddy_server cat /etc/caddy/Caddyfile 2>&1 || echo "Failed to read Caddyfile from container")
+              echo "$ACTIVE_CADDYFILE"
+              echo "---"
+            else
+              add_warning "Caddy container not running - cannot read active Caddyfile"
+              echo "⚠️  Cannot read active Caddyfile - Caddy container is not running"
+            fi
+            echo ""
+            
+            echo "=========================================="
+            echo "🔍 4c. Caddyfile Sync Check"
+            echo "=========================================="
+            echo ""
+            
+            CADDYFILE_MISSING_DOMAINS=()
+            
+            if is_caddy_running; then
+              echo "Checking if all required domains are configured in the active Caddyfile..."
+              for domain in "${REQUIRED_DOMAINS[@]}"; do
+                # Check if the domain is present in the active Caddyfile (flexible pattern to handle spacing)
+                if echo "$ACTIVE_CADDYFILE" | grep -qE "(^|[[:space:]])${domain}[[:space:]]*\{"; then
+                  echo "✅ ${domain} is configured"
+                else
+                  add_issue "Caddyfile is missing entry for ${domain} - run deploy workflow to sync"
+                  CADDYFILE_MISSING_DOMAINS+=("$domain")
+                  echo "❌ ${domain} is NOT configured in Caddyfile"
+                fi
+              done
+            else
+              echo "⚠️  Caddy container not running - cannot check domain configuration"
+            fi
+            echo ""
+            
+            echo "=========================================="
             echo "✔️  5. Caddy Config Validation"
             echo "=========================================="
             echo ""
@@ -257,6 +308,51 @@ jobs:
             echo ""
             
             echo "=========================================="
+            echo "🐳 6b. Docker Image Name Validation"
+            echo "=========================================="
+            echo ""
+            
+            echo "Checking docker-compose.yml files for image naming issues..."
+            DOCKER_COMPOSE_ISSUES=()
+            
+            for service in $(get_target_services); do
+              deploy_dir=$(get_deploy_dir "$service")
+              for compose_file in "docker-compose.yml" "docker-compose.yaml" "compose.yml" "compose.yaml"; do
+                if [[ -f "${deploy_dir}/${compose_file}" ]]; then
+                  echo "Checking ${deploy_dir}/${compose_file}..."
+                  
+                  # Check for uppercase letters in image names (after the registry/org part)
+                  # Extract image names and check for uppercase in the image name portion
+                  while IFS= read -r line; do
+                    IMAGE_VALUE=$(echo "$line" | sed 's/.*image:[[:space:]]*//' | tr -d '"' | tr -d "'" || true)
+                    if [[ -n "$IMAGE_VALUE" ]]; then
+                      # Get the image name part (after the last / if present)
+                      IMAGE_NAME_PART="${IMAGE_VALUE##*/}"
+                      # Check for uppercase in the image name (excluding tags after :)
+                      IMAGE_NAME_ONLY="${IMAGE_NAME_PART%%:*}"
+                      if echo "$IMAGE_NAME_ONLY" | grep -qE '[A-Z]'; then
+                        add_issue "Docker image name contains uppercase in ${deploy_dir}/${compose_file} - fix docker-compose.yml"
+                        DOCKER_COMPOSE_ISSUES+=("${deploy_dir}/${compose_file}: Uppercase in image name '${IMAGE_VALUE}'")
+                        echo "❌ Found uppercase in image name: ${IMAGE_VALUE}"
+                      fi
+                    fi
+                  done < <(grep -E '^\s*image:' "${deploy_dir}/${compose_file}" 2>/dev/null || true)
+                  
+                  if [[ ${#DOCKER_COMPOSE_ISSUES[@]} -eq 0 ]]; then
+                    echo "✅ No uppercase letters in image names"
+                  fi
+                  
+                  break  # Only check first compose file found
+                fi
+              done
+            done
+            
+            if [[ ${#DOCKER_COMPOSE_ISSUES[@]} -eq 0 ]]; then
+              echo "✅ No Docker image naming issues found"
+            fi
+            echo ""
+            
+            echo "=========================================="
             echo "🏥 7. Service Health Checks"
             echo "=========================================="
             echo ""
@@ -276,6 +372,20 @@ jobs:
                 else
                   add_issue "${service} is not running (status: ${STATUS})"
                   echo "❌ ${service}: ${STATUS} (not running)"
+                  
+                  # When a container fails to start, check for image issues
+                  deploy_dir=$(get_deploy_dir "$service")
+                  if [[ -f "${deploy_dir}/docker-compose.yml" ]]; then
+                    echo "  Checking docker-compose.yml for potential issues..."
+                    COMPOSE_IMAGES=$(grep -E '^\s*image:' "${deploy_dir}/docker-compose.yml" 2>/dev/null || true)
+                    if [[ -n "$COMPOSE_IMAGES" ]]; then
+                      echo "  Images configured:"
+                      echo "$COMPOSE_IMAGES" | sed 's/^/    /'
+                      if echo "$COMPOSE_IMAGES" | grep -qE '[A-Z]'; then
+                        echo "  💡 Suggestion: Docker image name contains uppercase - fix docker-compose.yml"
+                      fi
+                    fi
+                  fi
                 fi
               else
                 add_warning "${service} container does not exist"
@@ -301,6 +411,51 @@ jobs:
                 echo "⚠️  ${domain} - DNS resolution failed"
               fi
             done
+            echo ""
+            
+            echo "=========================================="
+            echo "🌐 8b. External Connectivity Tests"
+            echo "=========================================="
+            echo ""
+            
+            echo "Testing if domains are accessible from the internet (via HTTPS)..."
+            EXTERNAL_CONNECTIVITY_ISSUES=()
+            
+            for service in $(get_target_services); do
+              domain=$(get_domain "$service")
+              echo "Testing https://${domain}..."
+              
+              # Test external HTTPS connectivity with timeout
+              if curl -sf --connect-timeout 10 "https://${domain}" > /dev/null 2>&1; then
+                echo "✅ https://${domain} is accessible from the internet"
+              else
+                # Try with -k to ignore certificate issues (to distinguish between cert vs connectivity issues)
+                if curl -sfk --connect-timeout 10 "https://${domain}" > /dev/null 2>&1; then
+                  add_warning "https://${domain} is accessible but has SSL certificate issues"
+                  EXTERNAL_CONNECTIVITY_ISSUES+=("${domain}: SSL certificate issue")
+                  echo "⚠️  https://${domain} is accessible but has SSL certificate issues"
+                else
+                  add_issue "https://${domain} is NOT accessible from the internet"
+                  EXTERNAL_CONNECTIVITY_ISSUES+=("${domain}: Not accessible")
+                  echo "❌ https://${domain} is NOT accessible from the internet"
+                fi
+              fi
+            done
+            
+            # Also test the admin subdomain explicitly if not already covered
+            echo ""
+            echo "Testing admin.festas-builds.com..."
+            if curl -sf --connect-timeout 10 "https://admin.festas-builds.com" > /dev/null 2>&1; then
+              echo "✅ https://admin.festas-builds.com is accessible from the internet"
+            else
+              if curl -sfk --connect-timeout 10 "https://admin.festas-builds.com" > /dev/null 2>&1; then
+                add_warning "https://admin.festas-builds.com is accessible but has SSL certificate issues"
+                echo "⚠️  https://admin.festas-builds.com is accessible but has SSL certificate issues"
+              else
+                add_issue "https://admin.festas-builds.com is NOT accessible from the internet"
+                echo "❌ https://admin.festas-builds.com is NOT accessible from the internet"
+              fi
+            fi
             echo ""
             
             echo "=========================================="
@@ -478,8 +633,104 @@ jobs:
               done
               echo ""
               
-              # Fix 4: Reload Caddy configuration
-              echo "Fix 4: Reloading Caddy configuration..."
+              # Fix 4: Sync Caddyfile if domains are missing
+              echo "Fix 4: Checking Caddyfile sync..."
+              if [[ ${#CADDYFILE_MISSING_DOMAINS[@]} -gt 0 ]]; then
+                echo "Caddyfile is missing ${#CADDYFILE_MISSING_DOMAINS[@]} domain(s). Generating complete Caddyfile..."
+                
+                CADDY_DEPLOY_PATH="/srv/link-in-bio/Caddyfile"
+                if [[ ! -f "$CADDY_DEPLOY_PATH" ]]; then
+                  CADDY_DEPLOY_PATH="/home/deploy/link-in-bio/Caddyfile"
+                fi
+                
+                # Generate complete Caddyfile with all required domains
+                cat > "${CADDY_DEPLOY_PATH}" << 'CADDYFILE_EOF'
+            # Main domain - public-facing Link-in-Bio site
+            festas-builds.com {
+                tls eric@festas-builds.com
+                reverse_proxy web:8000
+            }
+            
+            # Admin subdomain - administrative interface
+            admin.festas-builds.com {
+                tls eric@festas-builds.com
+                reverse_proxy web:8000
+            }
+            
+            # RigPilot subdomain - PC Builder application
+            rigpilot.festas-builds.com {
+                tls eric@festas-builds.com
+                encode gzip zstd
+                @static path /_next/static/*
+                header @static Cache-Control "public, max-age=31536000, immutable"
+                reverse_proxy rigpilot:3000
+            }
+            
+            # ImmoCalc subdomain - Immobilien Investment Calculator
+            immocalc.festas-builds.com {
+                tls eric@festas-builds.com
+                encode gzip zstd
+                @static path /_next/static/*
+                header @static Cache-Control "public, max-age=31536000, immutable"
+                reverse_proxy immocalc:3000
+            }
+            
+            # Minecraft Server Website
+            mc.festas-builds.com {
+                tls eric@festas-builds.com
+                encode gzip zstd
+                @static path *.css *.js *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2
+                header @static Cache-Control "public, max-age=31536000, immutable"
+                reverse_proxy minecraft-web:80
+            }
+            
+            # Cosmic Survivor Game
+            cs.festas-builds.com {
+                tls eric@festas-builds.com
+                encode gzip zstd
+                @static path *.css *.js *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2 *.mp3 *.ogg *.wav
+                header @static Cache-Control "public, max-age=31536000, immutable"
+                reverse_proxy cosmic-survivor:80
+            }
+            CADDYFILE_EOF
+                
+                # Strip all leading whitespace from heredoc content
+                sed -i 's/^[[:space:]]*//' "${CADDY_DEPLOY_PATH}" || true
+                
+                echo "✅ Caddyfile updated with all required domains"
+                echo ""
+                echo "New Caddyfile contents:"
+                cat "${CADDY_DEPLOY_PATH}"
+                echo ""
+                
+                # Copy to Caddy container and reload
+                echo "Copying updated Caddyfile to Caddy container..."
+                if docker cp "${CADDY_DEPLOY_PATH}" caddy_server:/etc/caddy/Caddyfile; then
+                  echo "✅ Caddyfile copied to container"
+                  ((FIXES_APPLIED++))
+                  
+                  # Validate and reload
+                  echo "Validating and reloading Caddy configuration..."
+                  if docker exec caddy_server caddy validate --config /etc/caddy/Caddyfile 2>&1; then
+                    if docker exec caddy_server caddy reload --config /etc/caddy/Caddyfile 2>&1; then
+                      echo "✅ Caddy configuration reloaded successfully"
+                      ((FIXES_APPLIED++))
+                    else
+                      echo "⚠️  Caddy reload failed after Caddyfile update"
+                    fi
+                  else
+                    echo "❌ Updated Caddyfile validation failed - reverting may be needed"
+                  fi
+                else
+                  echo "❌ Failed to copy Caddyfile to container"
+                fi
+              else
+                echo "✅ Caddyfile has all required domains"
+              fi
+              echo ""
+              
+              # Fix 5: Reload Caddy configuration
+              echo "Fix 5: Reloading Caddy configuration..."
               if docker exec caddy_server caddy reload --config /etc/caddy/Caddyfile 2>&1; then
                 echo "✅ Caddy configuration reloaded"
                 ((FIXES_APPLIED++))
@@ -494,8 +745,8 @@ jobs:
               fi
               echo ""
               
-              # Fix 5: Restart unhealthy containers
-              echo "Fix 5: Checking for unhealthy containers..."
+              # Fix 6: Restart unhealthy containers
+              echo "Fix 6: Checking for unhealthy containers..."
               for service in $(get_target_services); do
                 if docker ps --format '{{.Names}}' | grep -q "^${service}$"; then
                   HEALTH=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}no healthcheck{{end}}' "$service" 2>/dev/null || echo "unknown")

@@ -22,3 +22,14 @@ rigpilot.festas-builds.com {
     header @static Cache-Control "public, max-age=31536000, immutable"
     reverse_proxy rigpilot:3000
 }
+
+# Minecraft Server Website - public landing page for the Minecraft server
+# The minecraft-web container must join the 'caddy-network' external network
+mc.festas-builds.com {
+    tls eric@festas-builds.com
+    encode gzip zstd
+    # Cache static assets with long expiry
+    @static path *.css *.js *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2
+    header @static Cache-Control "public, max-age=31536000, immutable"
+    reverse_proxy minecraft-web:80
+}

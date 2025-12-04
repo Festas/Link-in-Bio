@@ -90,6 +90,143 @@ body.theme-picasso {
     --color-accent-hover: #9333ea;
 }
 
+/* Minimal Theme - Clean, simple, professional */
+body.theme-minimal {
+    --color-bg: #ffffff;
+    --color-bg-gradient: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+    --color-text: #111827;
+    --color-text-muted: #6b7280;
+    --color-item-bg: #f9fafb;
+    --color-item-bg-hover: #f3f4f6;
+    --color-item-text: #111827;
+    --color-item-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --color-border: #e5e7eb;
+    --color-accent: #111827;
+    --color-accent-hover: #374151;
+    --color-tech-accent: #3b82f6;
+    --color-gaming-accent: #6366f1;
+}
+
+body.theme-minimal::before,
+body.theme-minimal::after {
+    display: none;
+}
+
+/* Gradient Theme - Colorful gradient backgrounds */
+body.theme-gradient {
+    --color-bg: #667eea;
+    --color-bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    --color-text: #ffffff;
+    --color-text-muted: rgba(255, 255, 255, 0.85);
+    --color-item-bg: rgba(255, 255, 255, 0.15);
+    --color-item-bg-hover: rgba(255, 255, 255, 0.25);
+    --color-item-text: #ffffff;
+    --color-item-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    --color-border: rgba(255, 255, 255, 0.2);
+    --color-accent: #ffffff;
+    --color-accent-hover: rgba(255, 255, 255, 0.9);
+    --color-tech-accent: #ffffff;
+    --color-gaming-accent: #fbbf24;
+}
+
+body.theme-gradient::before {
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+}
+
+body.theme-gradient::after {
+    display: none;
+}
+
+/* Dark Mode Theme - Pure dark theme with high contrast */
+body.theme-darkmode {
+    --color-bg: #000000;
+    --color-bg-gradient: linear-gradient(180deg, #000000 0%, #0a0a0a 50%, #111111 100%);
+    --color-text: #ffffff;
+    --color-text-muted: #a1a1aa;
+    --color-item-bg: rgba(255, 255, 255, 0.05);
+    --color-item-bg-hover: rgba(255, 255, 255, 0.1);
+    --color-item-text: #ffffff;
+    --color-item-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    --color-border: rgba(255, 255, 255, 0.1);
+    --color-accent: #ffffff;
+    --color-accent-hover: #e4e4e7;
+    --color-tech-accent: #fafafa;
+    --color-gaming-accent: #f4f4f5;
+}
+
+body.theme-darkmode::before,
+body.theme-darkmode::after {
+    display: none;
+}
+
+/* Pastel Theme - Soft, friendly colors */
+body.theme-pastel {
+    --color-bg: #fdf2f8;
+    --color-bg-gradient: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 25%, #fbcfe8 50%, #f5d0fe 75%, #e9d5ff 100%);
+    --color-text: #831843;
+    --color-text-muted: #9d174d;
+    --color-item-bg: rgba(255, 255, 255, 0.8);
+    --color-item-bg-hover: rgba(255, 255, 255, 0.95);
+    --color-item-text: #831843;
+    --color-item-shadow: 0 4px 20px rgba(190, 24, 93, 0.1);
+    --color-border: rgba(236, 72, 153, 0.2);
+    --color-accent: #ec4899;
+    --color-accent-hover: #db2777;
+    --color-tech-accent: #f472b6;
+    --color-gaming-accent: #a855f7;
+}
+
+body.theme-pastel::before {
+    background: 
+        radial-gradient(circle at 30% 20%, rgba(244, 114, 182, 0.2) 0%, transparent 40%),
+        radial-gradient(circle at 70% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 40%);
+}
+
+body.theme-pastel::after {
+    display: none;
+}
+
+/* Neon Theme - Bright, vibrant cyberpunk style */
+body.theme-neon {
+    --color-bg: #0f0f23;
+    --color-bg-gradient: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+    --color-text: #00ff88;
+    --color-text-muted: #00cc6a;
+    --color-item-bg: rgba(0, 255, 136, 0.05);
+    --color-item-bg-hover: rgba(0, 255, 136, 0.12);
+    --color-item-text: #00ff88;
+    --color-item-shadow: 0 0 30px rgba(0, 255, 136, 0.3), 0 8px 32px rgba(0, 0, 0, 0.5);
+    --color-border: rgba(0, 255, 136, 0.3);
+    --color-accent: #ff00ff;
+    --color-accent-hover: #ff33ff;
+    --color-tech-accent: #00ff88;
+    --color-gaming-accent: #ff00ff;
+}
+
+body.theme-neon::before {
+    background: 
+        radial-gradient(circle at 10% 50%, rgba(0, 255, 136, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 90% 50%, rgba(255, 0, 255, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 50% 90%, rgba(0, 255, 255, 0.1) 0%, transparent 40%);
+}
+
+body.theme-neon::after {
+    background-image: 
+        linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px);
+}
+
+body.theme-neon .profile-title {
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.8), 0 0 20px rgba(0, 255, 136, 0.6), 0 0 40px rgba(0, 255, 136, 0.4);
+}
+
+body.theme-neon .item-link:hover,
+body.theme-neon .item-product:hover {
+    box-shadow: 0 0 30px rgba(0, 255, 136, 0.5), 0 0 60px rgba(255, 0, 255, 0.3);
+}
+
 /* Animation Keyframes - Enhanced */
 @keyframes fadeInUp {
     from {

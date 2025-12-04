@@ -694,8 +694,8 @@ jobs:
             }
             CADDYFILE_EOF
                 
-                # Strip leading whitespace from heredoc (remove up to 12 spaces/tabs consistently)
-                sed -i 's/^[[:space:]]\{0,12\}//' "${CADDY_DEPLOY_PATH}" || true
+                # Strip all leading whitespace from heredoc content
+                sed -i 's/^[[:space:]]*//' "${CADDY_DEPLOY_PATH}" || true
                 
                 echo "✅ Caddyfile updated with all required domains"
                 echo ""

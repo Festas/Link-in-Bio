@@ -1,0 +1,565 @@
+name: Server Diagnostics
+
+on:
+  workflow_dispatch:
+    inputs:
+      auto_fix:
+        description: 'Attempt automatic fixes for detected issues'
+        type: boolean
+        default: false
+      target_service:
+        description: 'Service to diagnose'
+        type: choice
+        default: 'all'
+        options:
+          - all
+          - linktree_app
+          - immocalc
+          - rigpilot
+          - cosmic-survivor
+          - minecraft-web
+
+jobs:
+  diagnose:
+    name: Run Diagnostics
+    runs-on: ubuntu-latest
+    permissions: {}
+    
+    steps:
+      - name: Run Diagnostics
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          AUTO_FIX: ${{ inputs.auto_fix }}
+          TARGET_SERVICE: ${{ inputs.target_service }}
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: AUTO_FIX,TARGET_SERVICE
+          command_timeout: 10m
+          script: |
+            set -uo pipefail
+            
+            # ==========================================
+            # Configuration
+            # ==========================================
+            
+            # Service configuration: container_name -> internal_port,domain,deploy_dir
+            declare -A SERVICE_CONFIG
+            SERVICE_CONFIG["linktree_app"]="8000,festas-builds.com,/home/deploy/link-in-bio"
+            SERVICE_CONFIG["immocalc"]="3000,immocalc.festas-builds.com,/home/deploy/immocalc"
+            SERVICE_CONFIG["rigpilot"]="3000,rigpilot.festas-builds.com,/home/deploy/rigpilot"
+            SERVICE_CONFIG["cosmic-survivor"]="80,cs.festas-builds.com,/home/deploy/cosmic-survivor"
+            SERVICE_CONFIG["minecraft-web"]="80,mc.festas-builds.com,/home/deploy/minecraft-server"
+            
+            # Track issues and warnings
+            ISSUES=()
+            WARNINGS=()
+            
+            add_issue() {
+              ISSUES+=("$1")
+            }
+            
+            add_warning() {
+              WARNINGS+=("$1")
+            }
+            
+            # Get service config values
+            get_port() {
+              echo "${SERVICE_CONFIG[$1]}" | cut -d',' -f1
+            }
+            
+            get_domain() {
+              echo "${SERVICE_CONFIG[$1]}" | cut -d',' -f2
+            }
+            
+            get_deploy_dir() {
+              echo "${SERVICE_CONFIG[$1]}" | cut -d',' -f3
+            }
+            
+            # Check if docker compose file exists in a directory
+            has_compose_file() {
+              local dir="$1"
+              [[ -d "$dir" ]] && [[ -f "${dir}/docker-compose.yml" || -f "${dir}/docker-compose.yaml" || -f "${dir}/compose.yml" || -f "${dir}/compose.yaml" ]]
+            }
+            
+            # Check if Caddy container is running
+            is_caddy_running() {
+              docker ps --format '{{.Names}}' | grep -q '^caddy_server$'
+            }
+            
+            # Filter services based on target
+            get_target_services() {
+              if [[ "${TARGET_SERVICE}" == "all" ]]; then
+                echo "${!SERVICE_CONFIG[@]}"
+              else
+                echo "${TARGET_SERVICE}"
+              fi
+            }
+            
+            echo "=========================================="
+            echo "🔍 Server Diagnostics Report"
+            echo "=========================================="
+            echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "Target: ${TARGET_SERVICE}"
+            echo "Auto-fix: ${AUTO_FIX}"
+            echo ""
+            
+            # ==========================================
+            # Step 1: Diagnostic Checks
+            # ==========================================
+            
+            echo "=========================================="
+            echo "📊 1. Container Status Overview"
+            echo "=========================================="
+            echo ""
+            echo "All running containers:"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" || {
+              add_issue "Docker daemon may not be running"
+              echo "❌ Failed to list containers"
+            }
+            echo ""
+            
+            echo "Caddy container status:"
+            if docker ps --format '{{.Names}}' | grep -q '^caddy_server$'; then
+              CADDY_STATUS=$(docker inspect --format '{{.State.Status}}' caddy_server 2>/dev/null || echo "unknown")
+              echo "✅ caddy_server is running (status: ${CADDY_STATUS})"
+            else
+              add_issue "Caddy container (caddy_server) is not running"
+              echo "❌ caddy_server is NOT running"
+            fi
+            echo ""
+            
+            echo "=========================================="
+            echo "🌐 2. caddy-network Inspection"
+            echo "=========================================="
+            echo ""
+            
+            if docker network inspect caddy-network >/dev/null 2>&1; then
+              echo "✅ caddy-network exists"
+              echo ""
+              echo "Connected containers:"
+              docker network inspect caddy-network --format '{{range .Containers}}  - {{.Name}}{{println}}{{end}}' 2>/dev/null || echo "  (none)"
+              
+              CONNECTED_CONTAINERS=$(docker network inspect caddy-network --format '{{range .Containers}}{{.Name}} {{end}}' 2>/dev/null || echo "")
+              
+              for service in $(get_target_services); do
+                if echo "$CONNECTED_CONTAINERS" | grep -qw "$service"; then
+                  echo "✅ ${service} is connected to caddy-network"
+                else
+                  if docker ps -a --format '{{.Names}}' | grep -q "^${service}$"; then
+                    add_warning "${service} exists but is not connected to caddy-network"
+                    echo "⚠️  ${service} exists but is NOT connected to caddy-network"
+                  else
+                    add_warning "${service} container does not exist"
+                    echo "⚠️  ${service} container does not exist"
+                  fi
+                fi
+              done
+            else
+              add_issue "caddy-network does not exist"
+              echo "❌ caddy-network does NOT exist"
+            fi
+            echo ""
+            
+            echo "=========================================="
+            echo "🔗 3. Internal Connectivity Tests"
+            echo "=========================================="
+            echo ""
+            echo "Testing if Caddy can reach each service..."
+            echo ""
+            
+            if is_caddy_running; then
+              for service in $(get_target_services); do
+                port=$(get_port "$service")
+                echo "Testing ${service}:${port}..."
+                
+                # Try wget first (available in Caddy container), then curl as fallback
+                if docker exec caddy_server wget -q --spider --timeout=5 "http://${service}:${port}/" 2>/dev/null; then
+                  echo "✅ ${service}:${port} is reachable from Caddy"
+                elif docker exec caddy_server curl -sf --connect-timeout 5 "http://${service}:${port}/" >/dev/null 2>&1; then
+                  echo "✅ ${service}:${port} is reachable from Caddy (via curl)"
+                else
+                  add_issue "Cannot reach ${service}:${port} from Caddy container"
+                  echo "❌ ${service}:${port} is NOT reachable from Caddy"
+                fi
+              done
+            else
+              add_issue "Caddy container not running - cannot test internal connectivity"
+              echo "❌ Caddy container is not running - skipping connectivity tests"
+            fi
+            echo ""
+            
+            echo "=========================================="
+            echo "📝 4. Caddy Configuration"
+            echo "=========================================="
+            echo ""
+            
+            CADDY_CONFIG_PATH=""
+            for path in "/srv/link-in-bio/Caddyfile" "/home/deploy/link-in-bio/Caddyfile"; do
+              if [[ -f "$path" ]]; then
+                CADDY_CONFIG_PATH="$path"
+                break
+              fi
+            done
+            
+            if [[ -n "$CADDY_CONFIG_PATH" ]]; then
+              echo "Caddyfile location: ${CADDY_CONFIG_PATH}"
+              echo "---"
+              cat "${CADDY_CONFIG_PATH}"
+              echo "---"
+            else
+              add_warning "Caddyfile not found in expected locations"
+              echo "⚠️  Caddyfile not found"
+            fi
+            echo ""
+            
+            echo "=========================================="
+            echo "✔️  5. Caddy Config Validation"
+            echo "=========================================="
+            echo ""
+            
+            if docker exec caddy_server caddy validate --config /etc/caddy/Caddyfile 2>&1; then
+              echo "✅ Caddy configuration is valid"
+            else
+              add_issue "Caddy configuration validation failed"
+              echo "❌ Caddy configuration is INVALID"
+            fi
+            echo ""
+            
+            echo "=========================================="
+            echo "📋 6. Caddy Logs Analysis"
+            echo "=========================================="
+            echo ""
+            
+            echo "Recent Caddy logs (last 50 lines):"
+            CADDY_LOGS=$(docker logs caddy_server --tail 50 2>&1 || echo "Failed to retrieve logs")
+            echo "$CADDY_LOGS"
+            echo ""
+            
+            # Check for common issues in logs
+            echo "Checking for issues in logs..."
+            if echo "$CADDY_LOGS" | grep -qi "error"; then
+              add_warning "Errors found in Caddy logs"
+              echo "⚠️  Errors detected in Caddy logs"
+            else
+              echo "✅ No errors found in recent Caddy logs"
+            fi
+            
+            if echo "$CADDY_LOGS" | grep -qi "tls\|certificate\|acme"; then
+              if echo "$CADDY_LOGS" | grep -qi "failed\|error\|unable"; then
+                add_warning "TLS/certificate issues detected in Caddy logs"
+                echo "⚠️  TLS/certificate issues detected"
+              else
+                echo "✅ TLS mentions found but no issues detected"
+              fi
+            fi
+            echo ""
+            
+            echo "=========================================="
+            echo "🏥 7. Service Health Checks"
+            echo "=========================================="
+            echo ""
+            
+            for service in $(get_target_services); do
+              echo "Checking ${service}..."
+              
+              if docker ps -a --format '{{.Names}}' | grep -q "^${service}$"; then
+                STATUS=$(docker inspect --format '{{.State.Status}}' "$service" 2>/dev/null || echo "unknown")
+                HEALTH=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}no healthcheck{{end}}' "$service" 2>/dev/null || echo "unknown")
+                
+                if [[ "$STATUS" == "running" ]]; then
+                  echo "✅ ${service}: running (health: ${HEALTH})"
+                  if [[ "$HEALTH" == "unhealthy" ]]; then
+                    add_warning "${service} is running but unhealthy"
+                  fi
+                else
+                  add_issue "${service} is not running (status: ${STATUS})"
+                  echo "❌ ${service}: ${STATUS} (not running)"
+                fi
+              else
+                add_warning "${service} container does not exist"
+                echo "⚠️  ${service}: container does not exist"
+              fi
+            done
+            echo ""
+            
+            echo "=========================================="
+            echo "🌍 8. DNS Resolution"
+            echo "=========================================="
+            echo ""
+            
+            for service in $(get_target_services); do
+              domain=$(get_domain "$service")
+              echo "Checking DNS for ${domain}..."
+              
+              RESOLVED_IP=$(dig +short "$domain" 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+              if [[ -n "$RESOLVED_IP" ]]; then
+                echo "✅ ${domain} resolves to ${RESOLVED_IP}"
+              else
+                add_warning "DNS resolution failed for ${domain}"
+                echo "⚠️  ${domain} - DNS resolution failed"
+              fi
+            done
+            echo ""
+            
+            echo "=========================================="
+            echo "🔒 9. SSL Certificate Status"
+            echo "=========================================="
+            echo ""
+            
+            # Check Caddy's certificate storage
+            echo "Caddy certificate storage:"
+            if docker exec caddy_server ls -la /data/caddy/certificates/ 2>/dev/null; then
+              echo ""
+              
+              for service in $(get_target_services); do
+                domain=$(get_domain "$service")
+                echo "Checking certificate for ${domain}..."
+                
+                CERT_PATH=$(docker exec caddy_server find /data/caddy/certificates -name "${domain}*" -type d 2>/dev/null | head -1)
+                if [[ -n "$CERT_PATH" ]]; then
+                  echo "✅ Certificate found for ${domain}"
+                  docker exec caddy_server ls -la "$CERT_PATH" 2>/dev/null || true
+                else
+                  add_warning "No certificate found for ${domain}"
+                  echo "⚠️  No certificate found for ${domain}"
+                fi
+              done
+            else
+              add_warning "Could not access Caddy certificate storage"
+              echo "⚠️  Could not access certificate storage"
+            fi
+            echo ""
+            
+            echo "=========================================="
+            echo "💾 10. Disk and Resource Usage"
+            echo "=========================================="
+            echo ""
+            
+            echo "Docker disk usage:"
+            docker system df
+            echo ""
+            
+            echo "Deployment directory sizes:"
+            for service in $(get_target_services); do
+              deploy_dir=$(get_deploy_dir "$service")
+              if [[ -d "$deploy_dir" ]]; then
+                SIZE=$(du -sh "$deploy_dir" 2>/dev/null | cut -f1)
+                echo "  ${deploy_dir}: ${SIZE}"
+              else
+                echo "  ${deploy_dir}: directory not found"
+              fi
+            done
+            echo ""
+            
+            # ==========================================
+            # Summary
+            # ==========================================
+            
+            echo "=========================================="
+            echo "📊 Diagnostic Summary"
+            echo "=========================================="
+            echo ""
+            echo "Critical Issues: ${#ISSUES[@]}"
+            echo "Warnings: ${#WARNINGS[@]}"
+            echo ""
+            
+            if [[ ${#ISSUES[@]} -gt 0 ]]; then
+              echo "❌ Critical Issues:"
+              for issue in "${ISSUES[@]}"; do
+                echo "  - $issue"
+              done
+              echo ""
+            fi
+            
+            if [[ ${#WARNINGS[@]} -gt 0 ]]; then
+              echo "⚠️  Warnings:"
+              for warning in "${WARNINGS[@]}"; do
+                echo "  - $warning"
+              done
+              echo ""
+            fi
+            
+            if [[ ${#ISSUES[@]} -eq 0 && ${#WARNINGS[@]} -eq 0 ]]; then
+              echo "✅ All checks passed! No issues detected."
+            fi
+            echo ""
+            
+            # ==========================================
+            # Step 2: Auto-Fix (if enabled)
+            # ==========================================
+            
+            if [[ "${AUTO_FIX}" == "true" && (${#ISSUES[@]} -gt 0 || ${#WARNINGS[@]} -gt 0) ]]; then
+              echo "=========================================="
+              echo "🔧 Auto-Fix Mode Enabled"
+              echo "=========================================="
+              echo ""
+              
+              FIXES_APPLIED=0
+              
+              # Fix 1: Create caddy-network if it doesn't exist
+              echo "Fix 1: Checking caddy-network..."
+              if ! docker network inspect caddy-network >/dev/null 2>&1; then
+                echo "Creating caddy-network..."
+                if docker network create caddy-network; then
+                  echo "✅ Created caddy-network"
+                  ((FIXES_APPLIED++))
+                else
+                  echo "❌ Failed to create caddy-network"
+                fi
+              else
+                echo "✅ caddy-network already exists"
+              fi
+              echo ""
+              
+              # Fix 2: Connect disconnected containers to the network
+              echo "Fix 2: Connecting containers to caddy-network..."
+              CONNECTED_CONTAINERS=$(docker network inspect caddy-network --format '{{range .Containers}}{{.Name}} {{end}}' 2>/dev/null || echo "")
+              
+              for service in $(get_target_services); do
+                if docker ps --format '{{.Names}}' | grep -q "^${service}$"; then
+                  if ! echo "$CONNECTED_CONTAINERS" | grep -qw "$service"; then
+                    echo "Connecting ${service} to caddy-network..."
+                    if docker network connect caddy-network "$service" 2>/dev/null; then
+                      echo "✅ Connected ${service} to caddy-network"
+                      ((FIXES_APPLIED++))
+                    else
+                      echo "❌ Failed to connect ${service} to caddy-network"
+                    fi
+                  else
+                    echo "✅ ${service} already connected"
+                  fi
+                fi
+              done
+              echo ""
+              
+              # Fix 3: Start stopped containers
+              echo "Fix 3: Starting stopped containers..."
+              for service in $(get_target_services); do
+                if docker ps -a --format '{{.Names}}' | grep -q "^${service}$"; then
+                  STATUS=$(docker inspect --format '{{.State.Status}}' "$service" 2>/dev/null || echo "unknown")
+                  if [[ "$STATUS" != "running" ]]; then
+                    deploy_dir=$(get_deploy_dir "$service")
+                    echo "Starting ${service} via docker compose in ${deploy_dir}..."
+                    if has_compose_file "$deploy_dir"; then
+                      if (cd "$deploy_dir" && docker compose up -d); then
+                        echo "✅ Started services in ${deploy_dir}"
+                        ((FIXES_APPLIED++))
+                      else
+                        echo "❌ Failed to start services in ${deploy_dir}"
+                      fi
+                    else
+                      echo "⚠️  No docker compose file found in ${deploy_dir}, trying docker start..."
+                      if docker start "$service"; then
+                        echo "✅ Started ${service}"
+                        ((FIXES_APPLIED++))
+                      else
+                        echo "❌ Failed to start ${service}"
+                      fi
+                    fi
+                  else
+                    echo "✅ ${service} is already running"
+                  fi
+                else
+                  deploy_dir=$(get_deploy_dir "$service")
+                  if has_compose_file "$deploy_dir"; then
+                    echo "Container ${service} doesn't exist, trying to create via docker compose in ${deploy_dir}..."
+                    if (cd "$deploy_dir" && docker compose up -d); then
+                      echo "✅ Created and started services in ${deploy_dir}"
+                      ((FIXES_APPLIED++))
+                    else
+                      echo "❌ Failed to create services in ${deploy_dir}"
+                    fi
+                  else
+                    echo "⚠️  Deploy directory ${deploy_dir} not found or no compose file, cannot start ${service}"
+                  fi
+                fi
+              done
+              echo ""
+              
+              # Fix 4: Reload Caddy configuration
+              echo "Fix 4: Reloading Caddy configuration..."
+              if docker exec caddy_server caddy reload --config /etc/caddy/Caddyfile 2>&1; then
+                echo "✅ Caddy configuration reloaded"
+                ((FIXES_APPLIED++))
+              else
+                echo "⚠️  Caddy reload failed, attempting restart..."
+                if docker restart caddy_server; then
+                  echo "✅ Caddy container restarted"
+                  ((FIXES_APPLIED++))
+                else
+                  echo "❌ Failed to restart Caddy"
+                fi
+              fi
+              echo ""
+              
+              # Fix 5: Restart unhealthy containers
+              echo "Fix 5: Checking for unhealthy containers..."
+              for service in $(get_target_services); do
+                if docker ps --format '{{.Names}}' | grep -q "^${service}$"; then
+                  HEALTH=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}no healthcheck{{end}}' "$service" 2>/dev/null || echo "unknown")
+                  if [[ "$HEALTH" == "unhealthy" ]]; then
+                    echo "Restarting unhealthy container ${service}..."
+                    if docker restart "$service"; then
+                      echo "✅ Restarted ${service}"
+                      ((FIXES_APPLIED++))
+                    else
+                      echo "❌ Failed to restart ${service}"
+                    fi
+                  fi
+                fi
+              done
+              echo ""
+              
+              # Post-fix verification
+              echo "=========================================="
+              echo "🔍 Post-Fix Verification"
+              echo "=========================================="
+              echo ""
+              
+              echo "Waiting 10 seconds for services to stabilize..."
+              sleep 10
+              
+              echo "Verifying connectivity..."
+              VERIFICATION_PASSED=true
+              
+              if is_caddy_running; then
+                for service in $(get_target_services); do
+                  port=$(get_port "$service")
+                  if docker exec caddy_server wget -q --spider --timeout=5 "http://${service}:${port}/" 2>/dev/null || \
+                     docker exec caddy_server curl -sf --connect-timeout 5 "http://${service}:${port}/" >/dev/null 2>&1; then
+                    echo "✅ ${service}:${port} is now reachable"
+                  else
+                    echo "❌ ${service}:${port} is still NOT reachable"
+                    VERIFICATION_PASSED=false
+                  fi
+                done
+              else
+                echo "❌ Caddy container is not running - cannot verify connectivity"
+                VERIFICATION_PASSED=false
+              fi
+              echo ""
+              
+              echo "=========================================="
+              echo "📊 Auto-Fix Summary"
+              echo "=========================================="
+              echo ""
+              echo "Fixes applied: ${FIXES_APPLIED}"
+              if [[ "$VERIFICATION_PASSED" == "true" ]]; then
+                echo "✅ All services are now reachable"
+              else
+                echo "⚠️  Some services are still not reachable - manual intervention may be required"
+              fi
+              echo ""
+            elif [[ "${AUTO_FIX}" == "true" ]]; then
+              echo "=========================================="
+              echo "ℹ️  Auto-Fix Skipped"
+              echo "=========================================="
+              echo "No issues or warnings detected - nothing to fix."
+              echo ""
+            fi
+            
+            echo "=========================================="
+            echo "🏁 Diagnostics Complete"
+            echo "=========================================="

@@ -1,0 +1,286 @@
+name: Test Social Media Fetch
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to test'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - instagram
+          - tiktok
+          - both
+      project_path:
+        description: 'Path to project on server'
+        required: false
+        default: '/srv/link-in-bio'
+        type: string
+
+jobs:
+  test-fetch:
+    name: Test Social Media Stats Fetching
+    runs-on: ubuntu-latest
+    
+    permissions: {}
+    
+    steps:
+      - name: Display test configuration
+        run: |
+          echo "=========================================="
+          echo "🧪 Social Media Fetch Test Configuration"
+          echo "=========================================="
+          echo "Timestamp:     $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Platform:      ${{ inputs.platform }}"
+          echo "Project Path:  ${{ inputs.project_path }}"
+          echo "=========================================="
+
+      - name: Test Social Media Fetching via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            
+            echo "=========================================="
+            echo "🧪 Social Media Stats Fetch Test"
+            echo "=========================================="
+            echo "⏰ Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "📍 Platform: ${{ inputs.platform }}"
+            echo "📂 Project Path: ${{ inputs.project_path }}"
+            echo "=========================================="
+            echo ""
+            
+            # ==========================================
+            # 1. Navigate to project directory
+            # ==========================================
+            echo "[1/5] 📂 Navigating to project directory..."
+            
+            PROJECT_PATH="${{ inputs.project_path }}"
+            
+            if [ ! -d "$PROJECT_PATH" ]; then
+              echo "❌ ERROR: Project directory does not exist: $PROJECT_PATH"
+              echo "Please verify the project_path input or deploy the application first."
+              exit 1
+            fi
+            
+            cd "$PROJECT_PATH"
+            echo "✅ Working directory: $(pwd)"
+            echo ""
+            
+            # ==========================================
+            # 2. Check Docker status
+            # ==========================================
+            echo "[2/5] 🐳 Checking Docker status..."
+            
+            if ! docker compose ps > /dev/null 2>&1; then
+              echo "❌ ERROR: Docker Compose is not running or not available"
+              echo "Please ensure the application is deployed and Docker is running."
+              exit 1
+            fi
+            
+            # Check if the web service is running
+            if ! docker compose ps --services --filter status=running 2>/dev/null | grep -q "^web$"; then
+              echo "❌ ERROR: Web service is not running"
+              echo ""
+              echo "Current container status:"
+              docker compose ps || true
+              exit 1
+            fi
+            
+            echo "✅ Web service is running"
+            docker compose ps
+            echo ""
+            
+            # ==========================================
+            # 3. Check .env.social credentials
+            # ==========================================
+            echo "[3/5] 🔑 Checking credentials configuration..."
+            
+            ENV_SOCIAL_FILE="${PROJECT_PATH}/.env.social"
+            
+            if [ ! -f "$ENV_SOCIAL_FILE" ]; then
+              echo "❌ ERROR: .env.social file does not exist"
+              echo "Please configure the INSTAGRAM_SECRET and/or TIKTOK_SECRET in GitHub Secrets"
+              echo "and run a deployment to create the .env.social file."
+              exit 1
+            fi
+            
+            echo "✅ .env.social file exists"
+            
+            # Check for Instagram credentials (if testing Instagram)
+            if [ "${{ inputs.platform }}" = "instagram" ] || [ "${{ inputs.platform }}" = "both" ]; then
+              echo ""
+              echo "📱 Checking Instagram credentials..."
+              if grep -q "INSTAGRAM_ACCESS_TOKEN=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+                # Check if the value is not empty
+                if grep -E "^INSTAGRAM_ACCESS_TOKEN=.+" "$ENV_SOCIAL_FILE" > /dev/null 2>&1; then
+                  echo "  ✅ INSTAGRAM_ACCESS_TOKEN is configured"
+                else
+                  echo "  ⚠️ INSTAGRAM_ACCESS_TOKEN is empty"
+                fi
+              else
+                echo "  ❌ INSTAGRAM_ACCESS_TOKEN not found"
+              fi
+              
+              if grep -q "INSTAGRAM_USERNAME=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+                INSTA_USER=$(grep "INSTAGRAM_USERNAME=" "$ENV_SOCIAL_FILE" | cut -d'=' -f2)
+                echo "  ✅ INSTAGRAM_USERNAME: @$INSTA_USER"
+              else
+                echo "  ⚠️ INSTAGRAM_USERNAME not found"
+              fi
+              
+              if grep -q "INSTAGRAM_APP_ID=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+                echo "  ✅ INSTAGRAM_APP_ID is configured"
+              else
+                echo "  ⚠️ INSTAGRAM_APP_ID not found"
+              fi
+              
+              if grep -q "INSTAGRAM_APP_SECRET=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+                echo "  ✅ INSTAGRAM_APP_SECRET is configured"
+              else
+                echo "  ⚠️ INSTAGRAM_APP_SECRET not found"
+              fi
+            fi
+            
+            # Check for TikTok credentials (if testing TikTok)
+            if [ "${{ inputs.platform }}" = "tiktok" ] || [ "${{ inputs.platform }}" = "both" ]; then
+              echo ""
+              echo "📱 Checking TikTok credentials..."
+              if grep -q "TIKTOK_ACCESS_TOKEN=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+                if grep -E "^TIKTOK_ACCESS_TOKEN=.+" "$ENV_SOCIAL_FILE" > /dev/null 2>&1; then
+                  echo "  ✅ TIKTOK_ACCESS_TOKEN is configured"
+                else
+                  echo "  ⚠️ TIKTOK_ACCESS_TOKEN is empty"
+                fi
+              else
+                echo "  ❌ TIKTOK_ACCESS_TOKEN not found"
+              fi
+              
+              if grep -q "TIKTOK_REFRESH_TOKEN=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+                if grep -E "^TIKTOK_REFRESH_TOKEN=.+" "$ENV_SOCIAL_FILE" > /dev/null 2>&1; then
+                  echo "  ✅ TIKTOK_REFRESH_TOKEN is configured"
+                else
+                  echo "  ⚠️ TIKTOK_REFRESH_TOKEN is empty"
+                fi
+              else
+                echo "  ⚠️ TIKTOK_REFRESH_TOKEN not found"
+              fi
+              
+              if grep -q "TIKTOK_CLIENT_KEY=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+                echo "  ✅ TIKTOK_CLIENT_KEY is configured"
+              else
+                echo "  ⚠️ TIKTOK_CLIENT_KEY not found"
+              fi
+              
+              if grep -q "TIKTOK_CLIENT_SECRET=" "$ENV_SOCIAL_FILE" 2>/dev/null; then
+                echo "  ✅ TIKTOK_CLIENT_SECRET is configured"
+              else
+                echo "  ⚠️ TIKTOK_CLIENT_SECRET not found"
+              fi
+            fi
+            
+            echo ""
+            
+            # ==========================================
+            # 4. Run fetch scripts
+            # ==========================================
+            echo "[4/5] 🚀 Running fetch scripts..."
+            echo ""
+            
+            INSTAGRAM_SUCCESS=false
+            TIKTOK_SUCCESS=false
+            INSTAGRAM_RAN=false
+            TIKTOK_RAN=false
+            
+            # Run Instagram fetch if requested
+            if [ "${{ inputs.platform }}" = "instagram" ] || [ "${{ inputs.platform }}" = "both" ]; then
+              INSTAGRAM_RAN=true
+              echo "=========================================="
+              echo "📸 INSTAGRAM STATS FETCH"
+              echo "=========================================="
+              echo "⏰ Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+              echo ""
+              
+              if docker compose exec -T web python fetch_instagram_stats.py 2>&1; then
+                INSTAGRAM_SUCCESS=true
+                echo ""
+                echo "✅ Instagram fetch completed successfully"
+              else
+                echo ""
+                echo "❌ Instagram fetch failed"
+              fi
+              
+              echo "⏰ Finished at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+              echo "=========================================="
+              echo ""
+            fi
+            
+            # Run TikTok fetch if requested
+            if [ "${{ inputs.platform }}" = "tiktok" ] || [ "${{ inputs.platform }}" = "both" ]; then
+              TIKTOK_RAN=true
+              echo "=========================================="
+              echo "🎵 TIKTOK STATS FETCH"
+              echo "=========================================="
+              echo "⏰ Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+              echo ""
+              
+              if docker compose exec -T web python fetch_tiktok_stats.py 2>&1; then
+                TIKTOK_SUCCESS=true
+                echo ""
+                echo "✅ TikTok fetch completed successfully"
+              else
+                echo ""
+                echo "❌ TikTok fetch failed"
+              fi
+              
+              echo "⏰ Finished at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+              echo "=========================================="
+              echo ""
+            fi
+            
+            # ==========================================
+            # 5. Summary
+            # ==========================================
+            echo "[5/5] 📊 Test Summary"
+            echo "=========================================="
+            echo "⏰ Completed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo ""
+            
+            OVERALL_SUCCESS=true
+            
+            if [ "$INSTAGRAM_RAN" = "true" ]; then
+              if [ "$INSTAGRAM_SUCCESS" = "true" ]; then
+                echo "📸 Instagram: ✅ SUCCESS"
+              else
+                echo "📸 Instagram: ❌ FAILED"
+                OVERALL_SUCCESS=false
+              fi
+            else
+              echo "📸 Instagram: ⏭️ SKIPPED"
+            fi
+            
+            if [ "$TIKTOK_RAN" = "true" ]; then
+              if [ "$TIKTOK_SUCCESS" = "true" ]; then
+                echo "🎵 TikTok:    ✅ SUCCESS"
+              else
+                echo "🎵 TikTok:    ❌ FAILED"
+                OVERALL_SUCCESS=false
+              fi
+            else
+              echo "🎵 TikTok:    ⏭️ SKIPPED"
+            fi
+            
+            echo ""
+            echo "=========================================="
+            
+            if [ "$OVERALL_SUCCESS" = "true" ]; then
+              echo "🎉 All requested tests passed!"
+              exit 0
+            else
+              echo "⚠️ Some tests failed. Check the logs above for details."
+              exit 1
+            fi

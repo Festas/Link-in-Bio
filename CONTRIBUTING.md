@@ -197,6 +197,15 @@ Bei Änderungen am Frontend:
 3. Prüfe Console auf Errors
 4. Teste mit und ohne JavaScript
 
+### Social Media Integration
+
+Bei Änderungen an der Social Media Integration:
+
+1. Lese die Dokumentation in [docs/SOCIAL_TOKENS.md](docs/SOCIAL_TOKENS.md)
+2. Teste mit echten API-Credentials lokal
+3. Achte auf Token-Handling und Fehlerbehandlung
+4. Aktualisiere GitHub Secrets nach Token-Änderungen
+
 ## 🎯 Priority Areas
 
 Aktuell suchen wir besonders nach Hilfe bei:

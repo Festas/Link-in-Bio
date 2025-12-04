@@ -164,6 +164,19 @@ def init_main_db():
         )"""
         )
 
+        # Link reactions table for social engagement
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS reactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_id INTEGER NOT NULL,
+            reaction_type TEXT NOT NULL,
+            ip_hash TEXT NOT NULL,
+            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
+            UNIQUE(item_id, reaction_type, ip_hash)
+        )"""
+        )
+
         # Create indexes for main database
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_display_order ON items(display_order)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_item_id ON clicks(item_id)")
@@ -173,6 +186,8 @@ def init_main_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_timestamp ON clicks(timestamp)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_subscribers_email ON subscribers(email)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_social_stats_platform ON social_stats_cache(platform)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_reactions_item_id ON reactions(item_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_reactions_type ON reactions(reaction_type)")
 
         # Migrationen (Fix für grid_columns)
         cursor.execute("PRAGMA table_info(items)")

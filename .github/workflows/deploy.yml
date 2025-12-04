@@ -74,6 +74,16 @@ jobs:
       - name: Checkout repository (for Caddyfile)
         uses: actions/checkout@v4
 
+      - name: Copy Caddyfile to server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "Caddyfile"
+          target: "/tmp/link-in-bio-deploy"
+          strip_components: 0
+
       - name: Deploy to Hetzner via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
@@ -112,7 +122,7 @@ jobs:
             # ==========================================
             # 1. Setup deployment directory
             # ==========================================
-            echo "[1/6] Setting up deployment directory..."
+            echo "[1/7] Setting up deployment directory..."
             APP_DIR="/srv/link-in-bio"
             
             # Create directory if missing (handles empty server)
@@ -131,7 +141,7 @@ jobs:
             # ==========================================
             # 2. Write .env file from secrets
             # ==========================================
-            echo "[2/6] Writing .env file..."
+            echo "[2/7] Writing .env file..."
             
             if [[ -n "${ENV_FILE:-}" ]]; then
               echo "${ENV_FILE}" > .env
@@ -160,45 +170,29 @@ jobs:
             echo "✓ .env.social file created"
             
             # ==========================================
-            # 3. Write Caddyfile
+            # 3. Copy Caddyfile from repository
             # ==========================================
-            echo "[3/6] Writing Caddyfile..."
+            echo "[3/7] Copying Caddyfile from repository..."
             
-            if [[ -n "${DOMAIN:-}" ]]; then
-              printf '%s\n' \
-                "# Main domain - public-facing Link-in-Bio site" \
-                "${DOMAIN} {" \
-                "    tls eric@festas-builds.com" \
-                "    reverse_proxy web:8000" \
-                "}" \
-                "" \
-                "# Admin subdomain - administrative interface" \
-                "admin.${DOMAIN} {" \
-                "    tls eric@festas-builds.com" \
-                "    reverse_proxy web:8000" \
-                "}" \
-                "" \
-                "# RigPilot subdomain - PC Builder application" \
-                "rigpilot.${DOMAIN} {" \
-                "    tls eric@festas-builds.com" \
-                "    encode gzip zstd" \
-                "    # Cache static Next.js assets with immutable cache headers" \
-                "    @static path /_next/static/*" \
-                "    header @static Cache-Control \"public, max-age=31536000, immutable\"" \
-                "    reverse_proxy rigpilot:3000" \
-                "}" \
-                > Caddyfile
-              echo "✓ Caddyfile created for domain: ${DOMAIN} (with rigpilot subdomain)"
+            if [[ -f "/tmp/link-in-bio-deploy/Caddyfile" ]]; then
+              cp /tmp/link-in-bio-deploy/Caddyfile "${APP_DIR}/Caddyfile"
+              rm -rf /tmp/link-in-bio-deploy
+              echo "✓ Caddyfile copied from repository (all 6 domains configured)"
             else
-              echo "⚠ Warning: DOMAIN secret is not set, using localhost"
-              printf '%s\n' ":80 {" "    reverse_proxy web:8000" "}" > Caddyfile
-              echo "✓ Caddyfile created for localhost"
+              echo "⚠ Warning: Caddyfile not found in /tmp/link-in-bio-deploy"
+              echo "Creating fallback Caddyfile..."
+              if [[ -n "${DOMAIN:-}" ]]; then
+                printf '%s\n' ":80 {" "    reverse_proxy web:8000" "}" > Caddyfile
+              else
+                printf '%s\n' ":80 {" "    reverse_proxy web:8000" "}" > Caddyfile
+              fi
+              echo "✓ Fallback Caddyfile created"
             fi
             
             # ==========================================
             # 4. Write docker-compose.yml
             # ==========================================
-            echo "[4/6] Writing docker-compose.yml..."
+            echo "[4/7] Writing docker-compose.yml..."
             
             # Use printf to avoid heredoc line injection by SSH action
             COMPOSE_IMAGE="${REGISTRY}/${IMAGE_NAME_LOWER}:${IMAGE_TAG}"
@@ -263,7 +257,7 @@ jobs:
             # ==========================================
             # 5. Pull and deploy containers
             # ==========================================
-            echo "[5/6] Pulling and deploying containers..."
+            echo "[5/7] Pulling and deploying containers..."
             
             # Login to GHCR using GitHub token passed via env
             echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_ACTOR}" --password-stdin
@@ -292,7 +286,7 @@ jobs:
             # ==========================================
             # 6. Run database migrations
             # ==========================================
-            echo "[6/6] Running database migrations..."
+            echo "[6/7] Running database migrations..."
             
             # Run migrations, but make sure the container loads the mounted .env first.
             MIGRATE_CMD='set -o allexport && test -f /app/.env && . /app/.env || true && set +o allexport && if which alembic > /dev/null 2>&1; then alembic upgrade head; else python init_databases.py; fi'
@@ -302,6 +296,27 @@ jobs:
               echo "⚠ Database migrations failed. Showing web container logs for debugging:"
               docker compose logs --tail=200 web || true
               exit 1
+            fi
+            
+            # ==========================================
+            # 7. Validate and reload Caddy configuration
+            # ==========================================
+            echo "[7/7] Validating and reloading Caddy configuration..."
+            
+            # Validate the Caddyfile before reloading
+            if docker compose exec -T caddy caddy validate --config /etc/caddy/Caddyfile; then
+              echo "✓ Caddyfile validation passed"
+              
+              # Reload Caddy with the new configuration
+              if docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile; then
+                echo "✓ Caddy configuration reloaded successfully"
+              else
+                echo "⚠ Caddy reload failed, but container is still running"
+              fi
+            else
+              echo "⚠ Caddyfile validation failed. Showing Caddyfile contents:"
+              cat Caddyfile || true
+              echo "⚠ Caddy will continue with the previous configuration"
             fi
             
             # ==========================================

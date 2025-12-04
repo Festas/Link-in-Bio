@@ -37,7 +37,7 @@ jobs:
           envs: AUTO_FIX,TARGET_SERVICE
           command_timeout: 10m
           script: |
-            set -euo pipefail
+            set -uo pipefail
             
             # ==========================================
             # Configuration
@@ -74,6 +74,17 @@ jobs:
             
             get_deploy_dir() {
               echo "${SERVICE_CONFIG[$1]}" | cut -d',' -f3
+            }
+            
+            # Check if docker compose file exists in a directory
+            has_compose_file() {
+              local dir="$1"
+              [[ -d "$dir" ]] && [[ -f "${dir}/docker-compose.yml" || -f "${dir}/docker-compose.yaml" || -f "${dir}/compose.yml" || -f "${dir}/compose.yaml" ]]
+            }
+            
+            # Check if Caddy container is running
+            is_caddy_running() {
+              docker ps --format '{{.Names}}' | grep -q '^caddy_server$'
             }
             
             # Filter services based on target
@@ -157,20 +168,25 @@ jobs:
             echo "Testing if Caddy can reach each service..."
             echo ""
             
-            for service in $(get_target_services); do
-              port=$(get_port "$service")
-              echo "Testing ${service}:${port}..."
-              
-              # Try wget first (available in Caddy container), then curl as fallback
-              if docker exec caddy_server wget -q --spider --timeout=5 "http://${service}:${port}/" 2>/dev/null; then
-                echo "✅ ${service}:${port} is reachable from Caddy"
-              elif docker exec caddy_server curl -sf --connect-timeout 5 "http://${service}:${port}/" >/dev/null 2>&1; then
-                echo "✅ ${service}:${port} is reachable from Caddy (via curl)"
-              else
-                add_issue "Cannot reach ${service}:${port} from Caddy container"
-                echo "❌ ${service}:${port} is NOT reachable from Caddy"
-              fi
-            done
+            if is_caddy_running; then
+              for service in $(get_target_services); do
+                port=$(get_port "$service")
+                echo "Testing ${service}:${port}..."
+                
+                # Try wget first (available in Caddy container), then curl as fallback
+                if docker exec caddy_server wget -q --spider --timeout=5 "http://${service}:${port}/" 2>/dev/null; then
+                  echo "✅ ${service}:${port} is reachable from Caddy"
+                elif docker exec caddy_server curl -sf --connect-timeout 5 "http://${service}:${port}/" >/dev/null 2>&1; then
+                  echo "✅ ${service}:${port} is reachable from Caddy (via curl)"
+                else
+                  add_issue "Cannot reach ${service}:${port} from Caddy container"
+                  echo "❌ ${service}:${port} is NOT reachable from Caddy"
+                fi
+              done
+            else
+              add_issue "Caddy container not running - cannot test internal connectivity"
+              echo "❌ Caddy container is not running - skipping connectivity tests"
+            fi
             echo ""
             
             echo "=========================================="
@@ -276,9 +292,9 @@ jobs:
               domain=$(get_domain "$service")
               echo "Checking DNS for ${domain}..."
               
-              if host "$domain" >/dev/null 2>&1 || nslookup "$domain" >/dev/null 2>&1 || dig +short "$domain" 2>/dev/null | grep -q .; then
-                RESOLVED_IP=$(dig +short "$domain" 2>/dev/null | head -1 || host "$domain" 2>/dev/null | grep "has address" | head -1 | awk '{print $NF}')
-                echo "✅ ${domain} resolves to ${RESOLVED_IP:-unknown}"
+              RESOLVED_IP=$(dig +short "$domain" 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+              if [[ -n "$RESOLVED_IP" ]]; then
+                echo "✅ ${domain} resolves to ${RESOLVED_IP}"
               else
                 add_warning "DNS resolution failed for ${domain}"
                 echo "⚠️  ${domain} - DNS resolution failed"
@@ -425,7 +441,7 @@ jobs:
                   if [[ "$STATUS" != "running" ]]; then
                     deploy_dir=$(get_deploy_dir "$service")
                     echo "Starting ${service} via docker compose in ${deploy_dir}..."
-                    if [[ -d "$deploy_dir" ]] && [[ -f "${deploy_dir}/docker-compose.yml" || -f "${deploy_dir}/docker-compose.yaml" || -f "${deploy_dir}/compose.yml" || -f "${deploy_dir}/compose.yaml" ]]; then
+                    if has_compose_file "$deploy_dir"; then
                       if (cd "$deploy_dir" && docker compose up -d); then
                         echo "✅ Started services in ${deploy_dir}"
                         ((FIXES_APPLIED++))
@@ -446,7 +462,7 @@ jobs:
                   fi
                 else
                   deploy_dir=$(get_deploy_dir "$service")
-                  if [[ -d "$deploy_dir" ]]; then
+                  if has_compose_file "$deploy_dir"; then
                     echo "Container ${service} doesn't exist, trying to create via docker compose in ${deploy_dir}..."
                     if (cd "$deploy_dir" && docker compose up -d); then
                       echo "✅ Created and started services in ${deploy_dir}"
@@ -455,7 +471,7 @@ jobs:
                       echo "❌ Failed to create services in ${deploy_dir}"
                     fi
                   else
-                    echo "⚠️  Deploy directory ${deploy_dir} not found, cannot start ${service}"
+                    echo "⚠️  Deploy directory ${deploy_dir} not found or no compose file, cannot start ${service}"
                   fi
                 fi
               done
@@ -507,16 +523,21 @@ jobs:
               echo "Verifying connectivity..."
               VERIFICATION_PASSED=true
               
-              for service in $(get_target_services); do
-                port=$(get_port "$service")
-                if docker exec caddy_server wget -q --spider --timeout=5 "http://${service}:${port}/" 2>/dev/null || \
-                   docker exec caddy_server curl -sf --connect-timeout 5 "http://${service}:${port}/" >/dev/null 2>&1; then
-                  echo "✅ ${service}:${port} is now reachable"
-                else
-                  echo "❌ ${service}:${port} is still NOT reachable"
-                  VERIFICATION_PASSED=false
-                fi
-              done
+              if is_caddy_running; then
+                for service in $(get_target_services); do
+                  port=$(get_port "$service")
+                  if docker exec caddy_server wget -q --spider --timeout=5 "http://${service}:${port}/" 2>/dev/null || \
+                     docker exec caddy_server curl -sf --connect-timeout 5 "http://${service}:${port}/" >/dev/null 2>&1; then
+                    echo "✅ ${service}:${port} is now reachable"
+                  else
+                    echo "❌ ${service}:${port} is still NOT reachable"
+                    VERIFICATION_PASSED=false
+                  fi
+                done
+              else
+                echo "❌ Caddy container is not running - cannot verify connectivity"
+                VERIFICATION_PASSED=false
+              fi
               echo ""
               
               echo "=========================================="

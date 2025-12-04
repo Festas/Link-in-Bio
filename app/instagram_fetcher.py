@@ -18,6 +18,10 @@ INITIAL_BACKOFF = 1.0  # seconds
 MAX_BACKOFF = 30.0  # seconds
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
+# Token validation configuration
+MIN_TOKEN_LENGTH = 50
+PLACEHOLDER_TOKENS = {"your_instagram_access_token_here", "your_token_here"}
+
 
 class InstagramAPIError(Exception):
     """Custom exception for Instagram API errors"""
@@ -134,11 +138,11 @@ class InstagramFetcher:
             logger.error("❌ Access token is empty or not set")
             return False
 
-        if len(self.access_token) < 50:
+        if len(self.access_token) < MIN_TOKEN_LENGTH:
             logger.error("❌ Access token appears too short - may be invalid")
             return False
 
-        if self.access_token.startswith("your_") or self.access_token == "your_instagram_access_token_here":
+        if self.access_token.startswith("your_") or self.access_token in PLACEHOLDER_TOKENS:
             logger.error("❌ Access token is a placeholder - please configure with real token")
             return False
 

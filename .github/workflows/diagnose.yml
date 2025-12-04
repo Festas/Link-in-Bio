@@ -23,6 +23,7 @@ jobs:
   diagnose:
     name: Run Diagnostics
     runs-on: ubuntu-latest
+    permissions: {}
     
     steps:
       - name: Run Diagnostics

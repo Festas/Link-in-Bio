@@ -39,10 +39,25 @@ immocalc.festas-builds.com {
 mc.festas-builds.com {
     tls eric@festas-builds.com
     encode gzip zstd
-    # Cache static assets with long expiry
+    
+    # Static assets caching for website
     @static path *.css *.js *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2
     header @static Cache-Control "public, max-age=31536000, immutable"
-    reverse_proxy minecraft-web:80
+    
+    # Console routes (with WebSocket support for real-time logs)
+    handle /console* {
+        reverse_proxy minecraft-console:3001
+    }
+    
+    # Socket.io WebSocket connections for real-time features
+    handle /socket.io* {
+        reverse_proxy minecraft-console:3001
+    }
+    
+    # Everything else goes to the static website
+    handle {
+        reverse_proxy minecraft-web:80
+    }
 }
 
 # Cosmic Survivor Game - browser-based space survival game

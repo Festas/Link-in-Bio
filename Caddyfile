@@ -44,6 +44,11 @@ mc.festas-builds.com {
     @static path *.css *.js *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2
     header @static Cache-Control "public, max-age=31536000, immutable"
     
+    # API routes for console backend
+    handle /api* {
+        reverse_proxy minecraft-console:3001
+    }
+    
     # Console routes (with WebSocket support for real-time logs)
     handle /console* {
         reverse_proxy minecraft-console:3001

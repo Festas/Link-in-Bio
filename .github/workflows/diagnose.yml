@@ -18,25 +18,67 @@ on:
           - rigpilot
           - cosmic-survivor
           - minecraft-web
+      discovery_mode:
+        description: 'Discovery mode'
+        type: choice
+        default: 'quick'
+        options:
+          - quick
+          - full
+          - paranoid
+      auto_learn:
+        description: 'Auto-add discovered healthy services to config'
+        type: boolean
+        default: false
+      notify_unknown:
+        description: 'Create GitHub issue when unknown services are found'
+        type: boolean
+        default: false
 
 jobs:
   diagnose:
     name: Run Diagnostics
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: write
+      issues: write
     
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read known services config
+        id: config
+        run: |
+          if [[ -f ".github/config/known-services.json" ]]; then
+            echo "config_exists=true" >> $GITHUB_OUTPUT
+            # Extract service names as comma-separated list
+            SERVICES=$(jq -r '.services | keys | join(",")' .github/config/known-services.json)
+            echo "services=$SERVICES" >> $GITHUB_OUTPUT
+            # Pass the entire config as base64 to avoid shell escaping issues
+            CONFIG_B64=$(base64 -w 0 < .github/config/known-services.json)
+            echo "config_b64=$CONFIG_B64" >> $GITHUB_OUTPUT
+          else
+            echo "config_exists=false" >> $GITHUB_OUTPUT
+            echo "services=" >> $GITHUB_OUTPUT
+            echo "config_b64=" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run Diagnostics
+        id: diagnostics
         uses: appleboy/ssh-action@v1.0.3
         env:
           AUTO_FIX: ${{ inputs.auto_fix }}
           TARGET_SERVICE: ${{ inputs.target_service }}
+          DISCOVERY_MODE: ${{ inputs.discovery_mode }}
+          AUTO_LEARN: ${{ inputs.auto_learn }}
+          CONFIG_B64: ${{ steps.config.outputs.config_b64 }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: AUTO_FIX,TARGET_SERVICE
-          command_timeout: 10m
+          envs: AUTO_FIX,TARGET_SERVICE,DISCOVERY_MODE,AUTO_LEARN,CONFIG_B64
+          command_timeout: 15m
           script: |
             set -uo pipefail
             
@@ -44,23 +86,56 @@ jobs:
             # Configuration
             # ==========================================
             
-            # Service configuration: container_name -> internal_port,domain,deploy_dir
-            declare -A SERVICE_CONFIG
-            SERVICE_CONFIG["linktree_app"]="8000,festas-builds.com,/home/deploy/link-in-bio"
-            SERVICE_CONFIG["immocalc"]="3000,immocalc.festas-builds.com,/home/deploy/immocalc"
-            SERVICE_CONFIG["rigpilot"]="3000,rigpilot.festas-builds.com,/home/deploy/rigpilot"
-            SERVICE_CONFIG["cosmic-survivor"]="80,cs.festas-builds.com,/home/deploy/cosmic-survivor"
-            SERVICE_CONFIG["minecraft-web"]="80,mc.festas-builds.com,/home/deploy/minecraft-server"
+            # Decode config from base64
+            if [[ -n "${CONFIG_B64:-}" ]]; then
+              KNOWN_SERVICES_JSON=$(echo "$CONFIG_B64" | base64 -d)
+            else
+              KNOWN_SERVICES_JSON='{}'
+            fi
             
-            # Required domains that must be present in Caddyfile
-            REQUIRED_DOMAINS=(
-              "festas-builds.com"
-              "admin.festas-builds.com"
-              "rigpilot.festas-builds.com"
-              "immocalc.festas-builds.com"
-              "mc.festas-builds.com"
-              "cs.festas-builds.com"
-            )
+            # Service configuration: container_name -> internal_port,domain,deploy_dir
+            # Built dynamically from JSON config
+            declare -A SERVICE_CONFIG
+            
+            # Parse services from JSON config
+            if command -v jq &> /dev/null && [[ -n "${KNOWN_SERVICES_JSON:-}" ]]; then
+              while IFS='|' read -r name port domain deploy_dir; do
+                if [[ -n "$name" ]]; then
+                  SERVICE_CONFIG["$name"]="${port},${domain},${deploy_dir}"
+                fi
+              done < <(echo "$KNOWN_SERVICES_JSON" | jq -r '.services | to_entries[] | "\(.key)|\(.value.port)|\(.value.domain)|\(.value.deploy_dir)"' 2>/dev/null || true)
+            fi
+            
+            # Fallback to hardcoded config if parsing failed
+            if [[ ${#SERVICE_CONFIG[@]} -eq 0 ]]; then
+              SERVICE_CONFIG["linktree_app"]="8000,festas-builds.com,/home/deploy/link-in-bio"
+              SERVICE_CONFIG["immocalc"]="3000,immocalc.festas-builds.com,/home/deploy/immocalc"
+              SERVICE_CONFIG["rigpilot"]="3000,rigpilot.festas-builds.com,/home/deploy/rigpilot"
+              SERVICE_CONFIG["cosmic-survivor"]="80,cs.festas-builds.com,/home/deploy/cosmic-survivor"
+              SERVICE_CONFIG["minecraft-web"]="80,mc.festas-builds.com,/home/deploy/minecraft-server"
+            fi
+            
+            # Required domains from JSON config or fallback
+            REQUIRED_DOMAINS=()
+            if command -v jq &> /dev/null && [[ -n "${KNOWN_SERVICES_JSON:-}" ]]; then
+              while IFS= read -r domain; do
+                if [[ -n "$domain" ]]; then
+                  REQUIRED_DOMAINS+=("$domain")
+                fi
+              done < <(echo "$KNOWN_SERVICES_JSON" | jq -r '.required_domains[]' 2>/dev/null || true)
+            fi
+            
+            # Fallback to hardcoded domains if parsing failed
+            if [[ ${#REQUIRED_DOMAINS[@]} -eq 0 ]]; then
+              REQUIRED_DOMAINS=(
+                "festas-builds.com"
+                "admin.festas-builds.com"
+                "rigpilot.festas-builds.com"
+                "immocalc.festas-builds.com"
+                "mc.festas-builds.com"
+                "cs.festas-builds.com"
+              )
+            fi
             
             # Track issues and warnings
             ISSUES=()
@@ -107,12 +182,356 @@ jobs:
               fi
             }
             
+            # ==========================================
+            # Discovery Arrays
+            # ==========================================
+            declare -A DISCOVERED_CONTAINERS
+            declare -a UNKNOWN_CONTAINERS
+            declare -a MISSING_SERVICES
+            declare -a ANOMALIES
+            declare -a HEALTHY_UNKNOWN
+            
+            # JSON output for artifacts
+            DISCOVERY_JSON='{}'
+            
             echo "=========================================="
             echo "🔍 Server Diagnostics Report"
             echo "=========================================="
             echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
             echo "Target: ${TARGET_SERVICE}"
             echo "Auto-fix: ${AUTO_FIX}"
+            echo "Discovery Mode: ${DISCOVERY_MODE:-quick}"
+            echo "Auto-learn: ${AUTO_LEARN:-false}"
+            echo ""
+            
+            # ==========================================
+            # Auto-Discovery Phase
+            # ==========================================
+            
+            echo "=========================================="
+            echo "🔎 AUTO-DISCOVERY PHASE"
+            echo "=========================================="
+            echo ""
+            
+            # Container Discovery
+            echo "--- Container Discovery ---"
+            echo ""
+            
+            # Get all containers (running and stopped)
+            ALL_CONTAINERS=$(docker ps -a --format '{{.Names}}|{{.Status}}|{{.Ports}}|{{.Image}}|{{.CreatedAt}}' 2>/dev/null || echo "")
+            RUNNING_CONTAINERS=$(docker ps --format '{{.Names}}' 2>/dev/null || echo "")
+            
+            echo "All containers found:"
+            echo "$ALL_CONTAINERS" | while IFS='|' read -r name status ports image created; do
+              if [[ -n "$name" ]]; then
+                echo "  - $name (${status%% *})"
+              fi
+            done
+            echo ""
+            
+            # Classify containers
+            echo "Container Classification:"
+            while IFS='|' read -r name status ports image created; do
+              if [[ -z "$name" ]]; then continue; fi
+              
+              if [[ -v "SERVICE_CONFIG[$name]" ]]; then
+                if echo "$RUNNING_CONTAINERS" | grep -qw "$name"; then
+                  echo "  ✅ KNOWN: $name (running)"
+                  DISCOVERED_CONTAINERS["$name"]="known|running|$ports|$image"
+                else
+                  echo "  ⚠️  MISSING: $name (not running, status: ${status%% *})"
+                  MISSING_SERVICES+=("$name")
+                  DISCOVERED_CONTAINERS["$name"]="missing|${status%% *}|$ports|$image"
+                fi
+              else
+                # Skip caddy_server as it's infrastructure
+                if [[ "$name" == "caddy_server" ]]; then
+                  echo "  ℹ️  INFRASTRUCTURE: $name"
+                  continue
+                fi
+                echo "  ❓ UNKNOWN: $name (image: $image)"
+                UNKNOWN_CONTAINERS+=("$name|$status|$ports|$image|$created")
+                DISCOVERED_CONTAINERS["$name"]="unknown|${status%% *}|$ports|$image"
+              fi
+            done <<< "$ALL_CONTAINERS"
+            echo ""
+            
+            # Check for missing known services (not even stopped containers exist)
+            for service in "${!SERVICE_CONFIG[@]}"; do
+              if ! echo "$ALL_CONTAINERS" | grep -q "^$service|"; then
+                echo "  ❌ MISSING (no container): $service"
+                MISSING_SERVICES+=("$service")
+              fi
+            done
+            echo ""
+            
+            # Network Discovery (full and paranoid modes)
+            if [[ "${DISCOVERY_MODE:-quick}" != "quick" ]]; then
+              echo "--- Network Discovery ---"
+              echo ""
+              
+              echo "All Docker networks:"
+              docker network ls --format '{{.Name}}\t{{.Driver}}' 2>/dev/null || echo "Failed to list networks"
+              echo ""
+              
+              # Check network connectivity for each container
+              echo "Network connections:"
+              for network in $(docker network ls --format '{{.Name}}' 2>/dev/null); do
+                if [[ "$network" == "bridge" || "$network" == "host" || "$network" == "none" ]]; then
+                  continue
+                fi
+                CONNECTED=$(docker network inspect "$network" --format '{{range .Containers}}{{.Name}} {{end}}' 2>/dev/null || echo "")
+                if [[ -n "$CONNECTED" ]]; then
+                  echo "  $network: $CONNECTED"
+                fi
+              done
+              echo ""
+              
+              # Find containers not on caddy-network
+              CADDY_NETWORK_CONTAINERS=$(docker network inspect caddy-network --format '{{range .Containers}}{{.Name}} {{end}}' 2>/dev/null || echo "")
+              echo "Containers NOT on caddy-network:"
+              for name in $(docker ps --format '{{.Names}}' 2>/dev/null); do
+                if [[ "$name" == "caddy_server" ]]; then continue; fi
+                if ! echo "$CADDY_NETWORK_CONTAINERS" | grep -qw "$name"; then
+                  echo "  ⚠️  $name"
+                  ANOMALIES+=("$name is not on caddy-network")
+                fi
+              done
+              echo ""
+            fi
+            
+            # Port Discovery (full and paranoid modes)
+            if [[ "${DISCOVERY_MODE:-quick}" != "quick" ]]; then
+              echo "--- Port Discovery ---"
+              echo ""
+              
+              echo "All listening ports on host:"
+              ss -tlnp 2>/dev/null | head -30 || netstat -tlnp 2>/dev/null | head -30 || echo "Could not list ports"
+              echo ""
+              
+              # Docker port mappings
+              echo "Docker port mappings:"
+              docker ps --format '{{.Names}}\t{{.Ports}}' 2>/dev/null | grep -v "^$" || echo "  (none)"
+              echo ""
+            fi
+            
+            # Deploy Directory Scan (full and paranoid modes)
+            if [[ "${DISCOVERY_MODE:-quick}" != "quick" ]]; then
+              echo "--- Deploy Directory Scan ---"
+              echo ""
+              
+              echo "Scanning /home/deploy for docker-compose projects..."
+              DEPLOY_DIRS_FOUND=()
+              for dir in /home/deploy/*/; do
+                if [[ -d "$dir" ]]; then
+                  DIR_NAME=$(basename "$dir")
+                  if [[ -f "${dir}docker-compose.yml" || -f "${dir}docker-compose.yaml" || -f "${dir}compose.yml" || -f "${dir}compose.yaml" ]]; then
+                    DEPLOY_DIRS_FOUND+=("$dir")
+                    # Check if there's a running container for this directory
+                    HAS_RUNNING=false
+                    for service in "${!SERVICE_CONFIG[@]}"; do
+                      SVC_DIR=$(get_deploy_dir "$service")
+                      if [[ "${SVC_DIR%/}" == "${dir%/}" ]]; then
+                        if echo "$RUNNING_CONTAINERS" | grep -qw "$service"; then
+                          HAS_RUNNING=true
+                          break
+                        fi
+                      fi
+                    done
+                    if [[ "$HAS_RUNNING" == "true" ]]; then
+                      echo "  ✅ $dir (has running container)"
+                    else
+                      echo "  ⚠️  $dir (NO running container)"
+                      ANOMALIES+=("Deploy dir $dir has no running container")
+                    fi
+                  else
+                    echo "  ℹ️  $dir (no compose file)"
+                  fi
+                fi
+              done
+              echo ""
+            fi
+            
+            # Caddy Routes Discovery (full and paranoid modes)
+            if [[ "${DISCOVERY_MODE:-quick}" != "quick" ]] && is_caddy_running; then
+              echo "--- Caddy Routes Discovery ---"
+              echo ""
+              
+              echo "Configured domains in Caddyfile:"
+              ACTIVE_CADDYFILE_DISCOVERY=$(docker exec caddy_server cat /etc/caddy/Caddyfile 2>&1 || echo "Failed to read Caddyfile")
+              echo "$ACTIVE_CADDYFILE_DISCOVERY" | grep -E '^[a-zA-Z0-9].*\{' | sed 's/{.*//' | while read -r domain; do
+                echo "  - $domain"
+              done
+              echo ""
+              
+              echo "Reverse proxy backends:"
+              echo "$ACTIVE_CADDYFILE_DISCOVERY" | grep -E 'reverse_proxy' | while read -r line; do
+                echo "  $line"
+              done
+              echo ""
+            fi
+            
+            # Process Scan (paranoid mode only)
+            if [[ "${DISCOVERY_MODE:-quick}" == "paranoid" ]]; then
+              echo "--- Process Scan (Paranoid Mode) ---"
+              echo ""
+              
+              echo "Top processes by memory:"
+              ps aux --sort=-%mem | head -15 || echo "Could not list processes"
+              echo ""
+              
+              echo "Processes listening on common web ports (80, 443, 8000, 3000):"
+              ss -tlnp 2>/dev/null | grep -E ':80|:443|:8000|:3000' || echo "  (none found)"
+              echo ""
+            fi
+            
+            # Discovery Summary
+            echo "=========================================="
+            echo "📊 Discovery Summary"
+            echo "=========================================="
+            echo ""
+            echo "Known services: ${#SERVICE_CONFIG[@]}"
+            echo "Unknown containers: ${#UNKNOWN_CONTAINERS[@]}"
+            echo "Missing services: ${#MISSING_SERVICES[@]}"
+            echo "Anomalies: ${#ANOMALIES[@]}"
+            echo ""
+            
+            if [[ ${#UNKNOWN_CONTAINERS[@]} -gt 0 ]]; then
+              echo "Unknown containers details:"
+              for entry in "${UNKNOWN_CONTAINERS[@]}"; do
+                IFS='|' read -r name status ports image created <<< "$entry"
+                echo "  - $name"
+                echo "    Image: $image"
+                echo "    Status: $status"
+                echo "    Ports: ${ports:-none}"
+                echo ""
+                
+                # Check if unknown container is healthy (running)
+                if [[ "$status" == Up* ]]; then
+                  HEALTHY_UNKNOWN+=("$name|$ports|$image")
+                fi
+              done
+            fi
+            
+            if [[ ${#ANOMALIES[@]} -gt 0 ]]; then
+              echo "Anomalies detected:"
+              for anomaly in "${ANOMALIES[@]}"; do
+                echo "  - $anomaly"
+              done
+              echo ""
+            fi
+            
+            # Build discovery JSON for output
+            DISCOVERY_TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+            DISCOVERY_JSON=$(cat <<EOF
+            {
+              "timestamp": "${DISCOVERY_TIMESTAMP}",
+              "discovery_mode": "${DISCOVERY_MODE:-quick}",
+              "summary": {
+                "known_services": ${#SERVICE_CONFIG[@]},
+                "unknown_containers": ${#UNKNOWN_CONTAINERS[@]},
+                "missing_services": ${#MISSING_SERVICES[@]},
+                "anomalies": ${#ANOMALIES[@]},
+                "healthy_unknown": ${#HEALTHY_UNKNOWN[@]}
+              },
+              "unknown_containers": [
+            EOF
+            )
+            
+            # Add unknown containers to JSON
+            FIRST=true
+            for entry in "${UNKNOWN_CONTAINERS[@]}"; do
+              IFS='|' read -r name status ports image created <<< "$entry"
+              if [[ "$FIRST" == "true" ]]; then
+                FIRST=false
+              else
+                DISCOVERY_JSON+=","
+              fi
+              DISCOVERY_JSON+=$(cat <<EOF
+            
+                {
+                  "name": "${name}",
+                  "status": "${status}",
+                  "ports": "${ports}",
+                  "image": "${image}",
+                  "created": "${created}"
+                }
+            EOF
+            )
+            done
+            
+            DISCOVERY_JSON+=$(cat <<EOF
+            
+              ],
+              "missing_services": [
+            EOF
+            )
+            
+            FIRST=true
+            for svc in "${MISSING_SERVICES[@]}"; do
+              if [[ "$FIRST" == "true" ]]; then
+                FIRST=false
+              else
+                DISCOVERY_JSON+=","
+              fi
+              DISCOVERY_JSON+="\"${svc}\""
+            done
+            
+            DISCOVERY_JSON+=$(cat <<EOF
+            
+              ],
+              "anomalies": [
+            EOF
+            )
+            
+            FIRST=true
+            for anomaly in "${ANOMALIES[@]}"; do
+              if [[ "$FIRST" == "true" ]]; then
+                FIRST=false
+              else
+                DISCOVERY_JSON+=","
+              fi
+              DISCOVERY_JSON+="\"${anomaly}\""
+            done
+            
+            DISCOVERY_JSON+=$(cat <<EOF
+            
+              ],
+              "healthy_unknown": [
+            EOF
+            )
+            
+            FIRST=true
+            for entry in "${HEALTHY_UNKNOWN[@]}"; do
+              IFS='|' read -r name ports image <<< "$entry"
+              if [[ "$FIRST" == "true" ]]; then
+                FIRST=false
+              else
+                DISCOVERY_JSON+=","
+              fi
+              DISCOVERY_JSON+=$(cat <<EOF
+            
+                {
+                  "name": "${name}",
+                  "ports": "${ports}",
+                  "image": "${image}"
+                }
+            EOF
+            )
+            done
+            
+            DISCOVERY_JSON+=$(cat <<EOF
+            
+              ]
+            }
+            EOF
+            )
+            
+            # Output discovery JSON for workflow parsing
+            echo ""
+            echo "DISCOVERY_JSON_START"
+            echo "$DISCOVERY_JSON"
+            echo "DISCOVERY_JSON_END"
             echo ""
             
             # ==========================================
@@ -814,3 +1233,248 @@ jobs:
             echo "=========================================="
             echo "🏁 Diagnostics Complete"
             echo "=========================================="
+
+      - name: Parse Discovery Results
+        id: parse-discovery
+        if: always()
+        run: |
+          # Extract the discovery JSON from SSH output
+          SSH_OUTPUT="${{ steps.diagnostics.outputs.stdout }}"
+          
+          # Try to extract JSON between markers
+          if echo "$SSH_OUTPUT" | grep -q "DISCOVERY_JSON_START"; then
+            DISCOVERY_JSON=$(echo "$SSH_OUTPUT" | sed -n '/DISCOVERY_JSON_START/,/DISCOVERY_JSON_END/p' | grep -v 'DISCOVERY_JSON_START\|DISCOVERY_JSON_END' || echo '{}')
+          else
+            DISCOVERY_JSON='{}'
+          fi
+          
+          # Save discovery JSON to file
+          echo "$DISCOVERY_JSON" > discovery-report.json
+          
+          # Parse counts for outputs
+          UNKNOWN_COUNT=$(echo "$DISCOVERY_JSON" | jq -r '.summary.unknown_containers // 0' 2>/dev/null || echo "0")
+          HEALTHY_UNKNOWN_COUNT=$(echo "$DISCOVERY_JSON" | jq -r '.summary.healthy_unknown // 0' 2>/dev/null || echo "0")
+          MISSING_COUNT=$(echo "$DISCOVERY_JSON" | jq -r '.summary.missing_services // 0' 2>/dev/null || echo "0")
+          ANOMALY_COUNT=$(echo "$DISCOVERY_JSON" | jq -r '.summary.anomalies // 0' 2>/dev/null || echo "0")
+          
+          echo "unknown_count=$UNKNOWN_COUNT" >> $GITHUB_OUTPUT
+          echo "healthy_unknown_count=$HEALTHY_UNKNOWN_COUNT" >> $GITHUB_OUTPUT
+          echo "missing_count=$MISSING_COUNT" >> $GITHUB_OUTPUT
+          echo "anomaly_count=$ANOMALY_COUNT" >> $GITHUB_OUTPUT
+          
+          # Generate markdown report
+          cat > discovery-report.md << 'EOF'
+          # 🔍 Server Discovery Report
+          
+          Generated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          ## Summary
+          
+          | Category | Count |
+          |----------|-------|
+          | Unknown Containers | $UNKNOWN_COUNT |
+          | Healthy Unknown | $HEALTHY_UNKNOWN_COUNT |
+          | Missing Services | $MISSING_COUNT |
+          | Anomalies | $ANOMALY_COUNT |
+          
+          EOF
+          
+          # Add unknown containers section if any
+          if [[ "$UNKNOWN_COUNT" -gt 0 ]]; then
+            echo "## Unknown Containers" >> discovery-report.md
+            echo "" >> discovery-report.md
+            echo "$DISCOVERY_JSON" | jq -r '.unknown_containers[] | "- **\(.name)** (\(.status))\n  - Image: \(.image)\n  - Ports: \(.ports // "none")"' 2>/dev/null >> discovery-report.md || true
+            echo "" >> discovery-report.md
+          fi
+          
+          # Add missing services section if any
+          if [[ "$MISSING_COUNT" -gt 0 ]]; then
+            echo "## Missing Services" >> discovery-report.md
+            echo "" >> discovery-report.md
+            echo "$DISCOVERY_JSON" | jq -r '.missing_services[] | "- \(.)"' 2>/dev/null >> discovery-report.md || true
+            echo "" >> discovery-report.md
+          fi
+          
+          # Add anomalies section if any
+          if [[ "$ANOMALY_COUNT" -gt 0 ]]; then
+            echo "## Anomalies" >> discovery-report.md
+            echo "" >> discovery-report.md
+            echo "$DISCOVERY_JSON" | jq -r '.anomalies[] | "- \(.)"' 2>/dev/null >> discovery-report.md || true
+            echo "" >> discovery-report.md
+          fi
+          
+          echo "Discovery report generated"
+
+      - name: Auto-Learn Discovered Services
+        id: auto-learn
+        if: inputs.auto_learn == true && steps.parse-discovery.outputs.healthy_unknown_count != '0'
+        run: |
+          echo "Auto-learning enabled and healthy unknown containers found"
+          
+          # Read current config
+          CONFIG_FILE=".github/config/known-services.json"
+          if [[ -f "$CONFIG_FILE" ]]; then
+            CONFIG=$(cat "$CONFIG_FILE")
+          else
+            CONFIG='{"services": {}, "required_domains": [], "last_discovery": null}'
+          fi
+          
+          # Read discovery results
+          DISCOVERY=$(cat discovery-report.json)
+          TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+          
+          # Add healthy unknown containers to config
+          UPDATED_CONFIG="$CONFIG"
+          SERVICES_ADDED=0
+          
+          # Extract healthy unknown containers and add them
+          echo "$DISCOVERY" | jq -c '.healthy_unknown[]' 2>/dev/null | while read -r container; do
+            NAME=$(echo "$container" | jq -r '.name')
+            PORTS=$(echo "$container" | jq -r '.ports')
+            IMAGE=$(echo "$container" | jq -r '.image')
+            
+            # Skip if already in config
+            if echo "$UPDATED_CONFIG" | jq -e ".services[\"$NAME\"]" >/dev/null 2>&1; then
+              echo "Service $NAME already in config, skipping"
+              continue
+            fi
+            
+            # Extract port from ports string (e.g., "0.0.0.0:3000->3000/tcp" -> 3000)
+            PORT=$(echo "$PORTS" | grep -oE '->([0-9]+)/' | head -1 | grep -oE '[0-9]+' || echo "80")
+            
+            echo "Adding $NAME to config (port: $PORT)"
+            
+            # Add to config
+            UPDATED_CONFIG=$(echo "$UPDATED_CONFIG" | jq --arg name "$NAME" --arg port "$PORT" --arg ts "$TIMESTAMP" \
+              '.services[$name] = {
+                "port": ($port | tonumber),
+                "domain": null,
+                "deploy_dir": null,
+                "added": $ts,
+                "auto_discovered": true
+              }')
+            
+            SERVICES_ADDED=$((SERVICES_ADDED + 1))
+          done
+          
+          # Update last_discovery timestamp
+          UPDATED_CONFIG=$(echo "$UPDATED_CONFIG" | jq --arg ts "$TIMESTAMP" '.last_discovery = $ts')
+          
+          # Write updated config
+          echo "$UPDATED_CONFIG" | jq '.' > "$CONFIG_FILE"
+          
+          echo "services_added=$SERVICES_ADDED" >> $GITHUB_OUTPUT
+          
+          if [[ "$SERVICES_ADDED" -gt 0 ]]; then
+            echo "Added $SERVICES_ADDED new services to config"
+          else
+            echo "No new services to add"
+          fi
+
+      - name: Commit Updated Config
+        if: inputs.auto_learn == true && steps.auto-learn.outputs.services_added != '0'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add .github/config/known-services.json
+          git commit -m "chore: auto-discovered ${{ steps.auto-learn.outputs.services_added }} new service(s)
+
+          Services were automatically discovered during diagnostics run.
+          Discovery mode: ${{ inputs.discovery_mode }}
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+          git push
+
+      - name: Create Issue for Unknown Services
+        if: inputs.notify_unknown == true && steps.parse-discovery.outputs.unknown_count != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read discovery report
+            let discoveryData = {};
+            try {
+              discoveryData = JSON.parse(fs.readFileSync('discovery-report.json', 'utf8'));
+            } catch (e) {
+              console.log('Could not parse discovery report:', e);
+              return;
+            }
+            
+            const unknownCount = discoveryData.summary?.unknown_containers || 0;
+            const healthyUnknownCount = discoveryData.summary?.healthy_unknown || 0;
+            
+            if (unknownCount === 0) {
+              console.log('No unknown containers to report');
+              return;
+            }
+            
+            // Build issue body
+            let body = `## 🔍 Unknown Services Discovered\n\n`;
+            body += `During the diagnostics run on ${new Date().toISOString()}, the following unknown containers were discovered:\n\n`;
+            
+            if (discoveryData.unknown_containers) {
+              body += `### Unknown Containers (${unknownCount})\n\n`;
+              for (const container of discoveryData.unknown_containers) {
+                body += `- **${container.name}**\n`;
+                body += `  - Status: ${container.status}\n`;
+                body += `  - Image: ${container.image}\n`;
+                body += `  - Ports: ${container.ports || 'none'}\n`;
+                body += `  - Created: ${container.created}\n\n`;
+              }
+            }
+            
+            if (discoveryData.anomalies && discoveryData.anomalies.length > 0) {
+              body += `### Anomalies (${discoveryData.anomalies.length})\n\n`;
+              for (const anomaly of discoveryData.anomalies) {
+                body += `- ${anomaly}\n`;
+              }
+              body += '\n';
+            }
+            
+            body += `---\n`;
+            body += `**Discovery Mode:** ${{ inputs.discovery_mode }}\n`;
+            body += `**Auto-Learn:** ${{ inputs.auto_learn }}\n`;
+            body += `**Workflow Run:** [View Run](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})\n`;
+            
+            // Check for existing open issues with same label
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'diagnostics',
+              state: 'open'
+            });
+            
+            // Create or update issue
+            if (existingIssues.data.length > 0) {
+              // Update existing issue
+              const issue = existingIssues.data[0];
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: body
+              });
+              console.log(`Updated existing issue #${issue.number}`);
+            } else {
+              // Create new issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🔍 Unknown Services Discovered (${unknownCount} containers)`,
+                body: body,
+                labels: ['diagnostics']
+              });
+              console.log('Created new diagnostics issue');
+            }
+
+      - name: Upload Discovery Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: discovery-reports
+          path: |
+            discovery-report.json
+            discovery-report.md
+          retention-days: 30

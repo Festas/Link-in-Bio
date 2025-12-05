@@ -1,0 +1,48 @@
+{
+  "services": {
+    "linktree_app": {
+      "port": 8000,
+      "domain": "festas-builds.com",
+      "deploy_dir": "/home/deploy/link-in-bio",
+      "added": "2025-01-15T00:00:00Z",
+      "auto_discovered": false
+    },
+    "immocalc": {
+      "port": 3000,
+      "domain": "immocalc.festas-builds.com",
+      "deploy_dir": "/home/deploy/immocalc",
+      "added": "2025-01-15T00:00:00Z",
+      "auto_discovered": false
+    },
+    "rigpilot": {
+      "port": 3000,
+      "domain": "rigpilot.festas-builds.com",
+      "deploy_dir": "/home/deploy/rigpilot",
+      "added": "2025-01-15T00:00:00Z",
+      "auto_discovered": false
+    },
+    "cosmic-survivor": {
+      "port": 80,
+      "domain": "cs.festas-builds.com",
+      "deploy_dir": "/home/deploy/cosmic-survivor",
+      "added": "2025-01-15T00:00:00Z",
+      "auto_discovered": false
+    },
+    "minecraft-web": {
+      "port": 80,
+      "domain": "mc.festas-builds.com",
+      "deploy_dir": "/home/deploy/minecraft-server",
+      "added": "2025-01-15T00:00:00Z",
+      "auto_discovered": false
+    }
+  },
+  "required_domains": [
+    "festas-builds.com",
+    "admin.festas-builds.com",
+    "rigpilot.festas-builds.com",
+    "immocalc.festas-builds.com",
+    "mc.festas-builds.com",
+    "cs.festas-builds.com"
+  ],
+  "last_discovery": null
+}

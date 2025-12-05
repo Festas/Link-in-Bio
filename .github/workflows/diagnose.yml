@@ -305,8 +305,15 @@ jobs:
               echo "--- Port Discovery ---"
               echo ""
               
-              echo "All listening ports on host:"
-              ss -tlnp 2>/dev/null | head -30 || netstat -tlnp 2>/dev/null | head -30 || echo "Could not list ports"
+              # Set port listing limit based on discovery mode
+              if [[ "${DISCOVERY_MODE:-quick}" == "paranoid" ]]; then
+                PORT_LIMIT=200
+              else
+                PORT_LIMIT=50
+              fi
+              
+              echo "All listening ports on host (limit: ${PORT_LIMIT}):"
+              ss -tlnp 2>/dev/null | head -${PORT_LIMIT} || netstat -tlnp 2>/dev/null | head -${PORT_LIMIT} || echo "Could not list ports"
               echo ""
               
               # Docker port mappings
@@ -421,111 +428,65 @@ jobs:
               echo ""
             fi
             
-            # Build discovery JSON for output
+            # Build discovery JSON for output using jq for proper escaping
             DISCOVERY_TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
-            DISCOVERY_JSON=$(cat <<EOF
-            {
-              "timestamp": "${DISCOVERY_TIMESTAMP}",
-              "discovery_mode": "${DISCOVERY_MODE:-quick}",
-              "summary": {
-                "known_services": ${#SERVICE_CONFIG[@]},
-                "unknown_containers": ${#UNKNOWN_CONTAINERS[@]},
-                "missing_services": ${#MISSING_SERVICES[@]},
-                "anomalies": ${#ANOMALIES[@]},
-                "healthy_unknown": ${#HEALTHY_UNKNOWN[@]}
-              },
-              "unknown_containers": [
-            EOF
-            )
             
-            # Add unknown containers to JSON
-            FIRST=true
+            # Start with base JSON structure
+            DISCOVERY_JSON=$(jq -n \
+              --arg ts "$DISCOVERY_TIMESTAMP" \
+              --arg mode "${DISCOVERY_MODE:-quick}" \
+              --argjson known "${#SERVICE_CONFIG[@]}" \
+              --argjson unknown "${#UNKNOWN_CONTAINERS[@]}" \
+              --argjson missing "${#MISSING_SERVICES[@]}" \
+              --argjson anomalies "${#ANOMALIES[@]}" \
+              --argjson healthy "${#HEALTHY_UNKNOWN[@]}" \
+              '{
+                timestamp: $ts,
+                discovery_mode: $mode,
+                summary: {
+                  known_services: $known,
+                  unknown_containers: $unknown,
+                  missing_services: $missing,
+                  anomalies: $anomalies,
+                  healthy_unknown: $healthy
+                },
+                unknown_containers: [],
+                missing_services: [],
+                anomalies: [],
+                healthy_unknown: []
+              }')
+            
+            # Add unknown containers to JSON using jq
             for entry in "${UNKNOWN_CONTAINERS[@]}"; do
               IFS='|' read -r name status ports image created <<< "$entry"
-              if [[ "$FIRST" == "true" ]]; then
-                FIRST=false
-              else
-                DISCOVERY_JSON+=","
-              fi
-              DISCOVERY_JSON+=$(cat <<EOF
-            
-                {
-                  "name": "${name}",
-                  "status": "${status}",
-                  "ports": "${ports}",
-                  "image": "${image}",
-                  "created": "${created}"
-                }
-            EOF
-            )
+              DISCOVERY_JSON=$(echo "$DISCOVERY_JSON" | jq \
+                --arg name "$name" \
+                --arg status "$status" \
+                --arg ports "$ports" \
+                --arg image "$image" \
+                --arg created "$created" \
+                '.unknown_containers += [{name: $name, status: $status, ports: $ports, image: $image, created: $created}]')
             done
             
-            DISCOVERY_JSON+=$(cat <<EOF
-            
-              ],
-              "missing_services": [
-            EOF
-            )
-            
-            FIRST=true
+            # Add missing services to JSON using jq
             for svc in "${MISSING_SERVICES[@]}"; do
-              if [[ "$FIRST" == "true" ]]; then
-                FIRST=false
-              else
-                DISCOVERY_JSON+=","
-              fi
-              DISCOVERY_JSON+="\"${svc}\""
+              DISCOVERY_JSON=$(echo "$DISCOVERY_JSON" | jq --arg svc "$svc" '.missing_services += [$svc]')
             done
             
-            DISCOVERY_JSON+=$(cat <<EOF
-            
-              ],
-              "anomalies": [
-            EOF
-            )
-            
-            FIRST=true
+            # Add anomalies to JSON using jq
             for anomaly in "${ANOMALIES[@]}"; do
-              if [[ "$FIRST" == "true" ]]; then
-                FIRST=false
-              else
-                DISCOVERY_JSON+=","
-              fi
-              DISCOVERY_JSON+="\"${anomaly}\""
+              DISCOVERY_JSON=$(echo "$DISCOVERY_JSON" | jq --arg a "$anomaly" '.anomalies += [$a]')
             done
             
-            DISCOVERY_JSON+=$(cat <<EOF
-            
-              ],
-              "healthy_unknown": [
-            EOF
-            )
-            
-            FIRST=true
+            # Add healthy unknown containers to JSON using jq
             for entry in "${HEALTHY_UNKNOWN[@]}"; do
               IFS='|' read -r name ports image <<< "$entry"
-              if [[ "$FIRST" == "true" ]]; then
-                FIRST=false
-              else
-                DISCOVERY_JSON+=","
-              fi
-              DISCOVERY_JSON+=$(cat <<EOF
-            
-                {
-                  "name": "${name}",
-                  "ports": "${ports}",
-                  "image": "${image}"
-                }
-            EOF
-            )
+              DISCOVERY_JSON=$(echo "$DISCOVERY_JSON" | jq \
+                --arg name "$name" \
+                --arg ports "$ports" \
+                --arg image "$image" \
+                '.healthy_unknown += [{name: $name, ports: $ports, image: $image}]')
             done
-            
-            DISCOVERY_JSON+=$(cat <<EOF
-            
-              ]
-            }
-            EOF
-            )
             
             # Output discovery JSON for workflow parsing
             echo ""
@@ -1262,22 +1223,26 @@ jobs:
           echo "missing_count=$MISSING_COUNT" >> $GITHUB_OUTPUT
           echo "anomaly_count=$ANOMALY_COUNT" >> $GITHUB_OUTPUT
           
-          # Generate markdown report
-          cat > discovery-report.md << 'EOF'
+          # Generate markdown report with variable expansion
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          cat > discovery-report.md << EOF
           # 🔍 Server Discovery Report
           
-          Generated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          Generated: ${TIMESTAMP}
           
           ## Summary
           
           | Category | Count |
           |----------|-------|
-          | Unknown Containers | $UNKNOWN_COUNT |
-          | Healthy Unknown | $HEALTHY_UNKNOWN_COUNT |
-          | Missing Services | $MISSING_COUNT |
-          | Anomalies | $ANOMALY_COUNT |
+          | Unknown Containers | ${UNKNOWN_COUNT} |
+          | Healthy Unknown | ${HEALTHY_UNKNOWN_COUNT} |
+          | Missing Services | ${MISSING_COUNT} |
+          | Anomalies | ${ANOMALY_COUNT} |
           
           EOF
+          
+          # Strip leading whitespace from heredoc
+          sed -i 's/^          //' discovery-report.md
           
           # Add unknown containers section if any
           if [[ "$UNKNOWN_COUNT" -gt 0 ]]; then
@@ -1327,8 +1292,12 @@ jobs:
           UPDATED_CONFIG="$CONFIG"
           SERVICES_ADDED=0
           
-          # Extract healthy unknown containers and add them
-          echo "$DISCOVERY" | jq -c '.healthy_unknown[]' 2>/dev/null | while read -r container; do
+          # Get list of healthy unknown containers as an array
+          mapfile -t CONTAINERS < <(echo "$DISCOVERY" | jq -c '.healthy_unknown[]' 2>/dev/null)
+          
+          for container in "${CONTAINERS[@]}"; do
+            [[ -z "$container" ]] && continue
+            
             NAME=$(echo "$container" | jq -r '.name')
             PORTS=$(echo "$container" | jq -r '.ports')
             IMAGE=$(echo "$container" | jq -r '.image')
@@ -1344,7 +1313,7 @@ jobs:
             
             echo "Adding $NAME to config (port: $PORT)"
             
-            # Add to config
+            # Add to config using jq for safe JSON handling
             UPDATED_CONFIG=$(echo "$UPDATED_CONFIG" | jq --arg name "$NAME" --arg port "$PORT" --arg ts "$TIMESTAMP" \
               '.services[$name] = {
                 "port": ($port | tonumber),

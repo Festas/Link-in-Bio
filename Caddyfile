@@ -65,6 +65,25 @@ mc.festas-builds.com {
     }
 }
 
+# BlueMap - Live 3D server map
+mc-map.festas-builds.com {
+    tls eric@festas-builds.com
+    encode gzip zstd
+    
+    # Cache map tiles aggressively
+    @tiles path /maps/*/assets/*
+    header @tiles Cache-Control "public,max-age=3600"
+    
+    reverse_proxy minecraft-server:8100
+}
+
+# Plan Analytics - Player statistics dashboard
+mc-stats.festas-builds.com {
+    tls eric@festas-builds.com
+    encode gzip zstd
+    reverse_proxy minecraft-server:8804
+}
+
 # Cosmic Survivor Game - browser-based space survival game
 # The cosmic-survivor container must join the 'caddy-network' external network
 cs.festas-builds.com {

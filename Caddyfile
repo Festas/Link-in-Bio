@@ -40,9 +40,28 @@ mc.festas-builds.com {
     tls eric@festas-builds.com
     encode gzip zstd
     
-    # Static assets caching for website
-    @static path *.css *.js *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2
-    header @static Cache-Control "public, max-age=31536000, immutable"
+    # Console static assets - use revalidation-based caching
+    # Browsers will check if files changed (ETag/Last-Modified) but use cache if unchanged
+    # This ensures users always get fresh CSS/JS after deployments
+    @console_assets {
+        path /console/*.css /console/*.js /console/css/* /console/js/*
+    }
+    header @console_assets Cache-Control "public, max-age=0, must-revalidate"
+    
+    # Console HTML files - never cache, always fetch fresh
+    @console_html {
+        path /console/*.html /console/
+    }
+    header @console_html Cache-Control "no-cache, no-store, must-revalidate"
+    header @console_html Pragma "no-cache"
+    
+    # Static website assets (images, fonts) - long cache, these rarely change
+    # Exclude console path to not override the above rules
+    @website_static {
+        path *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2
+        not path /console/*
+    }
+    header @website_static Cache-Control "public, max-age=31536000, immutable"
     
     # API routes for console backend
     handle /api* {

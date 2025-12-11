@@ -81,6 +81,10 @@ mc-map.festas-builds.com {
 mc-stats.festas-builds.com {
     tls eric@festas-builds.com
     encode gzip zstd
+    
+    # Enable X-Forwarded-For header for Plan
+    header_up X-Forwarded-For {remote_host}
+    
     reverse_proxy minecraft-server:8804
 }
 

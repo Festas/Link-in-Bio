@@ -189,21 +189,15 @@ jobs:
             # ==========================================
             echo "[7/9] Creating admin user..."
             
-            # Check if admin user already exists
-            USER_EXISTS=$(sudo -u www-data php artisan tinker --execute="echo \App\Models\User::where('email', '${PTERO_ADMIN_EMAIL}')->exists() ? 'yes' : 'no';" 2>/dev/null || echo "no")
-            
-            if [[ "${USER_EXISTS}" == "yes" ]]; then
-              echo "⚠ Admin user already exists, skipping creation"
-            else
-              sudo -u www-data php artisan p:user:make \
-                --email="${PTERO_ADMIN_EMAIL}" \
-                --username=admin \
-                --name-first=Admin \
-                --name-last=Festas \
-                --password="${PTERO_ADMIN_PASSWORD}" \
-                --admin=1 \
-                --no-interaction || echo "⚠ User creation may have failed, check manually"
-            fi
+            # Create admin user (command handles existing users gracefully)
+            sudo -u www-data php artisan p:user:make \
+              --email="${PTERO_ADMIN_EMAIL}" \
+              --username=admin \
+              --name-first=Admin \
+              --name-last=Festas \
+              --password="${PTERO_ADMIN_PASSWORD}" \
+              --admin=1 \
+              --no-interaction || echo "⚠ User may already exist or creation failed, check manually"
             
             echo "✓ Admin user setup complete"
             
@@ -302,9 +296,14 @@ jobs:
             sudo systemctl enable pteroq.service
             sudo systemctl start pteroq.service
             
-            # Add cron job for schedule
+            # Add cron job for schedule (check if already exists to maintain idempotency)
             CRON_CMD="* * * * * php /var/www/pterodactyl/artisan schedule:run >> /dev/null 2>&1"
-            (sudo crontab -u www-data -l 2>/dev/null || true; echo "${CRON_CMD}") | sudo crontab -u www-data -
+            if ! sudo crontab -u www-data -l 2>/dev/null | grep -q "pterodactyl/artisan schedule:run"; then
+              (sudo crontab -u www-data -l 2>/dev/null || true; echo "${CRON_CMD}") | sudo crontab -u www-data -
+              echo "✓ Cron job added"
+            else
+              echo "✓ Cron job already exists"
+            fi
             
             echo "✓ Systemd services configured"
             

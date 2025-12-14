@@ -324,7 +324,15 @@ sudo chmod -R 755 /var/www/pterodactyl/bootstrap/cache
 ### Panel Backup
 
 ```bash
-# Database backup
+# Create backup directory if it doesn't exist
+sudo mkdir -p /backup
+
+# Database backup (password from environment or interactive)
+# Option 1: With password from secret
+PTERO_DB_PASSWORD="your_password_here"
+sudo mysqldump -u ptero -p"${PTERO_DB_PASSWORD}" pterodactyl > /backup/pterodactyl_$(date +%Y%m%d).sql
+
+# Option 2: Interactive (will prompt for password)
 sudo mysqldump -u ptero -p pterodactyl > /backup/pterodactyl_$(date +%Y%m%d).sql
 
 # Panel files backup
@@ -335,6 +343,10 @@ sudo tar -czf /backup/pterodactyl_files_$(date +%Y%m%d).tar.gz /var/www/pterodac
 
 Server files are stored in `/var/lib/pterodactyl/volumes/`
 ```bash
+# Create backup directory if it doesn't exist
+sudo mkdir -p /backup
+
+# Backup server volumes
 sudo tar -czf /backup/server_volumes_$(date +%Y%m%d).tar.gz /var/lib/pterodactyl/volumes
 ```
 

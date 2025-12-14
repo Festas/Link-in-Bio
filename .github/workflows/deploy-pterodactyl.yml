@@ -169,10 +169,16 @@ jobs:
             sudo chown -R www-data:www-data /var/www/pterodactyl
             sudo chmod -R 755 /var/www/pterodactyl/storage /var/www/pterodactyl/bootstrap/cache
             
+            # Create composer cache directories with proper permissions
+            echo "Setting up composer cache directories..."
+            sudo mkdir -p /var/www/.cache/composer
+            sudo mkdir -p /var/www/.composer
+            sudo chown -R www-data:www-data /var/www/.cache /var/www/.composer
+            
             # Install composer dependencies as www-data (now has write permissions)
             echo "Installing composer dependencies..."
             cd /var/www/pterodactyl
-            sudo -u www-data composer install --no-dev --optimize-autoloader --no-interaction
+            sudo -u www-data COMPOSER_HOME=/var/www/.composer composer install --no-dev --optimize-autoloader --no-interaction
             
             echo "✓ Panel files installed"
             
@@ -196,13 +202,25 @@ jobs:
               --redis-port=6379 \
               --no-interaction
             
-            sudo -u www-data php artisan p:environment:database \
+            # Configure database settings
+            # Pass password as environment variable to avoid shell escaping issues
+            echo "Configuring database connection..."
+            sudo -u www-data DB_PASSWORD="${PTERO_DB_PASSWORD}" php artisan p:environment:database \
               --host=127.0.0.1 \
               --port=3306 \
               --database=pterodactyl \
               --username=ptero \
               --password="${PTERO_DB_PASSWORD}" \
               --no-interaction
+            
+            # Verify database connection before proceeding
+            echo "Verifying database connection..."
+            if ! sudo -u www-data php artisan migrate:status 2>&1 | grep -q "Migration table created successfully\|Migration name"; then
+              echo "ERROR: Database connection failed. Checking .env file..."
+              sudo cat /var/www/pterodactyl/.env | grep DB_ || true
+              exit 1
+            fi
+            echo "✓ Database connection verified"
             
             # Configure mail settings (use default local mail)
             sudo -u www-data php artisan p:environment:mail \
@@ -218,9 +236,26 @@ jobs:
             # ==========================================
             echo "[6/9] Running database migrations..."
             
-            sudo -u www-data php artisan migrate --seed --force
+            # Run migrations with proper error handling
+            if ! sudo -u www-data php artisan migrate --seed --force; then
+              echo "ERROR: Database migration failed!"
+              echo "Checking database connection..."
+              sudo mysql -e "SHOW GRANTS FOR 'ptero'@'localhost';" || true
+              sudo mysql -e "SELECT user, host FROM mysql.user WHERE user='ptero';" || true
+              echo "Checking .env file database settings..."
+              sudo cat /var/www/pterodactyl/.env | grep DB_ || true
+              exit 1
+            fi
             
-            echo "✓ Database migrations complete"
+            # Verify migrations were successful
+            echo "Verifying migrations..."
+            if ! sudo mysql pterodactyl -e "SHOW TABLES;" | grep -q "settings"; then
+              echo "ERROR: Migrations did not create expected tables!"
+              sudo mysql pterodactyl -e "SHOW TABLES;" || true
+              exit 1
+            fi
+            
+            echo "✓ Database migrations complete and verified"
             
             # ==========================================
             # 7. Create Admin User
@@ -248,6 +283,15 @@ jobs:
             if ! command -v nginx &> /dev/null; then
               echo "Installing Nginx..."
               sudo apt-get install -y nginx
+            fi
+            
+            # Check if port 8080 is already in use
+            echo "Checking port 8080 availability..."
+            if sudo lsof -i :8080 -t >/dev/null 2>&1; then
+              echo "⚠ Port 8080 is already in use. Checking what's using it..."
+              sudo lsof -i :8080 || true
+              echo "This is expected if Caddy or another service is running."
+              echo "Nginx will bind to 127.0.0.1:8080 which should work alongside Caddy."
             fi
             
             # Create Nginx configuration
@@ -299,12 +343,34 @@ jobs:
             # Remove default site if exists
             sudo rm -f /etc/nginx/sites-enabled/default
             
-            # Test and reload Nginx
-            sudo nginx -t
-            sudo systemctl enable nginx
-            sudo systemctl restart nginx
+            # Test Nginx configuration
+            echo "Testing Nginx configuration..."
+            if ! sudo nginx -t; then
+              echo "ERROR: Nginx configuration test failed!"
+              exit 1
+            fi
             
-            echo "✓ Nginx setup complete"
+            # Enable and start/restart Nginx
+            sudo systemctl enable nginx
+            if ! sudo systemctl restart nginx; then
+              echo "ERROR: Nginx failed to start!"
+              echo "Checking Nginx status..."
+              sudo systemctl status nginx --no-pager -l || true
+              echo "Checking Nginx error log..."
+              sudo tail -50 /var/log/nginx/error.log || true
+              echo "Checking what's using port 8080..."
+              sudo netstat -tlnp | grep 8080 || true
+              exit 1
+            fi
+            
+            # Verify Nginx is running and listening
+            if ! sudo systemctl is-active --quiet nginx; then
+              echo "ERROR: Nginx is not running after restart!"
+              sudo systemctl status nginx --no-pager -l || true
+              exit 1
+            fi
+            
+            echo "✓ Nginx setup complete and verified"
             
             # ==========================================
             # 9. Systemd Services & Cron
@@ -399,11 +465,102 @@ jobs:
             echo "✓ Permissions set"
             
             # ==========================================
-            # Final Status
+            # Final Status & Verification
             # ==========================================
             echo ""
             echo "=========================================="
-            echo "Installation Complete!"
+            echo "Installation Complete - Running Verification"
+            echo "=========================================="
+            echo ""
+            
+            # Verify all critical services are running
+            FAILED_SERVICES=""
+            
+            echo "Checking services status..."
+            if ! sudo systemctl is-active --quiet nginx; then
+              echo "❌ Nginx is NOT running"
+              FAILED_SERVICES="${FAILED_SERVICES}nginx "
+            else
+              echo "✓ Nginx is running"
+            fi
+            
+            if ! sudo systemctl is-active --quiet php8.3-fpm; then
+              echo "❌ PHP-FPM is NOT running"
+              FAILED_SERVICES="${FAILED_SERVICES}php8.3-fpm "
+            else
+              echo "✓ PHP-FPM is running"
+            fi
+            
+            if ! sudo systemctl is-active --quiet pteroq; then
+              echo "❌ Pterodactyl Queue is NOT running"
+              FAILED_SERVICES="${FAILED_SERVICES}pteroq "
+            else
+              echo "✓ Pterodactyl Queue is running"
+            fi
+            
+            if ! sudo systemctl is-active --quiet mariadb; then
+              echo "❌ MariaDB is NOT running"
+              FAILED_SERVICES="${FAILED_SERVICES}mariadb "
+            else
+              echo "✓ MariaDB is running"
+            fi
+            
+            if ! sudo systemctl is-active --quiet redis-server; then
+              echo "❌ Redis is NOT running"
+              FAILED_SERVICES="${FAILED_SERVICES}redis "
+            else
+              echo "✓ Redis is running"
+            fi
+            
+            # Check if Nginx is listening on 8080
+            echo ""
+            echo "Checking Nginx port binding..."
+            if sudo netstat -tlnp | grep "127.0.0.1:8080" | grep -q nginx; then
+              echo "✓ Nginx is listening on 127.0.0.1:8080"
+            else
+              echo "❌ Nginx is NOT listening on 127.0.0.1:8080"
+              sudo netstat -tlnp | grep 8080 || echo "Port 8080 not in use by any service"
+              FAILED_SERVICES="${FAILED_SERVICES}nginx-port "
+            fi
+            
+            # Test database connection
+            echo ""
+            echo "Testing database connection..."
+            if sudo mysql -u ptero -p"${PTERO_DB_PASSWORD}" pterodactyl -e "SELECT COUNT(*) FROM settings;" >/dev/null 2>&1; then
+              echo "✓ Database connection successful"
+            else
+              echo "❌ Database connection failed"
+              FAILED_SERVICES="${FAILED_SERVICES}database "
+            fi
+            
+            # Check critical directories
+            echo ""
+            echo "Verifying file permissions..."
+            if [[ -w /var/www/pterodactyl/storage ]]; then
+              echo "✓ Storage directory is writable"
+            else
+              echo "❌ Storage directory is NOT writable"
+              FAILED_SERVICES="${FAILED_SERVICES}permissions "
+            fi
+            
+            # If any service failed, show details and exit with error
+            if [[ -n "${FAILED_SERVICES}" ]]; then
+              echo ""
+              echo "=========================================="
+              echo "⚠ Installation completed with ERRORS"
+              echo "=========================================="
+              echo "Failed components: ${FAILED_SERVICES}"
+              echo ""
+              echo "Service Details:"
+              sudo systemctl status nginx --no-pager -l || true
+              sudo systemctl status php8.3-fpm --no-pager -l || true
+              sudo systemctl status pteroq --no-pager -l || true
+              exit 1
+            fi
+            
+            echo ""
+            echo "=========================================="
+            echo "✓ All Verification Checks Passed!"
             echo "=========================================="
             echo ""
             echo "Panel URL: https://panel.festas-builds.com"
@@ -416,10 +573,11 @@ jobs:
             echo ""
             echo "Next Steps:"
             echo "1. Ensure DNS A-record for panel.festas-builds.com points to this server"
-            echo "2. Update Caddyfile and reload Caddy to enable SSL"
-            echo "3. Log into the panel at https://panel.festas-builds.com"
-            echo "4. Create a Location and Node in the admin panel"
-            echo "5. Generate Wings token and configure Wings"
+            echo "2. Caddy should already be configured (Caddyfile includes panel.festas-builds.com)"
+            echo "3. Reload Caddy if it's running: docker compose exec caddy caddy reload"
+            echo "4. Log into the panel at https://panel.festas-builds.com"
+            echo "5. Create a Location and Node in the admin panel"
+            echo "6. Generate Wings token and configure Wings"
             echo ""
             echo "See docs/PTERODACTYL_SETUP.md for detailed instructions"
             echo "=========================================="

@@ -7,6 +7,8 @@ jobs:
   deploy-pterodactyl:
     name: Install Pterodactyl Panel & Wings
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout repository

@@ -203,9 +203,8 @@ jobs:
               --no-interaction
             
             # Configure database settings
-            # Pass password as environment variable to avoid shell escaping issues
             echo "Configuring database connection..."
-            sudo -u www-data DB_PASSWORD="${PTERO_DB_PASSWORD}" php artisan p:environment:database \
+            sudo -u www-data php artisan p:environment:database \
               --host=127.0.0.1 \
               --port=3306 \
               --database=pterodactyl \
@@ -215,7 +214,7 @@ jobs:
             
             # Verify database connection before proceeding
             echo "Verifying database connection..."
-            if ! sudo -u www-data php artisan migrate:status 2>&1 | grep -q "Migration table created successfully\|Migration name"; then
+            if ! sudo -u www-data php artisan migrate:status 2>&1 | grep -q -E "Migration table created successfully|Migration name"; then
               echo "ERROR: Database connection failed. Checking .env file..."
               sudo cat /var/www/pterodactyl/.env | grep DB_ || true
               exit 1
@@ -526,7 +525,8 @@ jobs:
             # Test database connection
             echo ""
             echo "Testing database connection..."
-            if sudo mysql -u ptero -p"${PTERO_DB_PASSWORD}" pterodactyl -e "SELECT COUNT(*) FROM settings;" >/dev/null 2>&1; then
+            # Use environment variable to avoid password exposure in process list
+            if sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -e "SELECT COUNT(*) FROM settings;" >/dev/null 2>&1; then
               echo "✓ Database connection successful"
             else
               echo "❌ Database connection failed"

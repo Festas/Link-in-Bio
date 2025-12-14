@@ -2,6 +2,12 @@ name: Deploy Pterodactyl Panel & Wings
 
 on:
   workflow_dispatch:
+    inputs:
+      force_reinstall:
+        description: 'Force reinstall (removes existing installation)'
+        required: false
+        default: 'false'
+        type: boolean
 
 jobs:
   deploy-pterodactyl:
@@ -20,11 +26,12 @@ jobs:
           PTERO_DB_PASSWORD: ${{ secrets.PTERO_DB_PASSWORD }}
           PTERO_ADMIN_EMAIL: ${{ secrets.PTERO_ADMIN_EMAIL }}
           PTERO_ADMIN_PASSWORD: ${{ secrets.PTERO_ADMIN_PASSWORD }}
+          FORCE_REINSTALL: ${{ github.event.inputs.force_reinstall }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: PTERO_DB_PASSWORD,PTERO_ADMIN_EMAIL,PTERO_ADMIN_PASSWORD
+          envs: PTERO_DB_PASSWORD,PTERO_ADMIN_EMAIL,PTERO_ADMIN_PASSWORD,FORCE_REINSTALL
           script_stop: true
           timeout: 30m
           script: |
@@ -44,10 +51,22 @@ jobs:
             # ==========================================
             echo "[1/9] Checking existing installation..."
             
+            # Check for FORCE_REINSTALL environment variable to allow reinstallation
+            if [[ "${FORCE_REINSTALL:-false}" == "true" ]]; then
+              echo "⚠ FORCE_REINSTALL is set, removing existing installation..."
+              sudo rm -rf /var/www/pterodactyl
+              sudo mysql -e "DROP DATABASE IF EXISTS pterodactyl;" || true
+              sudo mysql -e "DROP USER IF EXISTS 'ptero'@'127.0.0.1';" || true
+              sudo mysql -e "DROP USER IF EXISTS 'ptero'@'localhost';" || true
+              sudo mysql -e "DROP USER IF EXISTS 'pterodactyluser'@'127.0.0.1';" || true
+              sudo mysql -e "DROP USER IF EXISTS 'pterodactyluser'@'localhost';" || true
+              echo "✓ Previous installation removed"
+            fi
+            
             if [[ -f /var/www/pterodactyl/artisan ]]; then
               echo "⚠ Pterodactyl Panel already installed at /var/www/pterodactyl"
               echo "Skipping installation to prevent data loss."
-              echo "To reinstall, manually remove /var/www/pterodactyl and re-run this workflow."
+              echo "To reinstall, set FORCE_REINSTALL=true and re-run this workflow."
               exit 0
             fi
             
@@ -103,12 +122,24 @@ jobs:
             # ==========================================
             echo "[3/9] Setting up database..."
             
-            # Create database and users
-            sudo mysql -e "CREATE DATABASE IF NOT EXISTS pterodactyl;" || true
-            sudo mysql -e "CREATE USER IF NOT EXISTS 'ptero'@'127.0.0.1' IDENTIFIED BY '${PTERO_DB_PASSWORD}';" || true
-            sudo mysql -e "GRANT ALL PRIVILEGES ON pterodactyl.* TO 'ptero'@'127.0.0.1' WITH GRANT OPTION;" || true
-            sudo mysql -e "CREATE USER IF NOT EXISTS 'pterodactyluser'@'127.0.0.1' IDENTIFIED BY '${PTERO_DB_PASSWORD}';" || true
-            sudo mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'pterodactyluser'@'127.0.0.1' WITH GRANT OPTION;" || true
+            # Create database
+            sudo mysql -e "CREATE DATABASE IF NOT EXISTS pterodactyl;"
+            
+            # Create users for BOTH localhost and 127.0.0.1 (MySQL treats them differently!)
+            # User for 127.0.0.1
+            sudo mysql -e "CREATE USER IF NOT EXISTS 'ptero'@'127.0.0.1' IDENTIFIED BY '${PTERO_DB_PASSWORD}';"
+            sudo mysql -e "GRANT ALL PRIVILEGES ON pterodactyl.* TO 'ptero'@'127.0.0.1' WITH GRANT OPTION;"
+            
+            # User for localhost (this is what PHP often uses!)
+            sudo mysql -e "CREATE USER IF NOT EXISTS 'ptero'@'localhost' IDENTIFIED BY '${PTERO_DB_PASSWORD}';"
+            sudo mysql -e "GRANT ALL PRIVILEGES ON pterodactyl.* TO 'ptero'@'localhost' WITH GRANT OPTION;"
+            
+            # Pterodactyl user for game server databases (both hosts)
+            sudo mysql -e "CREATE USER IF NOT EXISTS 'pterodactyluser'@'127.0.0.1' IDENTIFIED BY '${PTERO_DB_PASSWORD}';"
+            sudo mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'pterodactyluser'@'127.0.0.1' WITH GRANT OPTION;"
+            sudo mysql -e "CREATE USER IF NOT EXISTS 'pterodactyluser'@'localhost' IDENTIFIED BY '${PTERO_DB_PASSWORD}';"
+            sudo mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'pterodactyluser'@'localhost' WITH GRANT OPTION;"
+            
             sudo mysql -e "FLUSH PRIVILEGES;"
             
             echo "✓ Database setup complete"

@@ -18,14 +18,14 @@ fi
 # Default password (can be overridden)
 PTERO_DB_PASSWORD="${PTERO_DB_PASSWORD:-PterodactylDBPass2024!}"
 
-echo "[1/5] Stopping services..."
+echo "[1/6] Stopping services..."
 systemctl stop nginx 2>/dev/null || true
 systemctl stop pteroq 2>/dev/null || true
 systemctl stop php8.3-fpm 2>/dev/null || true
 echo "✓ Services stopped"
 
 echo ""
-echo "[2/5] Cleaning Nginx configurations..."
+echo "[2/6] Cleaning Nginx configurations..."
 rm -f /etc/nginx/sites-enabled/*
 rm -f /etc/nginx/sites-available/pterodactyl.conf
 rm -f /etc/nginx/sites-enabled/default
@@ -34,7 +34,7 @@ rm -f /etc/nginx/conf.d/default.conf
 echo "✓ Nginx configs cleaned"
 
 echo ""
-echo "[3/5] Fixing .env file password format..."
+echo "[3/6] Fixing .env file password format..."
 if [[ -f /var/www/pterodactyl/.env ]]; then
   cd /var/www/pterodactyl
   
@@ -50,7 +50,7 @@ else
 fi
 
 echo ""
-echo "[4/5] Testing database connection..."
+echo "[4/6] Testing database connection..."
 if [[ -f /var/www/pterodactyl/artisan ]]; then
   cd /var/www/pterodactyl
   if sudo -u www-data php artisan migrate:status; then
@@ -68,7 +68,7 @@ else
 fi
 
 echo ""
-echo "[5/5] Recreating Nginx configuration..."
+echo "[5/6] Recreating Nginx configuration..."
 cat > /etc/nginx/sites-available/pterodactyl.conf << 'NGINX_EOF'
 server {
     listen 127.0.0.1:8081;

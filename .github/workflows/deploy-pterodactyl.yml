@@ -74,7 +74,6 @@ jobs:
               sudo mysql -e "DROP USER IF EXISTS 'pterodactyluser'@'localhost';" || true
               
               # Remove systemd services
-              sudo systemctl stop pteroq || true
               sudo systemctl disable pteroq || true
               sudo rm -f /etc/systemd/system/pteroq.service
               sudo systemctl daemon-reload
@@ -240,7 +239,7 @@ jobs:
               echo "ERROR: .env file has incorrect DB_USERNAME!"
               echo "Expected: DB_USERNAME=ptero"
               echo "Current .env DB settings:"
-              sudo cat /var/www/pterodactyl/.env | grep DB_ || true
+              sudo grep DB_ /var/www/pterodactyl/.env || true
               exit 1
             fi
             echo "✓ .env credentials verified"

@@ -117,3 +117,22 @@ cs.festas-builds.com {
     header @static Cache-Control "public, max-age=31536000, immutable"
     reverse_proxy cosmic-survivor:80
 }
+
+# Pterodactyl Panel - Game Server Management
+# Panel runs on Nginx internally on port 8080, Caddy handles SSL
+panel.festas-builds.com {
+    tls eric@festas-builds.com
+    encode gzip zstd
+    
+    # Security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy same-origin
+    }
+    
+    # Reverse proxy to Nginx (running on host, not in Docker)
+    # Uses host.docker.internal to reach host from container
+    reverse_proxy host.docker.internal:8080
+}

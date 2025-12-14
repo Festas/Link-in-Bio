@@ -1,0 +1,388 @@
+name: Deploy Pterodactyl Panel & Wings
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-pterodactyl:
+    name: Install Pterodactyl Panel & Wings
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy Pterodactyl to Hetzner via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          PTERO_DB_PASSWORD: ${{ secrets.PTERO_DB_PASSWORD }}
+          PTERO_ADMIN_EMAIL: ${{ secrets.PTERO_ADMIN_EMAIL }}
+          PTERO_ADMIN_PASSWORD: ${{ secrets.PTERO_ADMIN_PASSWORD }}
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: PTERO_DB_PASSWORD,PTERO_ADMIN_EMAIL,PTERO_ADMIN_PASSWORD
+          script_stop: true
+          timeout: 30m
+          script: |
+            set -euo pipefail
+            
+            echo "=========================================="
+            echo "Pterodactyl Panel & Wings Installation"
+            echo "=========================================="
+            
+            # Set default values for secrets if not provided
+            PTERO_DB_PASSWORD="${PTERO_DB_PASSWORD:-PterodactylDBPass2024!}"
+            PTERO_ADMIN_EMAIL="${PTERO_ADMIN_EMAIL:-admin@festas-builds.com}"
+            PTERO_ADMIN_PASSWORD="${PTERO_ADMIN_PASSWORD:-PteroAdmin2024!}"
+            
+            # ==========================================
+            # 1. Check if already installed (idempotent)
+            # ==========================================
+            echo "[1/9] Checking existing installation..."
+            
+            if [[ -f /var/www/pterodactyl/artisan ]]; then
+              echo "⚠ Pterodactyl Panel already installed at /var/www/pterodactyl"
+              echo "Skipping installation to prevent data loss."
+              echo "To reinstall, manually remove /var/www/pterodactyl and re-run this workflow."
+              exit 0
+            fi
+            
+            echo "✓ No existing installation found, proceeding..."
+            
+            # ==========================================
+            # 2. System Setup
+            # ==========================================
+            echo "[2/9] Installing system dependencies..."
+            
+            # Update package list
+            sudo apt-get update
+            
+            # Add PHP repository for 8.3
+            sudo apt-get install -y software-properties-common
+            sudo add-apt-repository -y ppa:ondrej/php
+            sudo apt-get update
+            
+            # Install PHP 8.3 and extensions
+            sudo apt-get install -y php8.3 php8.3-cli php8.3-common php8.3-gd \
+              php8.3-mysql php8.3-mbstring php8.3-bcmath php8.3-xml php8.3-fpm \
+              php8.3-curl php8.3-zip php8.3-intl php8.3-sqlite3 php8.3-redis
+            
+            # Install Composer if not present
+            if ! command -v composer &> /dev/null; then
+              echo "Installing Composer..."
+              curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
+            fi
+            
+            # Install MariaDB if not present
+            if ! command -v mysql &> /dev/null; then
+              echo "Installing MariaDB..."
+              sudo apt-get install -y mariadb-server mariadb-client
+              sudo systemctl start mariadb
+              sudo systemctl enable mariadb
+            fi
+            
+            # Install Redis if not present
+            if ! command -v redis-cli &> /dev/null; then
+              echo "Installing Redis..."
+              sudo apt-get install -y redis-server
+              sudo systemctl start redis-server
+              sudo systemctl enable redis-server
+            fi
+            
+            # Install other dependencies
+            sudo apt-get install -y curl tar unzip git
+            
+            echo "✓ System dependencies installed"
+            
+            # ==========================================
+            # 3. Database Setup
+            # ==========================================
+            echo "[3/9] Setting up database..."
+            
+            # Create database and users
+            sudo mysql -e "CREATE DATABASE IF NOT EXISTS pterodactyl;" || true
+            sudo mysql -e "CREATE USER IF NOT EXISTS 'ptero'@'127.0.0.1' IDENTIFIED BY '${PTERO_DB_PASSWORD}';" || true
+            sudo mysql -e "GRANT ALL PRIVILEGES ON pterodactyl.* TO 'ptero'@'127.0.0.1' WITH GRANT OPTION;" || true
+            sudo mysql -e "CREATE USER IF NOT EXISTS 'pterodactyluser'@'127.0.0.1' IDENTIFIED BY '${PTERO_DB_PASSWORD}';" || true
+            sudo mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'pterodactyluser'@'127.0.0.1' WITH GRANT OPTION;" || true
+            sudo mysql -e "FLUSH PRIVILEGES;"
+            
+            echo "✓ Database setup complete"
+            
+            # ==========================================
+            # 4. Panel Installation
+            # ==========================================
+            echo "[4/9] Installing Pterodactyl Panel..."
+            
+            # Create directory
+            sudo mkdir -p /var/www/pterodactyl
+            cd /var/www/pterodactyl
+            
+            # Download Panel
+            echo "Downloading latest Panel release..."
+            PANEL_VERSION=$(curl -s https://api.github.com/repos/pterodactyl/panel/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+            echo "Latest version: ${PANEL_VERSION}"
+            
+            sudo curl -L -o panel.tar.gz "https://github.com/pterodactyl/panel/releases/latest/download/panel.tar.gz"
+            sudo tar -xzf panel.tar.gz
+            sudo rm panel.tar.gz
+            
+            # Set permissions for composer
+            sudo chown -R www-data:www-data /var/www/pterodactyl/*
+            
+            # Install composer dependencies as www-data
+            echo "Installing composer dependencies..."
+            sudo -u www-data composer install --no-dev --optimize-autoloader --no-interaction
+            
+            echo "✓ Panel files installed"
+            
+            # ==========================================
+            # 5. Panel Configuration
+            # ==========================================
+            echo "[5/9] Configuring Panel..."
+            
+            # Generate application key and create .env
+            sudo -u www-data php artisan key:generate --force
+            
+            # Configure .env file
+            sudo -u www-data php artisan p:environment:setup \
+              --url=https://panel.festas-builds.com \
+              --timezone=Europe/Berlin \
+              --cache=redis \
+              --session=redis \
+              --queue=redis \
+              --redis-host=127.0.0.1 \
+              --redis-pass= \
+              --redis-port=6379 \
+              --no-interaction
+            
+            sudo -u www-data php artisan p:environment:database \
+              --host=127.0.0.1 \
+              --port=3306 \
+              --database=pterodactyl \
+              --username=ptero \
+              --password="${PTERO_DB_PASSWORD}" \
+              --no-interaction
+            
+            # Configure mail settings (use default local mail)
+            sudo -u www-data php artisan p:environment:mail \
+              --driver=mail \
+              --email=noreply@festas-builds.com \
+              --from="Pterodactyl Panel" \
+              --no-interaction
+            
+            echo "✓ Panel configuration complete"
+            
+            # ==========================================
+            # 6. Database Migrations
+            # ==========================================
+            echo "[6/9] Running database migrations..."
+            
+            sudo -u www-data php artisan migrate --seed --force
+            
+            echo "✓ Database migrations complete"
+            
+            # ==========================================
+            # 7. Create Admin User
+            # ==========================================
+            echo "[7/9] Creating admin user..."
+            
+            # Check if admin user already exists
+            USER_EXISTS=$(sudo -u www-data php artisan tinker --execute="echo \App\Models\User::where('email', '${PTERO_ADMIN_EMAIL}')->exists() ? 'yes' : 'no';" 2>/dev/null || echo "no")
+            
+            if [[ "${USER_EXISTS}" == "yes" ]]; then
+              echo "⚠ Admin user already exists, skipping creation"
+            else
+              sudo -u www-data php artisan p:user:make \
+                --email="${PTERO_ADMIN_EMAIL}" \
+                --username=admin \
+                --name-first=Admin \
+                --name-last=Festas \
+                --password="${PTERO_ADMIN_PASSWORD}" \
+                --admin=1 \
+                --no-interaction || echo "⚠ User creation may have failed, check manually"
+            fi
+            
+            echo "✓ Admin user setup complete"
+            
+            # ==========================================
+            # 8. Nginx Setup
+            # ==========================================
+            echo "[8/9] Setting up Nginx..."
+            
+            # Install Nginx if not present
+            if ! command -v nginx &> /dev/null; then
+              echo "Installing Nginx..."
+              sudo apt-get install -y nginx
+            fi
+            
+            # Create Nginx configuration
+            sudo tee /etc/nginx/sites-available/pterodactyl.conf > /dev/null <<'NGINX_EOF'
+            server {
+                listen 127.0.0.1:8080;
+                server_name panel.festas-builds.com;
+                root /var/www/pterodactyl/public;
+                index index.php;
+            
+                access_log /var/log/nginx/pterodactyl.access.log;
+                error_log /var/log/nginx/pterodactyl.error.log;
+            
+                client_max_body_size 100m;
+                client_body_timeout 120s;
+            
+                sendfile off;
+            
+                location / {
+                    try_files $uri $uri/ /index.php?$query_string;
+                }
+            
+                location ~ \.php$ {
+                    fastcgi_split_path_info ^(.+\.php)(/.+)$;
+                    fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+                    fastcgi_index index.php;
+                    include fastcgi_params;
+                    fastcgi_param PHP_VALUE "upload_max_filesize = 100M \n post_max_size=100M";
+                    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                    fastcgi_param HTTP_PROXY "";
+                    fastcgi_intercept_errors off;
+                    fastcgi_buffer_size 16k;
+                    fastcgi_buffers 4 16k;
+                    fastcgi_connect_timeout 300;
+                    fastcgi_send_timeout 300;
+                    fastcgi_read_timeout 300;
+                    include /etc/nginx/fastcgi_params;
+                }
+            
+                location ~ /\.ht {
+                    deny all;
+                }
+            }
+            NGINX_EOF
+            
+            # Enable site
+            sudo ln -sf /etc/nginx/sites-available/pterodactyl.conf /etc/nginx/sites-enabled/pterodactyl.conf
+            
+            # Remove default site if exists
+            sudo rm -f /etc/nginx/sites-enabled/default
+            
+            # Test and reload Nginx
+            sudo nginx -t
+            sudo systemctl enable nginx
+            sudo systemctl restart nginx
+            
+            echo "✓ Nginx setup complete"
+            
+            # ==========================================
+            # 9. Systemd Services & Cron
+            # ==========================================
+            echo "[9/9] Setting up systemd services..."
+            
+            # Create pteroq service
+            sudo tee /etc/systemd/system/pteroq.service > /dev/null <<'SERVICE_EOF'
+            [Unit]
+            Description=Pterodactyl Queue Worker
+            After=redis-server.service
+            
+            [Service]
+            User=www-data
+            Group=www-data
+            Restart=always
+            ExecStart=/usr/bin/php /var/www/pterodactyl/artisan queue:work --queue=high,standard,low --sleep=3 --tries=3
+            StartLimitInterval=180
+            StartLimitBurst=30
+            RestartSec=5s
+            
+            [Install]
+            WantedBy=multi-user.target
+            SERVICE_EOF
+            
+            # Enable and start pteroq
+            sudo systemctl enable pteroq.service
+            sudo systemctl start pteroq.service
+            
+            # Add cron job for schedule
+            CRON_CMD="* * * * * php /var/www/pterodactyl/artisan schedule:run >> /dev/null 2>&1"
+            (sudo crontab -u www-data -l 2>/dev/null || true; echo "${CRON_CMD}") | sudo crontab -u www-data -
+            
+            echo "✓ Systemd services configured"
+            
+            # ==========================================
+            # 10. Wings Installation
+            # ==========================================
+            echo "[10/10] Installing Wings..."
+            
+            # Create pterodactyl directory
+            sudo mkdir -p /etc/pterodactyl
+            
+            # Download Wings
+            WINGS_VERSION=$(curl -s https://api.github.com/repos/pterodactyl/wings/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+            echo "Downloading Wings ${WINGS_VERSION}..."
+            sudo curl -L -o /usr/local/bin/wings "https://github.com/pterodactyl/wings/releases/latest/download/wings_linux_amd64"
+            sudo chmod +x /usr/local/bin/wings
+            
+            # Create Wings systemd service
+            sudo tee /etc/systemd/system/wings.service > /dev/null <<'WINGS_EOF'
+            [Unit]
+            Description=Pterodactyl Wings Daemon
+            After=docker.service
+            Requires=docker.service
+            PartOf=docker.service
+            
+            [Service]
+            User=root
+            WorkingDirectory=/etc/pterodactyl
+            LimitNOFILE=4096
+            PIDFile=/var/run/wings/daemon.pid
+            ExecStart=/usr/local/bin/wings
+            Restart=on-failure
+            StartLimitInterval=180
+            StartLimitBurst=30
+            RestartSec=5s
+            
+            [Install]
+            WantedBy=multi-user.target
+            WINGS_EOF
+            
+            # Enable Wings service (but don't start - needs manual token configuration)
+            sudo systemctl enable wings.service
+            
+            echo "✓ Wings installed (not started - needs manual token configuration)"
+            
+            # ==========================================
+            # 11. Set Final Permissions
+            # ==========================================
+            echo "Setting final permissions..."
+            
+            sudo chown -R www-data:www-data /var/www/pterodactyl/*
+            sudo chmod -R 755 /var/www/pterodactyl/storage
+            sudo chmod -R 755 /var/www/pterodactyl/bootstrap/cache
+            
+            echo "✓ Permissions set"
+            
+            # ==========================================
+            # Final Status
+            # ==========================================
+            echo ""
+            echo "=========================================="
+            echo "Installation Complete!"
+            echo "=========================================="
+            echo ""
+            echo "Panel URL: https://panel.festas-builds.com"
+            echo "Admin Email: ${PTERO_ADMIN_EMAIL}"
+            echo ""
+            echo "Services Status:"
+            sudo systemctl status nginx --no-pager -l || true
+            sudo systemctl status php8.3-fpm --no-pager -l || true
+            sudo systemctl status pteroq --no-pager -l || true
+            echo ""
+            echo "Next Steps:"
+            echo "1. Ensure DNS A-record for panel.festas-builds.com points to this server"
+            echo "2. Update Caddyfile and reload Caddy to enable SSL"
+            echo "3. Log into the panel at https://panel.festas-builds.com"
+            echo "4. Create a Location and Node in the admin panel"
+            echo "5. Generate Wings token and configure Wings"
+            echo ""
+            echo "See docs/PTERODACTYL_SETUP.md for detailed instructions"
+            echo "=========================================="

@@ -235,7 +235,8 @@ jobs:
             
             # Fix .env file password format (Laravel may add extra quotes)
             echo "Fixing .env password format..."
-            sudo -u www-data sed -i 's/DB_PASSWORD=".*"/DB_PASSWORD='"${PTERO_DB_PASSWORD}"'/' /var/www/pterodactyl/.env
+            # Use a safe method that doesn't expose password to shell expansion
+            sudo -u www-data sh -c "sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD='\"${PTERO_DB_PASSWORD}\"'/' /var/www/pterodactyl/.env"
             echo "✓ .env password format fixed"
             
             # Verify .env file has correct database credentials

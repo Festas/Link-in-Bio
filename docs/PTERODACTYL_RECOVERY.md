@@ -106,7 +106,9 @@ cd /var/www/pterodactyl
 
 # Fix password format (remove extra quotes)
 # Replace PterodactylDBPass2024! with your actual password
-sudo -u www-data sed -i 's/DB_PASSWORD=".*"/DB_PASSWORD=PterodactylDBPass2024!/' .env
+# Use a safe method that properly handles special characters
+export PTERO_DB_PASSWORD="PterodactylDBPass2024!"
+sudo -u www-data sh -c "sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD='\"${PTERO_DB_PASSWORD}\"'/' .env"
 
 # Verify the fix
 sudo grep DB_ .env

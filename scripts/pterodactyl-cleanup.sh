@@ -38,8 +38,8 @@ echo "[3/6] Fixing .env file password format..."
 if [[ -f /var/www/pterodactyl/.env ]]; then
   cd /var/www/pterodactyl
   
-  # Fix password format (remove extra quotes)
-  sudo -u www-data sed -i 's/DB_PASSWORD=".*"/DB_PASSWORD='"${PTERO_DB_PASSWORD}"'/' .env
+  # Fix password format (remove extra quotes) using a safe method
+  sudo -u www-data sh -c "sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD='\"${PTERO_DB_PASSWORD}\"'/' .env"
   
   # Show current DB settings
   echo "Current database settings in .env:"

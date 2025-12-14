@@ -119,7 +119,7 @@ cs.festas-builds.com {
 }
 
 # Pterodactyl Panel - Game Server Management
-# Panel runs on Nginx internally on port 8080, Caddy handles SSL
+# Panel runs on Nginx internally on port 8081, Caddy handles SSL
 panel.festas-builds.com {
     tls eric@festas-builds.com
     encode gzip zstd
@@ -134,5 +134,5 @@ panel.festas-builds.com {
     
     # Reverse proxy to Nginx (running on host, not in Docker)
     # Uses host.docker.internal to reach host from container
-    reverse_proxy host.docker.internal:8080
+    reverse_proxy host.docker.internal:8081
 }

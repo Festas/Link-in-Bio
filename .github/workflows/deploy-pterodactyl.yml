@@ -54,12 +54,34 @@ jobs:
             # Check for FORCE_REINSTALL environment variable to allow reinstallation
             if [[ "${FORCE_REINSTALL:-false}" == "true" ]]; then
               echo "⚠ FORCE_REINSTALL is set, removing existing installation..."
+              
+              # Stop services
+              sudo systemctl stop pteroq || true
+              sudo systemctl stop nginx || true
+              
+              # Remove application files
               sudo rm -rf /var/www/pterodactyl
+              
+              # Remove Nginx configuration
+              sudo rm -f /etc/nginx/sites-enabled/pterodactyl.conf
+              sudo rm -f /etc/nginx/sites-available/pterodactyl.conf
+              
+              # Clean database
               sudo mysql -e "DROP DATABASE IF EXISTS pterodactyl;" || true
               sudo mysql -e "DROP USER IF EXISTS 'ptero'@'127.0.0.1';" || true
               sudo mysql -e "DROP USER IF EXISTS 'ptero'@'localhost';" || true
               sudo mysql -e "DROP USER IF EXISTS 'pterodactyluser'@'127.0.0.1';" || true
               sudo mysql -e "DROP USER IF EXISTS 'pterodactyluser'@'localhost';" || true
+              
+              # Remove systemd services
+              sudo systemctl stop pteroq || true
+              sudo systemctl disable pteroq || true
+              sudo rm -f /etc/systemd/system/pteroq.service
+              sudo systemctl daemon-reload
+              
+              # Remove cron job
+              sudo crontab -u www-data -l 2>/dev/null | grep -v "pterodactyl/artisan schedule:run" | sudo crontab -u www-data - || true
+              
               echo "✓ Previous installation removed"
             fi
             
@@ -212,6 +234,17 @@ jobs:
               --password="${PTERO_DB_PASSWORD}" \
               --no-interaction
             
+            # Verify .env file has correct database credentials
+            echo "Verifying .env database credentials..."
+            if ! sudo grep -q "DB_USERNAME=ptero" /var/www/pterodactyl/.env; then
+              echo "ERROR: .env file has incorrect DB_USERNAME!"
+              echo "Expected: DB_USERNAME=ptero"
+              echo "Current .env DB settings:"
+              sudo cat /var/www/pterodactyl/.env | grep DB_ || true
+              exit 1
+            fi
+            echo "✓ .env credentials verified"
+            
             # Verify database connection before proceeding
             echo "Verifying database connection..."
             if ! sudo -u www-data php artisan migrate:status 2>&1 | grep -q -E "Migration table created successfully|Migration name"; then
@@ -284,19 +317,36 @@ jobs:
               sudo apt-get install -y nginx
             fi
             
-            # Check if port 8080 is already in use
-            echo "Checking port 8080 availability..."
-            if sudo lsof -i :8080 -t >/dev/null 2>&1; then
-              echo "⚠ Port 8080 is already in use. Checking what's using it..."
-              sudo lsof -i :8080 || true
-              echo "This is expected if Caddy or another service is running."
-              echo "Nginx will bind to 127.0.0.1:8080 which should work alongside Caddy."
+            # Stop Nginx before making configuration changes to prevent port conflicts
+            echo "Stopping Nginx for configuration..."
+            sudo systemctl stop nginx || true
+            
+            # Remove ALL default Nginx configurations to prevent port 80 conflicts
+            echo "Removing default Nginx configurations..."
+            sudo rm -f /etc/nginx/sites-enabled/default
+            sudo rm -f /etc/nginx/sites-available/default
+            sudo rm -f /etc/nginx/conf.d/default.conf
+            
+            # Disable default server in nginx.conf if present
+            if sudo grep -q "listen.*80" /etc/nginx/nginx.conf 2>/dev/null; then
+              echo "⚠ Warning: /etc/nginx/nginx.conf contains port 80 configuration"
+              echo "This may need manual cleanup if issues persist"
             fi
             
-            # Create Nginx configuration
-            sudo tee /etc/nginx/sites-available/pterodactyl.conf > /dev/null <<'NGINX_EOF'
+            # Check if port 8081 is already in use
+            echo "Checking port 8081 availability..."
+            if sudo lsof -i :8081 -t >/dev/null 2>&1; then
+              echo "⚠ Port 8081 is already in use. Checking what's using it..."
+              sudo lsof -i :8081 || true
+              echo "ERROR: Port 8081 must be available for Nginx"
+              exit 1
+            fi
+            
+            # Create Nginx configuration using cat with proper escaping
+            echo "Creating Nginx configuration for Pterodactyl..."
+            sudo cat > /etc/nginx/sites-available/pterodactyl.conf << 'NGINX_EOF'
             server {
-                listen 127.0.0.1:8080;
+                listen 127.0.0.1:8081;
                 server_name panel.festas-builds.com;
                 root /var/www/pterodactyl/public;
                 index index.php;
@@ -338,9 +388,6 @@ jobs:
             
             # Enable site
             sudo ln -sf /etc/nginx/sites-available/pterodactyl.conf /etc/nginx/sites-enabled/pterodactyl.conf
-            
-            # Remove default site if exists
-            sudo rm -f /etc/nginx/sites-enabled/default
             
             # Test Nginx configuration
             echo "Testing Nginx configuration..."
@@ -511,14 +558,14 @@ jobs:
               echo "✓ Redis is running"
             fi
             
-            # Check if Nginx is listening on 8080
+            # Check if Nginx is listening on 8081
             echo ""
             echo "Checking Nginx port binding..."
-            if sudo netstat -tlnp | grep "127.0.0.1:8080" | grep -q nginx; then
-              echo "✓ Nginx is listening on 127.0.0.1:8080"
+            if sudo netstat -tlnp | grep "127.0.0.1:8081" | grep -q nginx; then
+              echo "✓ Nginx is listening on 127.0.0.1:8081"
             else
-              echo "❌ Nginx is NOT listening on 127.0.0.1:8080"
-              sudo netstat -tlnp | grep 8080 || echo "Port 8080 not in use by any service"
+              echo "❌ Nginx is NOT listening on 127.0.0.1:8081"
+              sudo netstat -tlnp | grep 8081 || echo "Port 8081 not in use by any service"
               FAILED_SERVICES="${FAILED_SERVICES}nginx-port "
             fi
             

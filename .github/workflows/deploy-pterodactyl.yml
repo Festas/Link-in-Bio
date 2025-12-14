@@ -131,11 +131,16 @@ jobs:
             sudo tar -xzf panel.tar.gz
             sudo rm panel.tar.gz
             
-            # Set permissions for composer
-            sudo chown -R www-data:www-data /var/www/pterodactyl/*
+            # Copy .env.example to .env BEFORE setting permissions
+            sudo cp .env.example .env
             
-            # Install composer dependencies as www-data
+            # Set permissions BEFORE running composer (this is critical!)
+            sudo chown -R www-data:www-data /var/www/pterodactyl
+            sudo chmod -R 755 /var/www/pterodactyl/storage /var/www/pterodactyl/bootstrap/cache
+            
+            # Install composer dependencies as www-data (now has write permissions)
             echo "Installing composer dependencies..."
+            cd /var/www/pterodactyl
             sudo -u www-data composer install --no-dev --optimize-autoloader --no-interaction
             
             echo "✓ Panel files installed"
@@ -145,7 +150,7 @@ jobs:
             # ==========================================
             echo "[5/9] Configuring Panel..."
             
-            # Generate application key and create .env
+            # Generate application key (now .env file exists)
             sudo -u www-data php artisan key:generate --force
             
             # Configure .env file
@@ -356,7 +361,7 @@ jobs:
             # ==========================================
             echo "Setting final permissions..."
             
-            sudo chown -R www-data:www-data /var/www/pterodactyl/*
+            sudo chown -R www-data:www-data /var/www/pterodactyl
             sudo chmod -R 755 /var/www/pterodactyl/storage
             sudo chmod -R 755 /var/www/pterodactyl/bootstrap/cache
             

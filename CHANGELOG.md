@@ -5,6 +5,40 @@ Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt hält sich an [Semantic Versioning](https://semver.org/lang/de/).
 
+## [2.0.0] - 2025-12-15 - Nginx Migration
+
+### Changed
+- **BREAKING**: Migrated from Dockerized Caddy to host-based Nginx reverse proxy
+- Updated `docker-compose.yml` to expose web container port to `127.0.0.1:8000`
+- Updated deployment workflow to deploy Nginx configurations instead of Caddy
+- Updated all helper scripts to remove Caddy references and add Nginx support
+- Updated firewall configuration to use standard ports 80/443 instead of 8080/8443
+
+### Added
+- Comprehensive Nginx server block configurations for all 9 domains
+- SSL/TLS management via Certbot/Let's Encrypt
+- Automated Nginx setup script (`scripts/setup-nginx-ssl.sh`)
+- Documentation: `docs/NGINX_MIGRATION.md` - Complete migration guide
+- Documentation: `docs/DEPLOYMENT_CHECKLIST.md` - Deployment procedures
+- Documentation: `docs/EXTERNAL_SERVICES_PORTS.md` - Port mapping reference
+- Documentation: `nginx/README.md` - Nginx configuration reference
+- Security headers configuration in Nginx (X-Frame-Options, X-Content-Type-Options, etc.)
+- Cache headers for static assets and application content
+- WebSocket support for real-time features (Minecraft console)
+
+### Removed
+- `Caddyfile` configuration file
+- Caddy service from `docker-compose.yml`
+- Caddy-specific volumes and networks
+- Caddy-related directory creation in deployment scripts
+
+### Migration Notes
+- All domains continue to work with identical routing logic
+- SSL certificates are now managed via Certbot instead of Caddy's automatic ACME
+- Docker containers must expose ports to `127.0.0.1` instead of using shared network
+- Manual SSL certificate setup required for new deployments
+- See `docs/NGINX_MIGRATION.md` for complete migration instructions
+
 ## [1.2.0] - 2024-11-22 - Comprehensive Project Rework
 
 ### Added

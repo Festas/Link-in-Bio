@@ -644,7 +644,13 @@ sleep 3
 echo "Flushing failed queue jobs..."
 cd /var/www/pterodactyl
 sudo -u www-data php artisan queue:flush 2>/dev/null || echo "⚠ Queue flush failed or not needed"
-echo "✓ Queue worker started cleanly"
+
+# Also clear the failed jobs table to prevent retries of old notification jobs
+echo "Clearing failed jobs table..."
+sudo -u www-data php artisan queue:clear --queue=high,standard,low 2>/dev/null || true
+sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -e "TRUNCATE TABLE failed_jobs;" 2>/dev/null || true
+
+echo "✓ Queue cleaned and ready for restart"
 
 # Add cron job for schedule (check if already exists to maintain idempotency)
 CRON_CMD="* * * * * php /var/www/pterodactyl/artisan schedule:run >> /dev/null 2>&1"
@@ -746,8 +752,14 @@ else
   # Verify queue is processing without errors
   echo "Checking queue for recent errors..."
   sleep 10
-  QUEUE_ERRORS=$(sudo journalctl -u pteroq --since "10 seconds ago" 2>/dev/null | grep -cE "\\[FAIL\\]|Exception|Failed" || echo "0")
-  if [[ "${QUEUE_ERRORS}" -gt "0" ]]; then
+  # Fix: Use wc -l for reliable counting, then sanitize the result
+  QUEUE_ERRORS=$(sudo journalctl -u pteroq --since "10 seconds ago" 2>/dev/null | grep -E "\\[FAIL\\]|Exception|Failed" | wc -l || echo "0")
+  # Sanitize: Remove any whitespace/newlines and ensure it's a valid number
+  QUEUE_ERRORS=$(echo "${QUEUE_ERRORS}" | tr -d '\n\r\t ' | grep -o '[0-9]*' || echo "0")
+  # Default to 0 if empty
+  QUEUE_ERRORS=${QUEUE_ERRORS:-0}
+  
+  if [[ "${QUEUE_ERRORS}" -gt 0 ]]; then
     echo "⚠ WARNING: Queue has ${QUEUE_ERRORS} errors in last 10 seconds"
     echo "Recent queue logs:"
     sudo journalctl -u pteroq -n 10 --no-pager || true
@@ -797,13 +809,14 @@ fi
 # Check critical directories
 echo ""
 echo "Verifying file permissions..."
-if [[ -w /var/www/pterodactyl/storage ]]; then
+# Fix: Test write permissions as www-data, not as root
+if sudo -u www-data test -w /var/www/pterodactyl/storage; then
   echo "✓ Storage directory is writable"
 else
   echo "⚠ Storage directory is NOT writable, fixing..."
   sudo chown -R www-data:www-data /var/www/pterodactyl/storage /var/www/pterodactyl/bootstrap/cache
   sudo chmod -R 775 /var/www/pterodactyl/storage /var/www/pterodactyl/bootstrap/cache
-  if [[ -w /var/www/pterodactyl/storage ]]; then
+  if sudo -u www-data test -w /var/www/pterodactyl/storage; then
     echo "✓ Storage directory permissions fixed"
   else
     echo "❌ Storage directory is STILL NOT writable after fix attempt"

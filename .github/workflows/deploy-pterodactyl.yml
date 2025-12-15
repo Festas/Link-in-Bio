@@ -875,7 +875,7 @@ jobs:
                   else
                     echo "⚠ Laravel command failed, trying direct SQL insert..."
                     PASSWORD_HASH=$(sudo -u www-data php -r "echo password_hash('${PTERO_ADMIN_PASSWORD}', PASSWORD_BCRYPT);")
-                    UUID=$(sudo -u www-data php -r "echo \Ramsey\Uuid\Uuid::uuid4()->toString();")
+                    UUID=$(sudo -u www-data php -r "require '/var/www/pterodactyl/vendor/autoload.php'; echo \Ramsey\Uuid\Uuid::uuid4()->toString();")
                     
                     if sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -e "
                       INSERT INTO users (uuid, email, username, name_first, name_last, password, root_admin, language, created_at, updated_at)

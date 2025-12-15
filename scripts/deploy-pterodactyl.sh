@@ -432,9 +432,9 @@ if sudo grep -q "listen.*80" /etc/nginx/nginx.conf 2>/dev/null; then
   echo "This may need manual cleanup if issues persist"
 fi
 
-# Create Nginx configuration using cat with proper escaping
+# Create Nginx configuration using tee with proper escaping
 echo "Creating Nginx configuration for Pterodactyl Panel (HTTPS)..."
-sudo cat > /etc/nginx/sites-available/panel.festas-builds.com.conf << 'NGINX_EOF'
+sudo tee /etc/nginx/sites-available/panel.festas-builds.com.conf > /dev/null << 'NGINX_EOF'
 # Pterodactyl Panel - Direct SSL Configuration
 # Serves panel.festas-builds.com directly with FastCGI to PHP-FPM
 
@@ -559,7 +559,7 @@ echo ""
 # Create temporary non-SSL fallback for initial setup (if SSL certs don't exist)
 if [[ ! -f /etc/letsencrypt/live/panel.festas-builds.com/fullchain.pem ]]; then
   echo "⚠ SSL certificates not found - creating temporary HTTP-only config..."
-  sudo cat > /etc/nginx/sites-available/panel.festas-builds.com.conf << 'NGINX_TEMP_EOF'
+  sudo tee /etc/nginx/sites-available/panel.festas-builds.com.conf > /dev/null << 'NGINX_TEMP_EOF'
   # Temporary HTTP-only configuration for initial setup
   # This will be replaced once SSL certificates are obtained
   server {

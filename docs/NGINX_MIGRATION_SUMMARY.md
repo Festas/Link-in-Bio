@@ -78,7 +78,7 @@ Docker Containers (port exposed to localhost)
 | Service | Container Port | Host Port | Bind Address |
 |---------|---------------|-----------|--------------|
 | Link-in-Bio Web | 8000 | 8000 | 127.0.0.1 |
-| Pterodactyl | - | 8081 | 127.0.0.1 |
+| Pterodactyl | - | Direct (FastCGI) | N/A |
 | Minecraft Web | 80 | 8100 | 127.0.0.1 |
 | Minecraft Console | 3001 | 3001 | 127.0.0.1 |
 | BlueMap | 8100 | 8101 | 127.0.0.1 |
@@ -196,9 +196,11 @@ sudo certbot certificates
 
 ### 4. Port Accessibility
 ```bash
-for port in 8000 8081 8100 3001 8804; do
+for port in 8000 8100 3001 8804; do
   curl -I http://127.0.0.1:$port && echo "✓ Port $port OK"
 done
+# Test Pterodactyl directly via HTTPS
+curl -I https://panel.festas-builds.com && echo "✓ Pterodactyl Panel OK"
 ```
 
 ### 5. External Access

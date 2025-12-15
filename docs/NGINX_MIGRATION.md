@@ -30,7 +30,7 @@ Docker containers now expose ports to `127.0.0.1` instead of using an internal n
 | Service | Container Port | Host Port | Domain |
 |---------|---------------|-----------|---------|
 | Link-in-Bio Web | 8000 | 127.0.0.1:8000 | festas-builds.com, admin.festas-builds.com |
-| Pterodactyl Panel | - | 127.0.0.1:8081 | panel.festas-builds.com |
+| Pterodactyl Panel | - | Direct (FastCGI) | panel.festas-builds.com |
 | Minecraft Web | 80 | 127.0.0.1:8100 | mc.festas-builds.com |
 | Minecraft Console | 3001 | 127.0.0.1:3001 | mc.festas-builds.com (/console, /api) |
 | BlueMap | 8100 | 127.0.0.1:8101 | mc-map.festas-builds.com |
@@ -331,7 +331,7 @@ sudo systemctl status certbot.timer
 ```bash
 # Test each exposed port
 curl -I http://127.0.0.1:8000/health  # Link-in-Bio
-curl -I http://127.0.0.1:8081         # Pterodactyl
+curl -I https://panel.festas-builds.com  # Pterodactyl (direct HTTPS)
 curl -I http://127.0.0.1:8100         # Minecraft Web
 curl -I http://127.0.0.1:3001         # Minecraft Console
 ```

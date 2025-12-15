@@ -99,7 +99,7 @@ docker compose ps
 # OR manually run the workflow steps
 ```
 
-Note: Pterodactyl already uses Nginx on the host (port 8081), compatible with new setup.
+Note: Pterodactyl uses Nginx on the host with direct SSL via FastCGI to PHP-FPM, compatible with new setup.
 
 ## Post-Deployment Verification
 
@@ -119,7 +119,7 @@ curl -I http://127.0.0.1:8000/health
 # Expected: HTTP/1.1 200 OK
 
 # Test Pterodactyl (if deployed)
-curl -I http://127.0.0.1:8081
+curl -I https://panel.festas-builds.com
 # Expected: HTTP/1.1 200 OK or 302 redirect
 ```
 

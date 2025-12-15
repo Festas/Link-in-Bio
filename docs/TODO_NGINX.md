@@ -32,9 +32,11 @@ sudo nginx -t
 sudo certbot certificates
 
 # Check localhost port accessibility
-for port in 8000 8081 8100 3001; do
+for port in 8000 8100 3001; do
   nc -z 127.0.0.1 $port && echo "Port $port: OK" || echo "Port $port: FAIL"
 done
+# Check Pterodactyl Panel
+curl -I https://panel.festas-builds.com && echo "Pterodactyl Panel: OK" || echo "Pterodactyl Panel: FAIL"
 ```
 
 ## Medium Priority

@@ -11,7 +11,7 @@ The main Link-in-Bio application (`web` container) is the only service defined i
 | Service | Container Name | Internal Port | Required Host Port | Domain |
 |---------|---------------|---------------|-------------------|---------|
 | Link-in-Bio Web | `linktree_app` | 8000 | 127.0.0.1:8000 | festas-builds.com, admin.festas-builds.com |
-| Pterodactyl Panel | - | - | 127.0.0.1:8081 | panel.festas-builds.com |
+| Pterodactyl Panel | - | - | Direct (FastCGI) | panel.festas-builds.com |
 | Minecraft Web | `minecraft-web` | 80 | 127.0.0.1:8100 | mc.festas-builds.com |
 | Minecraft Console | `minecraft-console` | 3001 | 127.0.0.1:3001 | mc.festas-builds.com (/console, /api) |
 | BlueMap | `minecraft-server` | 8100 | 127.0.0.1:8101 | mc-map.festas-builds.com |
@@ -249,7 +249,7 @@ When deploying a new external service:
 
 ```bash
 # One-liner to check all expected ports
-for port in 8000 8081 8100 3001 8101 8804 8200 3000 3100; do
+for port in 8000 8100 3001 8101 8804 8200 3000 3100; do
   echo -n "Port $port: "
   nc -z 127.0.0.1 $port && echo "✓ Open" || echo "✗ Closed"
 done

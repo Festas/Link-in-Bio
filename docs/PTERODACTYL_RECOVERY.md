@@ -26,9 +26,9 @@ This guide provides manual recovery steps for when the Pterodactyl Panel install
 - `nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)`
 - Nginx fails to start
 
-**Cause:** Caddy is already using port 80. Pterodactyl should only listen on `127.0.0.1:8081`.
+**Cause:** Another service is already using port 80/443. Pterodactyl Nginx configuration should serve directly on ports 80 and 443 with SSL.
 
-**Fix:** Remove default Nginx configurations and ensure pterodactyl.conf only listens on 8081.
+**Fix:** Remove default Nginx configurations and ensure panel.festas-builds.com.conf is properly configured for direct SSL access.
 
 ### 3. Database Connection Issues
 **Symptoms:**
@@ -144,20 +144,48 @@ sudo mysql -u ptero -p pterodactyl
 
 ### Step 5: Recreate Nginx Configuration
 
+Use the pterodactyl-cleanup.sh script to automatically recreate the correct configuration:
+
 ```bash
-sudo cat > /etc/nginx/sites-available/pterodactyl.conf << 'NGINX_EOF'
+sudo bash scripts/pterodactyl-cleanup.sh
+```
+
+Or manually create the configuration:
+
+```bash
+# Check if SSL certificates exist
+if [[ -f /etc/letsencrypt/live/panel.festas-builds.com/fullchain.pem ]]; then
+  # Create HTTPS configuration
+  sudo cat > /etc/nginx/sites-available/panel.festas-builds.com.conf << 'NGINX_EOF'
 server {
-    listen 127.0.0.1:8081;
+    listen 80;
+    listen [::]:80;
+    server_name panel.festas-builds.com;
+    return 301 https://\$server_name\$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
     server_name panel.festas-builds.com;
     root /var/www/pterodactyl/public;
     index index.php;
 
-    access_log /var/log/nginx/pterodactyl.access.log;
-    error_log /var/log/nginx/pterodactyl.error.log;
+    ssl_certificate /etc/letsencrypt/live/panel.festas-builds.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/panel.festas-builds.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "same-origin" always;
+
+    access_log /var/log/nginx/panel.festas-builds.com.access.log;
+    error_log /var/log/nginx/panel.festas-builds.com.error.log;
 
     client_max_body_size 100m;
     client_body_timeout 120s;
-
     sendfile off;
 
     location / {
@@ -169,16 +197,13 @@ server {
         fastcgi_pass unix:/run/php/php8.3-fpm.sock;
         fastcgi_index index.php;
         include fastcgi_params;
-        fastcgi_param PHP_VALUE "upload_max_filesize = 100M \n post_max_size=100M";
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         fastcgi_param HTTP_PROXY "";
-        fastcgi_intercept_errors off;
         fastcgi_buffer_size 16k;
         fastcgi_buffers 4 16k;
         fastcgi_connect_timeout 300;
         fastcgi_send_timeout 300;
         fastcgi_read_timeout 300;
-        include /etc/nginx/fastcgi_params;
     }
 
     location ~ /\.ht {
@@ -186,9 +211,43 @@ server {
     }
 }
 NGINX_EOF
+else
+  # Create temporary HTTP-only configuration
+  sudo cat > /etc/nginx/sites-available/panel.festas-builds.com.conf << 'NGINX_EOF'
+server {
+    listen 80;
+    listen [::]:80;
+    server_name panel.festas-builds.com;
+    root /var/www/pterodactyl/public;
+    index index.php;
+
+    access_log /var/log/nginx/panel.festas-builds.com.access.log;
+    error_log /var/log/nginx/panel.festas-builds.com.error.log;
+
+    client_max_body_size 100m;
+    client_body_timeout 120s;
+    sendfile off;
+
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+NGINX_EOF
+  echo "⚠ Remember to run: sudo certbot --nginx -d panel.festas-builds.com"
+fi
 
 # Enable site
-sudo ln -sf /etc/nginx/sites-available/pterodactyl.conf /etc/nginx/sites-enabled/pterodactyl.conf
+sudo ln -sf /etc/nginx/sites-available/panel.festas-builds.com.conf /etc/nginx/sites-enabled/panel.festas-builds.com.conf
 
 # Test configuration
 sudo nginx -t
@@ -213,10 +272,10 @@ sudo systemctl start pteroq
 # Check service status
 sudo systemctl status nginx php8.3-fpm pteroq
 
-# Verify Nginx is listening on correct port
-sudo netstat -tlnp | grep 8081
+# Verify Nginx is listening on correct ports
+sudo netstat -tlnp | grep nginx
 
-# Should show: tcp  0  0 127.0.0.1:8081  0.0.0.0:*  LISTEN  <pid>/nginx
+# Should show nginx listening on ports 80 and/or 443
 
 # Test database connection
 cd /var/www/pterodactyl
@@ -235,7 +294,7 @@ sudo tail -50 /var/log/nginx/pterodactyl.error.log
 sudo systemctl status nginx php8.3-fpm pteroq mariadb redis-server
 
 # Port usage
-sudo netstat -tlnp | grep -E '80|8081'
+sudo netstat -tlnp | grep -E ':(80|443)'
 
 # Nginx configuration test
 sudo nginx -t
@@ -253,7 +312,7 @@ sudo journalctl -u pteroq --no-pager -n 100
 ### Common Error Messages
 
 **Error: `bind() to 0.0.0.0:80 failed`**
-- Solution: Remove default Nginx configs, ensure pterodactyl.conf only uses port 8081
+- Solution: Remove default Nginx configs, ensure only panel.festas-builds.com.conf uses port 80/443
 
 **Error: `Access denied for user 'ptero'@'localhost'`**
 - Solution: Fix `.env` password format, recreate database user
@@ -290,7 +349,7 @@ gh workflow run deploy-pterodactyl.yml -f force_reinstall=true
 After recovery, verify:
 
 - [ ] Nginx running: `sudo systemctl status nginx`
-- [ ] Nginx listening on 8081: `sudo netstat -tlnp | grep 8081`
+- [ ] Nginx listening on 80/443: `sudo netstat -tlnp | grep nginx`
 - [ ] PHP-FPM running: `sudo systemctl status php8.3-fpm`
 - [ ] pteroq running: `sudo systemctl status pteroq`
 - [ ] Database connection works: `cd /var/www/pterodactyl && sudo -u www-data php artisan migrate:status`

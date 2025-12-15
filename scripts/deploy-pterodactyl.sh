@@ -405,9 +405,17 @@ echo "✓ Admin user setup complete and verified"
 # ==========================================
 echo "[8/9] Setting up Nginx..."
 
-# Ensure port 8080 is completely free
-echo "Ensuring port 8080 is free..."
-sudo fuser -k 8080/tcp || true
+# Ensure all required ports are completely free
+echo "Ensuring required ports (80, 443, 8081) are free..."
+sudo fuser -k 80/tcp || true
+sudo fuser -k 443/tcp || true
+sudo fuser -k 8081/tcp || true
+sleep 3  # Give processes time to terminate
+
+# Double-check with lsof and kill any remaining processes
+sudo lsof -ti :80 | xargs -r sudo kill -9 || true
+sudo lsof -ti :443 | xargs -r sudo kill -9 || true
+sudo lsof -ti :8081 | xargs -r sudo kill -9 || true
 sleep 2
 
 # Install Nginx if not present
@@ -432,18 +440,17 @@ if sudo grep -q "listen.*80" /etc/nginx/nginx.conf 2>/dev/null; then
   echo "This may need manual cleanup if issues persist"
 fi
 
-# Create Nginx configuration using tee with proper escaping
-echo "Creating Nginx configuration for Pterodactyl Panel (HTTPS)..."
-sudo tee /etc/nginx/sites-available/panel.festas-builds.com.conf > /dev/null << 'NGINX_EOF'
-# Pterodactyl Panel - Direct SSL Configuration
-# Serves panel.festas-builds.com directly with FastCGI to PHP-FPM
-
+# Check if SSL certificates exist and write appropriate config
+if [[ -f /etc/letsencrypt/live/panel.festas-builds.com/fullchain.pem ]]; then
+  echo "✓ SSL certificates found - creating HTTPS configuration..."
+  
+  # Create HTTPS Nginx configuration
+  sudo tee /etc/nginx/sites-available/panel.festas-builds.com.conf > /dev/null << 'NGINX_SSL_EOF'
+# Pterodactyl Panel - HTTPS Configuration
 server {
     listen 80;
     listen [::]:80;
     server_name panel.festas-builds.com;
-
-    # Redirect HTTP to HTTPS
     return 301 https://$server_name$request_uri;
 }
 
@@ -454,30 +461,25 @@ server {
     root /var/www/pterodactyl/public;
     index index.php;
 
-    # SSL certificates managed by Certbot
     ssl_certificate /etc/letsencrypt/live/panel.festas-builds.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/panel.festas-builds.com/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
-    # Security headers
     add_header X-Frame-Options "DENY" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "same-origin" always;
 
-    # Logging
     access_log /var/log/nginx/panel.festas-builds.com.access.log;
     error_log /var/log/nginx/panel.festas-builds.com.error.log;
 
-    # Enable gzip compression
     gzip on;
     gzip_vary on;
     gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json;
 
     client_max_body_size 100m;
     client_body_timeout 120s;
-
     sendfile off;
 
     location / {
@@ -504,7 +506,66 @@ server {
         deny all;
     }
 }
-NGINX_EOF
+NGINX_SSL_EOF
+
+else
+  echo "⚠ SSL certificates not found - creating temporary HTTP-only configuration..."
+  echo "   Run 'sudo certbot --nginx -d panel.festas-builds.com' after deployment"
+  
+  # Create temporary HTTP-only configuration
+  sudo tee /etc/nginx/sites-available/panel.festas-builds.com.conf > /dev/null << 'NGINX_HTTP_EOF'
+# Pterodactyl Panel - Temporary HTTP Configuration
+# Run certbot to enable HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name panel.festas-builds.com;
+    root /var/www/pterodactyl/public;
+    index index.php;
+
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "same-origin" always;
+
+    access_log /var/log/nginx/panel.festas-builds.com.access.log;
+    error_log /var/log/nginx/panel.festas-builds.com.error.log;
+
+    gzip on;
+    gzip_vary on;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json;
+
+    client_max_body_size 100m;
+    client_body_timeout 120s;
+    sendfile off;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param PHP_VALUE "upload_max_filesize = 100M \n post_max_size=100M";
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param HTTP_PROXY "";
+        fastcgi_intercept_errors off;
+        fastcgi_buffer_size 16k;
+        fastcgi_buffers 4 16k;
+        fastcgi_connect_timeout 300;
+        fastcgi_send_timeout 300;
+        fastcgi_read_timeout 300;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+NGINX_HTTP_EOF
+
+fi
 
 # Enable site
 sudo ln -sf /etc/nginx/sites-available/panel.festas-builds.com.conf /etc/nginx/sites-enabled/panel.festas-builds.com.conf
@@ -513,116 +574,39 @@ sudo ln -sf /etc/nginx/sites-available/panel.festas-builds.com.conf /etc/nginx/s
 echo "Testing Nginx configuration..."
 if ! sudo nginx -t; then
   echo "ERROR: Nginx configuration test failed!"
+  sudo nginx -t 2>&1  # Show detailed error
   exit 1
 fi
 
-# Enable and start/restart Nginx
+# Enable Nginx
 sudo systemctl enable nginx
-if ! sudo systemctl reload nginx; then
-  echo "ERROR: Nginx failed to reload!"
+
+# Restart Nginx (works whether it's running or not)
+echo "Starting/restarting Nginx..."
+sudo systemctl restart nginx
+
+# Wait a moment for Nginx to start
+sleep 2
+
+# Verify Nginx started successfully
+if ! sudo systemctl is-active --quiet nginx; then
+  echo "ERROR: Nginx failed to start!"
   echo "Checking Nginx status..."
   sudo systemctl status nginx --no-pager -l || true
+  echo ""
   echo "Checking Nginx error log..."
-  sudo tail -50 /var/log/nginx/error.log || true
+  sudo tail -100 /var/log/nginx/error.log || true
+  echo ""
+  echo "Checking what's using ports 80 and 443..."
+  sudo netstat -tlnp | grep -E ':(80|443)' || true
+  sudo lsof -i :80 || true
+  sudo lsof -i :443 || true
   exit 1
 fi
 
-# Verify Nginx is running and listening
-if ! sudo systemctl is-active --quiet nginx; then
-  echo "ERROR: Nginx is not running after reload!"
-  sudo systemctl status nginx --no-pager -l || true
-  exit 1
-fi
+echo "✓ Nginx started successfully"
 
-echo "✓ Nginx setup complete and verified"
 
-# ==========================================
-# Note about SSL certificates
-# ==========================================
-echo ""
-echo "⚠ IMPORTANT: SSL Certificate Setup Required"
-echo "=============================================="
-echo "After the first deployment, you need to obtain SSL certificates:"
-echo "Run: sudo certbot --nginx -d panel.festas-builds.com"
-echo ""
-echo "Certbot will:"
-echo "  1. Verify domain ownership via HTTP challenge"
-echo "  2. Obtain certificates from Let's Encrypt"
-echo "  3. Configure SSL in the Nginx config automatically"
-echo "  4. Set up auto-renewal"
-echo ""
-echo "After obtaining certificates, reload Nginx:"
-echo "Run: sudo systemctl reload nginx"
-echo "=============================================="
-echo ""
-
-# Create temporary non-SSL fallback for initial setup (if SSL certs don't exist)
-if [[ ! -f /etc/letsencrypt/live/panel.festas-builds.com/fullchain.pem ]]; then
-  echo "⚠ SSL certificates not found - creating temporary HTTP-only config..."
-  sudo tee /etc/nginx/sites-available/panel.festas-builds.com.conf > /dev/null << 'NGINX_TEMP_EOF'
-  # Temporary HTTP-only configuration for initial setup
-  # This will be replaced once SSL certificates are obtained
-  server {
-      listen 80;
-      listen [::]:80;
-      server_name panel.festas-builds.com;
-      root /var/www/pterodactyl/public;
-      index index.php;
-  
-      # Security headers
-      add_header X-Frame-Options "DENY" always;
-      add_header X-Content-Type-Options "nosniff" always;
-      add_header X-XSS-Protection "1; mode=block" always;
-      add_header Referrer-Policy "same-origin" always;
-  
-      # Logging
-      access_log /var/log/nginx/panel.festas-builds.com.access.log;
-      error_log /var/log/nginx/panel.festas-builds.com.error.log;
-  
-      # Enable gzip compression
-      gzip on;
-      gzip_vary on;
-      gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json;
-  
-      client_max_body_size 100m;
-      client_body_timeout 120s;
-  
-      sendfile off;
-  
-      location / {
-          try_files $uri $uri/ /index.php?$query_string;
-      }
-  
-      location ~ \.php$ {
-          fastcgi_split_path_info ^(.+\.php)(/.+)$;
-          fastcgi_pass unix:/run/php/php8.3-fpm.sock;
-          fastcgi_index index.php;
-          include fastcgi_params;
-          fastcgi_param PHP_VALUE "upload_max_filesize = 100M \n post_max_size=100M";
-          fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-          fastcgi_param HTTP_PROXY "";
-          fastcgi_intercept_errors off;
-          fastcgi_buffer_size 16k;
-          fastcgi_buffers 4 16k;
-          fastcgi_connect_timeout 300;
-          fastcgi_send_timeout 300;
-          fastcgi_read_timeout 300;
-      }
-  
-      location ~ /\.ht {
-          deny all;
-      }
-  }
-NGINX_TEMP_EOF
-  
-  # Enable site
-  sudo ln -sf /etc/nginx/sites-available/panel.festas-builds.com.conf /etc/nginx/sites-enabled/panel.festas-builds.com.conf
-  
-  echo "✓ Temporary HTTP-only config created"
-  echo "⚠ Remember to run certbot to enable HTTPS!"
-else
-  echo "✓ SSL certificates found - using HTTPS configuration"
-fi
 
 
 # ==========================================

@@ -8,7 +8,7 @@ This directory contains Nginx server block configurations for all domains in the
 |-----------|---------|----------------|------------|
 | festas-builds.com | Main Link-in-Bio site | `web:8000` | `127.0.0.1:8000` |
 | admin.festas-builds.com | Admin interface | `web:8000` | `127.0.0.1:8000` |
-| panel.festas-builds.com | Pterodactyl Panel | Host Nginx | `127.0.0.1:8081` |
+| panel.festas-builds.com | Pterodactyl Panel | PHP-FPM (FastCGI) | - |
 | mc.festas-builds.com | Minecraft Website + Console | `minecraft-web:80`, `minecraft-console:3001` | `127.0.0.1:8100`, `127.0.0.1:3001` |
 | mc-map.festas-builds.com | BlueMap (3D Map) | `minecraft-server:8100` | `127.0.0.1:8101` |
 | mc-stats.festas-builds.com | Plan Analytics | `minecraft-server:8804` | `127.0.0.1:8804` |

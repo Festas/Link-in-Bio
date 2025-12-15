@@ -28,6 +28,7 @@ echo ""
 echo "[2/6] Cleaning Nginx configurations..."
 rm -f /etc/nginx/sites-enabled/*
 rm -f /etc/nginx/sites-available/pterodactyl.conf
+rm -f /etc/nginx/sites-available/panel.festas-builds.com.conf
 rm -f /etc/nginx/sites-enabled/default
 rm -f /etc/nginx/sites-available/default
 rm -f /etc/nginx/conf.d/default.conf
@@ -69,15 +70,48 @@ fi
 
 echo ""
 echo "[5/6] Recreating Nginx configuration..."
-cat > /etc/nginx/sites-available/pterodactyl.conf << 'NGINX_EOF'
+
+# Check if SSL certificates exist
+if [[ -f /etc/letsencrypt/live/panel.festas-builds.com/fullchain.pem ]]; then
+  echo "SSL certificates found - creating HTTPS configuration..."
+  cat > /etc/nginx/sites-available/panel.festas-builds.com.conf << 'NGINX_EOF'
+# Pterodactyl Panel - Direct SSL Configuration
 server {
-    listen 127.0.0.1:8081;
+    listen 80;
+    listen [::]:80;
+    server_name panel.festas-builds.com;
+
+    # Redirect HTTP to HTTPS
+    return 301 https://\$server_name\$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
     server_name panel.festas-builds.com;
     root /var/www/pterodactyl/public;
     index index.php;
 
-    access_log /var/log/nginx/pterodactyl.access.log;
-    error_log /var/log/nginx/pterodactyl.error.log;
+    # SSL certificates
+    ssl_certificate /etc/letsencrypt/live/panel.festas-builds.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/panel.festas-builds.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Security headers
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "same-origin" always;
+
+    # Logging
+    access_log /var/log/nginx/panel.festas-builds.com.access.log;
+    error_log /var/log/nginx/panel.festas-builds.com.error.log;
+
+    # Enable gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json;
 
     client_max_body_size 100m;
     client_body_timeout 120s;
@@ -102,7 +136,6 @@ server {
         fastcgi_connect_timeout 300;
         fastcgi_send_timeout 300;
         fastcgi_read_timeout 300;
-        include /etc/nginx/fastcgi_params;
     }
 
     location ~ /\.ht {
@@ -110,9 +143,67 @@ server {
     }
 }
 NGINX_EOF
+else
+  echo "SSL certificates not found - creating HTTP-only configuration..."
+  cat > /etc/nginx/sites-available/panel.festas-builds.com.conf << 'NGINX_EOF'
+# Pterodactyl Panel - HTTP-only (temporary)
+server {
+    listen 80;
+    listen [::]:80;
+    server_name panel.festas-builds.com;
+    root /var/www/pterodactyl/public;
+    index index.php;
+
+    # Security headers
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "same-origin" always;
+
+    # Logging
+    access_log /var/log/nginx/panel.festas-builds.com.access.log;
+    error_log /var/log/nginx/panel.festas-builds.com.error.log;
+
+    # Enable gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json;
+
+    client_max_body_size 100m;
+    client_body_timeout 120s;
+
+    sendfile off;
+
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param PHP_VALUE "upload_max_filesize = 100M \n post_max_size=100M";
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_param HTTP_PROXY "";
+        fastcgi_intercept_errors off;
+        fastcgi_buffer_size 16k;
+        fastcgi_buffers 4 16k;
+        fastcgi_connect_timeout 300;
+        fastcgi_send_timeout 300;
+        fastcgi_read_timeout 300;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+NGINX_EOF
+  echo "⚠ Remember to run: sudo certbot --nginx -d panel.festas-builds.com"
+fi
 
 # Enable site
-ln -sf /etc/nginx/sites-available/pterodactyl.conf /etc/nginx/sites-enabled/pterodactyl.conf
+ln -sf /etc/nginx/sites-available/panel.festas-builds.com.conf /etc/nginx/sites-enabled/panel.festas-builds.com.conf
 
 # Test configuration
 echo "Testing Nginx configuration..."
@@ -142,11 +233,12 @@ echo ""
 systemctl status pteroq --no-pager -l || true
 echo ""
 echo "Nginx Port Check:"
-netstat -tlnp | grep 8081 || echo "⚠ Port 8081 not in use"
+netstat -tlnp | grep nginx | grep -E ":(80|443)" || echo "⚠ Nginx not listening on ports 80/443"
 echo ""
 echo "Next Steps:"
-echo "1. Verify Nginx is listening: netstat -tlnp | grep 8081"
+echo "1. Verify Nginx is listening: netstat -tlnp | grep nginx"
 echo "2. Test database connection: cd /var/www/pterodactyl && sudo -u www-data php artisan migrate:status"
-echo "3. Check logs: tail -50 /var/log/nginx/pterodactyl.error.log"
-echo "4. Access panel: https://panel.festas-builds.com"
+echo "3. Check logs: tail -50 /var/log/nginx/panel.festas-builds.com.error.log"
+echo "4. If SSL not configured: sudo certbot --nginx -d panel.festas-builds.com"
+echo "5. Access panel: https://panel.festas-builds.com"
 echo "=========================================="

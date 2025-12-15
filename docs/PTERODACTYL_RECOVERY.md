@@ -156,7 +156,7 @@ Or manually create the configuration:
 # Check if SSL certificates exist
 if [[ -f /etc/letsencrypt/live/panel.festas-builds.com/fullchain.pem ]]; then
   # Create HTTPS configuration
-  sudo cat > /etc/nginx/sites-available/panel.festas-builds.com.conf << 'NGINX_EOF'
+  sudo tee /etc/nginx/sites-available/panel.festas-builds.com.conf > /dev/null << 'NGINX_EOF'
 server {
     listen 80;
     listen [::]:80;
@@ -213,7 +213,7 @@ server {
 NGINX_EOF
 else
   # Create temporary HTTP-only configuration
-  sudo cat > /etc/nginx/sites-available/panel.festas-builds.com.conf << 'NGINX_EOF'
+  sudo tee /etc/nginx/sites-available/panel.festas-builds.com.conf > /dev/null << 'NGINX_EOF'
 server {
     listen 80;
     listen [::]:80;

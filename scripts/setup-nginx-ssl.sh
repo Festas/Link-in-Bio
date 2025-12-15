@@ -44,6 +44,9 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT="$SCRIPT_DIR/.."
 cd "$REPO_ROOT"
 
+# Default email for SSL certificates (can be overridden with environment variable)
+CERT_EMAIL="${CERT_EMAIL:-admin@festas-builds.com}"
+
 log_info "=========================================="
 log_info "Nginx & SSL Setup for Link-in-Bio"
 log_info "=========================================="
@@ -212,7 +215,7 @@ case $CERT_OPTION in
             DOMAIN_ARGS="$DOMAIN_ARGS -d $domain"
         done
         
-        if certbot --nginx $DOMAIN_ARGS --non-interactive --agree-tos --email admin@festas-builds.com; then
+        if certbot --nginx $DOMAIN_ARGS --non-interactive --agree-tos --email "$CERT_EMAIL"; then
             log_info "✓ SSL certificates obtained successfully"
         else
             log_error "Failed to obtain SSL certificates"
@@ -228,7 +231,7 @@ case $CERT_OPTION in
         for domain in "${DOMAINS[@]}"; do
             log_info "Processing $domain..."
             
-            if certbot --nginx -d "$domain" --non-interactive --agree-tos --email admin@festas-builds.com; then
+            if certbot --nginx -d "$domain" --non-interactive --agree-tos --email "$CERT_EMAIL"; then
                 log_info "  ✓ Certificate obtained for $domain"
             else
                 log_error "  ✗ Failed to obtain certificate for $domain"
@@ -274,10 +277,12 @@ fi
 
 # Test renewal (dry run)
 log_info "Testing certificate renewal (dry run)..."
-if certbot renew --dry-run 2>&1 | tail -5; then
+if certbot renew --dry-run >/dev/null 2>&1; then
     log_info "✓ Certificate renewal test passed"
 else
-    log_warn "Certificate renewal test had issues (check output above)"
+    log_warn "Certificate renewal test had issues"
+    log_warn "Running detailed test..."
+    certbot renew --dry-run 2>&1 | tail -10
 fi
 
 # ==========================================

@@ -296,7 +296,7 @@ jobs:
             echo "[7/7] Reloading Nginx configuration..."
             
             # Reload Nginx if configuration is valid
-            if sudo nginx -t 2>&1; then
+            if sudo nginx -t >/dev/null 2>&1; then
               echo "✓ Nginx configuration is valid"
               
               if sudo systemctl reload nginx; then

@@ -748,7 +748,7 @@ else
   # Verify queue is processing without errors
   echo "Checking queue for recent errors..."
   sleep 10
-  QUEUE_ERRORS=$(sudo journalctl -u pteroq --since "10 seconds ago" 2>/dev/null | grep -ci "failed\|exception" || echo "0")
+  QUEUE_ERRORS=$(sudo journalctl -u pteroq --since "10 seconds ago" 2>/dev/null | grep -cE "\\[FAIL\\]|Exception|Failed" || echo "0")
   if [[ "${QUEUE_ERRORS}" -gt "0" ]]; then
     echo "⚠ WARNING: Queue has ${QUEUE_ERRORS} errors in last 10 seconds"
     echo "Checking logs..."

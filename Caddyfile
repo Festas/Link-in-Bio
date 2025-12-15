@@ -134,5 +134,7 @@ panel.festas-builds.com {
     
     # Reverse proxy to Nginx (running on host, not in Docker)
     # Uses host.docker.internal to reach host from container
-    reverse_proxy host.docker.internal:8081
+    # reverse_proxy host.docker.internal:8081
+    reverse_proxy 128.140.99.121:8081
+
 }

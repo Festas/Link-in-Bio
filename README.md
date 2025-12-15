@@ -114,9 +114,12 @@ cp .env.example .env
 # Passwort und Domain anpassen!
 ```
 
-2. **Caddyfile anpassen**
+2. **Nginx und SSL einrichten**
 ```bash
-# In Caddyfile: "deine-domain.de" durch echte Domain ersetzen
+# Automatisches Setup-Script (empfohlen)
+sudo ./scripts/setup-nginx-ssl.sh
+
+# Oder siehe docs/NGINX_MIGRATION.md für manuelle Schritte
 ```
 
 3. **Container starten**
@@ -129,9 +132,10 @@ make docker-up
 docker-compose up -d
 ```
 
-> **Hinweis**: Alle Datenbanken werden im `data/` Ordner gespeichert und als Volume gemountet.
-
-4. **Automatisches SSL**: Caddy konfiguriert automatisch Let's Encrypt SSL-Zertifikate
+> **Hinweis**: 
+> - Alle Datenbanken werden im `data/` Ordner gespeichert und als Volume gemountet.
+> - Der Web-Container exponiert Port 8000 auf 127.0.0.1 für Nginx Reverse Proxy
+> - SSL-Zertifikate werden via Certbot/Let's Encrypt verwaltet
 
 ## 🔧 Konfiguration
 
@@ -312,7 +316,7 @@ Dies lädt TailwindCSS, Lucide Icons, SortableJS und andere Frontend-Bibliotheke
 - ✅ Input Validation mit Pydantic
 - ✅ SSRF-Protection beim Scraping
 - ✅ SQL Injection Protection
-- ✅ HTTPS via Caddy mit Let's Encrypt
+- ✅ HTTPS via Nginx mit Let's Encrypt (Certbot)
 - ⚠️ **Wichtig**: Admin-Passwort in `.env` ändern!
 
 ## 📈 Analytics

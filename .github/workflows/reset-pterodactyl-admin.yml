@@ -1,0 +1,220 @@
+name: Reset Pterodactyl Admin User
+
+on:
+  workflow_dispatch:
+    inputs:
+      admin_username:
+        description: 'Admin username (default: admin)'
+        required: false
+        default: 'admin'
+        type: string
+
+jobs:
+  reset-admin:
+    name: Reset Pterodactyl Admin User
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Reset Admin User via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          PTERO_DB_PASSWORD: ${{ secrets.PTERO_DB_PASSWORD }}
+          PTERO_ADMIN_EMAIL: ${{ secrets.PTERO_ADMIN_EMAIL }}
+          PTERO_ADMIN_PASSWORD: ${{ secrets.PTERO_ADMIN_PASSWORD }}
+          ADMIN_USERNAME: ${{ github.event.inputs.admin_username }}
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: PTERO_DB_PASSWORD,PTERO_ADMIN_EMAIL,PTERO_ADMIN_PASSWORD,ADMIN_USERNAME
+          script_stop: true
+          timeout: 5m
+          script: |
+            set -euo pipefail
+            
+            echo "=========================================="
+            echo "Pterodactyl Admin User Reset"
+            echo "=========================================="
+            echo ""
+            
+            # Set default values for secrets if not provided
+            PTERO_DB_PASSWORD="${PTERO_DB_PASSWORD:-PterodactylDBPass2024!}"
+            PTERO_ADMIN_EMAIL="${PTERO_ADMIN_EMAIL:-admin@festas-builds.com}"
+            PTERO_ADMIN_PASSWORD="${PTERO_ADMIN_PASSWORD:-PteroAdmin2024!}"
+            ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
+            
+            # Check if Pterodactyl is installed
+            if [[ ! -f /var/www/pterodactyl/artisan ]]; then
+              echo "❌ ERROR: Pterodactyl Panel not found at /var/www/pterodactyl"
+              echo "Please deploy Pterodactyl first using the deploy-pterodactyl workflow"
+              exit 1
+            fi
+            
+            echo "✓ Pterodactyl Panel found"
+            echo ""
+            
+            # ==========================================
+            # Step 1: Verify Database Connection
+            # ==========================================
+            echo "[Step 1/4] Verifying database connection..."
+            
+            if ! sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -e "SELECT 1;" >/dev/null 2>&1; then
+              echo "❌ ERROR: Cannot connect to database!"
+              echo ""
+              echo "Troubleshooting:"
+              echo "1. Check if MariaDB is running:"
+              sudo systemctl status mariadb --no-pager -l || true
+              echo ""
+              echo "2. Check database users:"
+              sudo mysql -e "SELECT user, host FROM mysql.user WHERE user='ptero';" 2>&1 || true
+              echo ""
+              echo "3. Test connection:"
+              sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero -h 127.0.0.1 pterodactyl -e "SELECT 1;" 2>&1 || true
+              exit 1
+            fi
+            
+            echo "✓ Database connection successful"
+            echo ""
+            
+            # ==========================================
+            # Step 2: Verify Users Table Exists
+            # ==========================================
+            echo "[Step 2/4] Checking users table..."
+            
+            if ! sudo mysql pterodactyl -e "SHOW TABLES LIKE 'users';" 2>/dev/null | grep -q "users"; then
+              echo "❌ ERROR: Users table does not exist!"
+              echo ""
+              echo "Current tables in database:"
+              sudo mysql pterodactyl -e "SHOW TABLES;" 2>&1 || true
+              echo ""
+              echo "Please run database migrations first:"
+              echo "  cd /var/www/pterodactyl"
+              echo "  sudo -u www-data php artisan migrate --seed --force"
+              exit 1
+            fi
+            
+            echo "✓ Users table exists"
+            echo ""
+            
+            # ==========================================
+            # Step 3: Check/Create/Reset Admin User
+            # ==========================================
+            echo "[Step 3/4] Creating/resetting admin user..."
+            
+            # Check if user exists
+            USER_EXISTS=$(sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -sN -e "SELECT COUNT(*) FROM users WHERE email='${PTERO_ADMIN_EMAIL}';" 2>/dev/null || echo "0")
+            
+            if [[ "${USER_EXISTS}" == "0" ]]; then
+              echo "Admin user does not exist, creating new user..."
+              echo "  Email: ${PTERO_ADMIN_EMAIL}"
+              echo "  Username: ${ADMIN_USERNAME}"
+              echo ""
+              
+              # Try Laravel command first
+              cd /var/www/pterodactyl
+              if sudo -u www-data php artisan p:user:make \
+                --email="${PTERO_ADMIN_EMAIL}" \
+                --username="${ADMIN_USERNAME}" \
+                --name-first=Admin \
+                --name-last=Festas \
+                --password="${PTERO_ADMIN_PASSWORD}" \
+                --admin=1 \
+                --no-interaction 2>&1; then
+                echo "✓ Admin user created successfully via Laravel command!"
+              else
+                echo "⚠ Laravel command failed, using direct SQL insert..."
+                
+                # Generate password hash and UUID
+                PASSWORD_HASH=$(sudo -u www-data php -r "echo password_hash('${PTERO_ADMIN_PASSWORD}', PASSWORD_BCRYPT);")
+                UUID=$(sudo -u www-data php -r "echo (string) \Ramsey\Uuid\Uuid::uuid4();")
+                
+                if sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -e "
+                  INSERT INTO users (uuid, email, username, name_first, name_last, password, root_admin, language, created_at, updated_at)
+                  VALUES ('${UUID}', '${PTERO_ADMIN_EMAIL}', '${ADMIN_USERNAME}', 'Admin', 'Festas', '${PASSWORD_HASH}', 1, 'en', NOW(), NOW());
+                " 2>&1; then
+                  echo "✓ Admin user created successfully via SQL!"
+                else
+                  echo "❌ Failed to create admin user"
+                  exit 1
+                fi
+              fi
+            else
+              echo "Admin user already exists, resetting password..."
+              echo "  Email: ${PTERO_ADMIN_EMAIL}"
+              echo ""
+              
+              # Generate password hash
+              cd /var/www/pterodactyl
+              PASSWORD_HASH=$(sudo -u www-data php -r "echo password_hash('${PTERO_ADMIN_PASSWORD}', PASSWORD_BCRYPT);")
+              
+              # Update password and ensure root_admin flag is set
+              if sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -e "
+                UPDATE users 
+                SET password='${PASSWORD_HASH}', 
+                    root_admin=1,
+                    username='${ADMIN_USERNAME}',
+                    updated_at=NOW() 
+                WHERE email='${PTERO_ADMIN_EMAIL}';
+              " 2>&1; then
+                echo "✓ Admin user password and settings updated successfully!"
+              else
+                echo "❌ Failed to update admin user"
+                exit 1
+              fi
+            fi
+            
+            echo ""
+            
+            # ==========================================
+            # Step 4: Verify Admin User
+            # ==========================================
+            echo "[Step 4/4] Verifying admin user..."
+            
+            # Get user details
+            USER_INFO=$(sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -sN -e "
+              SELECT email, username, root_admin, created_at 
+              FROM users 
+              WHERE email='${PTERO_ADMIN_EMAIL}';
+            " 2>/dev/null || echo "")
+            
+            if [[ -z "${USER_INFO}" ]]; then
+              echo "❌ ERROR: Admin user verification failed!"
+              echo "User not found in database after creation/update"
+              exit 1
+            fi
+            
+            # Check root_admin flag
+            IS_ADMIN=$(sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -sN -e "
+              SELECT root_admin FROM users WHERE email='${PTERO_ADMIN_EMAIL}';
+            " 2>/dev/null || echo "0")
+            
+            if [[ "${IS_ADMIN}" != "1" ]]; then
+              echo "❌ ERROR: User exists but is not admin!"
+              echo "root_admin flag: ${IS_ADMIN}"
+              exit 1
+            fi
+            
+            echo "✓ Admin user verified successfully!"
+            echo ""
+            
+            # ==========================================
+            # Summary
+            # ==========================================
+            echo "=========================================="
+            echo "✅ Admin User Reset Complete!"
+            echo "=========================================="
+            echo ""
+            echo "Login Credentials:"
+            echo "  Panel URL: https://panel.festas-builds.com"
+            echo "  Email: ${PTERO_ADMIN_EMAIL}"
+            echo "  Username: ${ADMIN_USERNAME}"
+            echo "  Password: [Configured from GitHub Secrets]"
+            echo "  Admin: Yes (root_admin=1)"
+            echo ""
+            echo "User Details:"
+            echo "${USER_INFO}"
+            echo ""
+            echo "You can now log in to the Pterodactyl Panel!"
+            echo "=========================================="

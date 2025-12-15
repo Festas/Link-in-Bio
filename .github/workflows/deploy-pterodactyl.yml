@@ -272,63 +272,164 @@ jobs:
             
             # Run migrations with proper error handling
             echo "Running migrations and seeding database..."
-            if ! sudo -u www-data php artisan migrate --seed --force 2>&1; then
-              echo "ERROR: Database migration failed!"
+            MIGRATION_OUTPUT=$(sudo -u www-data php artisan migrate --seed --force 2>&1) || MIGRATION_FAILED=true
+            
+            if [[ "${MIGRATION_FAILED}" == "true" ]]; then
+              echo "❌ ERROR: Database migration FAILED!"
               echo ""
-              echo "Debug Information:"
-              echo "===================="
-              echo "1. Checking database connection..."
-              sudo mysql -e "SHOW GRANTS FOR 'ptero'@'localhost';" 2>&1 || true
-              sudo mysql -e "SELECT user, host FROM mysql.user WHERE user='ptero';" 2>&1 || true
+              echo "Migration Output:"
+              echo "================="
+              echo "${MIGRATION_OUTPUT}"
               echo ""
-              echo "2. Checking .env file database settings..."
-              sudo cat /var/www/pterodactyl/.env | grep DB_ 2>&1 || true
+              echo "Diagnostic Information:"
+              echo "======================="
               echo ""
-              echo "3. Testing direct MySQL connection..."
-              sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero -h 127.0.0.1 pterodactyl -e "SELECT 1;" 2>&1 || true
+              echo "1. Database connection test..."
+              sudo mysql -e "SHOW GRANTS FOR 'ptero'@'localhost';" 2>&1 || echo "Failed to show grants"
+              sudo mysql -e "SELECT user, host FROM mysql.user WHERE user='ptero';" 2>&1 || echo "Failed to query users"
               echo ""
-              echo "4. Checking Laravel logs for errors..."
+              echo "2. .env file database settings..."
+              sudo cat /var/www/pterodactyl/.env | grep DB_ 2>&1 || echo "Failed to read .env"
+              echo ""
+              echo "3. Direct MySQL connection test..."
+              sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero -h 127.0.0.1 pterodactyl -e "SELECT 1 AS test;" 2>&1 || echo "Direct connection failed"
+              echo ""
+              echo "4. Laravel logs (last 50 lines)..."
               sudo tail -50 /var/www/pterodactyl/storage/logs/laravel.log 2>&1 || echo "No Laravel logs found"
+              echo ""
+              echo "5. Current database tables..."
+              sudo mysql pterodactyl -e "SHOW TABLES;" 2>&1 || echo "Failed to show tables"
+              echo ""
+              echo "======================="
+              echo "Migration failed - cannot proceed with admin user creation!"
+              echo "======================="
               exit 1
             fi
+            
             echo "✓ Migrations and seeding completed successfully"
+            echo "Migration Output:"
+            echo "${MIGRATION_OUTPUT}"
+            echo ""
             
             # Verify migrations were successful by checking migration status
-            echo "Verifying migration status..."
-            if ! sudo -u www-data php artisan migrate:status 2>&1 | grep -q "Migration name"; then
-              echo "WARNING: Could not verify migration status"
+            echo "Verifying migration status with 'php artisan migrate:status'..."
+            MIGRATION_STATUS=$(sudo -u www-data php artisan migrate:status 2>&1) || true
+            
+            if ! echo "${MIGRATION_STATUS}" | grep -q "Migration name"; then
+              echo "⚠ WARNING: Could not verify migration status"
+              echo "Migration Status Output:"
+              echo "${MIGRATION_STATUS}"
             else
               echo "✓ Migration status verified"
+              echo "${MIGRATION_STATUS}" | head -20
             fi
+            echo ""
             
-            # Verify expected tables exist
-            echo "Verifying database tables..."
-            if ! sudo mysql pterodactyl -e "SHOW TABLES;" | grep -q "settings"; then
-              echo "ERROR: Migrations did not create expected tables!"
+            # Verify expected tables exist - FAIL FAST if they don't
+            echo "Verifying critical database tables exist..."
+            CRITICAL_TABLES=("users" "settings" "migrations")
+            ALL_TABLES_EXIST=true
+            
+            for table in "${CRITICAL_TABLES[@]}"; do
+              if ! sudo mysql pterodactyl -e "SHOW TABLES LIKE '${table}';" 2>/dev/null | grep -q "${table}"; then
+                echo "❌ CRITICAL TABLE MISSING: ${table}"
+                ALL_TABLES_EXIST=false
+              else
+                echo "✓ Table exists: ${table}"
+              fi
+            done
+            
+            if [[ "${ALL_TABLES_EXIST}" != "true" ]]; then
+              echo ""
+              echo "❌ ERROR: Critical database tables are missing!"
+              echo ""
               echo "Current tables in database:"
-              sudo mysql pterodactyl -e "SHOW TABLES;" || true
+              sudo mysql pterodactyl -e "SHOW TABLES;" 2>&1 || echo "Failed to show tables"
+              echo ""
+              echo "Migration status:"
+              echo "${MIGRATION_STATUS}"
+              echo ""
+              echo "======================="
+              echo "Cannot proceed with admin user creation - database incomplete!"
+              echo "======================="
               exit 1
             fi
-            echo "✓ Expected database tables verified"
             
+            echo "✓ All critical database tables verified"
             echo "✓ Database migrations complete and verified"
             
             # ==========================================
-            # 7. Create Admin User
+            # 7. Create/Reset Admin User (Idempotent)
             # ==========================================
-            echo "[7/9] Creating admin user..."
+            echo "[7/9] Creating/resetting admin user..."
             
-            # Create admin user (command handles existing users gracefully)
-            sudo -u www-data php artisan p:user:make \
-              --email="${PTERO_ADMIN_EMAIL}" \
-              --username=admin \
-              --name-first=Admin \
-              --name-last=Festas \
-              --password="${PTERO_ADMIN_PASSWORD}" \
-              --admin=1 \
-              --no-interaction || echo "⚠ User may already exist or creation failed, check manually"
+            # Function to create or reset admin user
+            # This is idempotent - it will create the user if it doesn't exist,
+            # or update the password if it does exist
             
-            echo "✓ Admin user setup complete"
+            echo "Checking if admin user exists..."
+            USER_EXISTS=$(sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -sN -e "SELECT COUNT(*) FROM users WHERE email='${PTERO_ADMIN_EMAIL}';" 2>/dev/null || echo "0")
+            
+            if [[ "${USER_EXISTS}" == "0" ]]; then
+              echo "Admin user does not exist, creating new user..."
+              
+              # Attempt to create user with retries
+              CREATE_SUCCESS=false
+              for attempt in {1..3}; do
+                echo "Attempt ${attempt}/3 to create admin user..."
+                if sudo -u www-data php artisan p:user:make \
+                  --email="${PTERO_ADMIN_EMAIL}" \
+                  --username=admin \
+                  --name-first=Admin \
+                  --name-last=Festas \
+                  --password="${PTERO_ADMIN_PASSWORD}" \
+                  --admin=1 \
+                  --no-interaction 2>&1; then
+                  CREATE_SUCCESS=true
+                  echo "✓ Admin user created successfully!"
+                  break
+                else
+                  echo "⚠ Attempt ${attempt} failed, retrying..."
+                  sleep 2
+                fi
+              done
+              
+              if [[ "${CREATE_SUCCESS}" != "true" ]]; then
+                echo "❌ ERROR: Failed to create admin user after 3 attempts!"
+                exit 1
+              fi
+            else
+              echo "Admin user already exists, updating password..."
+              
+              # Update the password for existing user
+              # We'll use direct SQL to ensure the password is updated
+              PASSWORD_HASH=$(sudo -u www-data php -r "echo password_hash('${PTERO_ADMIN_PASSWORD}', PASSWORD_BCRYPT);")
+              
+              if sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -e "UPDATE users SET password='${PASSWORD_HASH}', root_admin=1 WHERE email='${PTERO_ADMIN_EMAIL}';" 2>&1; then
+                echo "✓ Admin user password updated successfully!"
+              else
+                echo "❌ ERROR: Failed to update admin user password!"
+                exit 1
+              fi
+            fi
+            
+            # Verify admin user exists and has correct permissions
+            echo ""
+            echo "Verifying admin user..."
+            ADMIN_COUNT=$(sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -sN -e "SELECT COUNT(*) FROM users WHERE email='${PTERO_ADMIN_EMAIL}' AND root_admin=1;" 2>/dev/null || echo "0")
+            
+            if [[ "${ADMIN_COUNT}" == "1" ]]; then
+              echo "✓ Admin user verified: ${PTERO_ADMIN_EMAIL}"
+              echo "✓ Admin permissions: root_admin=1"
+              echo "✓ Username: admin"
+              echo "✓ Password: [CONFIGURED FROM SECRETS]"
+            else
+              echo "❌ ERROR: Admin user verification failed!"
+              echo "Expected 1 admin user, found: ${ADMIN_COUNT}"
+              exit 1
+            fi
+            
+            echo "✓ Admin user setup complete and verified"
             
             # ==========================================
             # 8. Nginx Setup
@@ -736,6 +837,94 @@ jobs:
               fi
             fi
             
+            # ==========================================
+            # Final Admin User Reset (Recovery Step)
+            # ==========================================
+            # This step runs even if some services failed, to ensure admin can log in
+            echo ""
+            echo "=========================================="
+            echo "Final Admin User Reset (Recovery Step)"
+            echo "=========================================="
+            
+            # Check if database is accessible
+            if sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -e "SELECT 1;" >/dev/null 2>&1; then
+              echo "✓ Database is accessible"
+              
+              # Check if users table exists
+              if sudo mysql pterodactyl -e "SHOW TABLES LIKE 'users';" 2>/dev/null | grep -q "users"; then
+                echo "✓ Users table exists"
+                
+                # Perform final admin user reset
+                echo "Performing final admin user reset/verification..."
+                USER_EXISTS=$(sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -sN -e "SELECT COUNT(*) FROM users WHERE email='${PTERO_ADMIN_EMAIL}';" 2>/dev/null || echo "0")
+                
+                if [[ "${USER_EXISTS}" == "0" ]]; then
+                  echo "⚠ Admin user does not exist, attempting emergency creation..."
+                  
+                  # Try Laravel command first
+                  if sudo -u www-data php artisan p:user:make \
+                    --email="${PTERO_ADMIN_EMAIL}" \
+                    --username=admin \
+                    --name-first=Admin \
+                    --name-last=Festas \
+                    --password="${PTERO_ADMIN_PASSWORD}" \
+                    --admin=1 \
+                    --no-interaction 2>&1; then
+                    echo "✓ Emergency admin user created via Laravel!"
+                  else
+                    echo "⚠ Laravel command failed, trying direct SQL insert..."
+                    PASSWORD_HASH=$(sudo -u www-data php -r "echo password_hash('${PTERO_ADMIN_PASSWORD}', PASSWORD_BCRYPT);")
+                    UUID=$(sudo -u www-data php -r "echo \Ramsey\Uuid\Uuid::uuid4()->toString();")
+                    
+                    if sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -e "
+                      INSERT INTO users (uuid, email, username, name_first, name_last, password, root_admin, language, created_at, updated_at)
+                      VALUES ('${UUID}', '${PTERO_ADMIN_EMAIL}', 'admin', 'Admin', 'Festas', '${PASSWORD_HASH}', 1, 'en', NOW(), NOW())
+                      ON DUPLICATE KEY UPDATE password='${PASSWORD_HASH}', root_admin=1, updated_at=NOW();
+                    " 2>&1; then
+                      echo "✓ Emergency admin user created via direct SQL!"
+                    else
+                      echo "❌ Failed to create admin user via SQL"
+                    fi
+                  fi
+                else
+                  echo "✓ Admin user exists, ensuring password is current..."
+                  PASSWORD_HASH=$(sudo -u www-data php -r "echo password_hash('${PTERO_ADMIN_PASSWORD}', PASSWORD_BCRYPT);")
+                  
+                  if sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -e "
+                    UPDATE users SET password='${PASSWORD_HASH}', root_admin=1, updated_at=NOW() WHERE email='${PTERO_ADMIN_EMAIL}';
+                  " 2>&1; then
+                    echo "✓ Admin password updated to match secrets!"
+                  else
+                    echo "❌ Failed to update admin password"
+                  fi
+                fi
+                
+                # Final verification
+                FINAL_ADMIN_COUNT=$(sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero pterodactyl -sN -e "SELECT COUNT(*) FROM users WHERE email='${PTERO_ADMIN_EMAIL}' AND root_admin=1;" 2>/dev/null || echo "0")
+                
+                if [[ "${FINAL_ADMIN_COUNT}" == "1" ]]; then
+                  echo ""
+                  echo "✅ ADMIN USER FINAL STATUS: READY"
+                  echo "   Email: ${PTERO_ADMIN_EMAIL}"
+                  echo "   Password: Configured from GitHub secrets"
+                  echo "   Admin: Yes (root_admin=1)"
+                  echo ""
+                else
+                  echo ""
+                  echo "❌ ADMIN USER FINAL STATUS: FAILED"
+                  echo "   Could not verify admin user exists with correct permissions"
+                  echo ""
+                fi
+              else
+                echo "❌ Users table does not exist - cannot create admin user"
+              fi
+            else
+              echo "❌ Database is not accessible - cannot reset admin user"
+            fi
+            
+            echo "=========================================="
+            echo ""
+            
             # If any service failed, show details and exit with error
             if [[ -n "${FAILED_SERVICES}" ]]; then
               echo ""
@@ -773,6 +962,10 @@ jobs:
             echo "4. Log into the panel at https://panel.festas-builds.com"
             echo "5. Create a Location and Node in the admin panel"
             echo "6. Generate Wings token and configure Wings"
+            echo ""
+            echo "Admin User Recovery:"
+            echo "If you cannot log in, use the 'Reset Pterodactyl Admin User' workflow"
+            echo "to reset your admin credentials without reinstalling."
             echo ""
             echo "See docs/PTERODACTYL_SETUP.md for detailed instructions"
             echo "=========================================="

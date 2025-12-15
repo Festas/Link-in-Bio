@@ -272,6 +272,7 @@ jobs:
             
             # Run migrations with proper error handling
             echo "Running migrations and seeding database..."
+            MIGRATION_FAILED=false
             MIGRATION_OUTPUT=$(sudo -u www-data php artisan migrate --seed --force 2>&1) || MIGRATION_FAILED=true
             
             if [[ "${MIGRATION_FAILED}" == "true" ]]; then

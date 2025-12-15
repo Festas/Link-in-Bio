@@ -243,7 +243,7 @@ echo "[6/9] Running database migrations..."
 # Run migrations with proper error handling
 echo "Running migrations and seeding database..."
 MIGRATION_FAILED=false
-MIGRATION_OUTPUT=$(sudo -u www-data php artisan migrate --seed --force 2>&1) || MIGRATION_FAILED=true
+MIGRATION_OUTPUT=$(sudo -u www-data php artisan migrate --seed --force --quiet 2>&1) || MIGRATION_FAILED=true
 
 if [[ "${MIGRATION_FAILED}" == "true" ]]; then
   echo "❌ ERROR: Database migration FAILED!"
@@ -278,21 +278,19 @@ if [[ "${MIGRATION_FAILED}" == "true" ]]; then
 fi
 
 echo "✓ Migrations and seeding completed successfully"
-echo "Migration Output:"
-echo "${MIGRATION_OUTPUT}"
+# Don't echo full MIGRATION_OUTPUT to avoid overwhelming SSH buffer
+echo "Migrations: $(echo "${MIGRATION_OUTPUT}" | grep -c "DONE" || echo "completed")"
 echo ""
 
 # Verify migrations were successful by checking migration status
-echo "Verifying migration status with 'php artisan migrate:status'..."
-MIGRATION_STATUS=$(sudo -u www-data php artisan migrate:status 2>&1) || true
+echo "Verifying migration status..."
+MIGRATION_STATUS=$(sudo -u www-data php artisan migrate:status 2>&1 | head -5 || true)
 
 if ! echo "${MIGRATION_STATUS}" | grep -q "Migration name"; then
   echo "⚠ WARNING: Could not verify migration status"
-  echo "Migration Status Output:"
-  echo "${MIGRATION_STATUS}"
 else
-  echo "✓ Migration status verified"
-  echo "${MIGRATION_STATUS}" | head -20
+  echo "✓ Migration status verified (showing first 5 migrations)"
+  echo "${MIGRATION_STATUS}"
 fi
 echo ""
 
@@ -751,8 +749,8 @@ else
   QUEUE_ERRORS=$(sudo journalctl -u pteroq --since "10 seconds ago" 2>/dev/null | grep -cE "\\[FAIL\\]|Exception|Failed" || echo "0")
   if [[ "${QUEUE_ERRORS}" -gt "0" ]]; then
     echo "⚠ WARNING: Queue has ${QUEUE_ERRORS} errors in last 10 seconds"
-    echo "Checking logs..."
-    sudo journalctl -u pteroq -n 20 --no-pager || true
+    echo "Recent queue logs:"
+    sudo journalctl -u pteroq -n 10 --no-pager || true
     FAILED_SERVICES="${FAILED_SERVICES}pteroq-errors "
   else
     echo "✓ Queue processing without errors"
@@ -925,9 +923,9 @@ echo "Panel URL: https://panel.festas-builds.com"
 echo "Admin Email: ${PTERO_ADMIN_EMAIL}"
 echo ""
 echo "Services Status:"
-sudo systemctl status nginx --no-pager -l || true
-sudo systemctl status php8.3-fpm --no-pager -l || true
-sudo systemctl status pteroq --no-pager -l || true
+sudo systemctl is-active nginx && echo "✓ nginx: active" || echo "✗ nginx: failed"
+sudo systemctl is-active php8.3-fpm && echo "✓ php8.3-fpm: active" || echo "✗ php8.3-fpm: failed"
+sudo systemctl is-active pteroq && echo "✓ pteroq: active" || echo "✗ pteroq: failed"
 echo ""
 echo "Next Steps:"
 echo "1. Ensure DNS A-record for panel.festas-builds.com points to this server"

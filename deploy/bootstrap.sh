@@ -143,8 +143,6 @@ fi
 # Create subdirectories for persistent data
 mkdir -p "${APP_DIR}/data"
 mkdir -p "${APP_DIR}/static/uploads"
-mkdir -p "${APP_DIR}/caddy_data"
-mkdir -p "${APP_DIR}/caddy_config"
 
 # ==========================================
 # 7. Set correct ownership
@@ -162,8 +160,8 @@ chmod 700 "${APP_DIR}/data"
 if command -v ufw &> /dev/null; then
     log_info "Configuring firewall rules..."
     ufw allow 22/tcp comment 'SSH' || true
-    ufw allow 8080/tcp comment 'HTTP' || true
-    ufw allow 8443/tcp comment 'HTTPS' || true
+    ufw allow 80/tcp comment 'HTTP' || true
+    ufw allow 443/tcp comment 'HTTPS' || true
     
     # Check ufw status safely (may fail if ufw not properly configured)
     UFW_STATUS=$(ufw status 2>/dev/null || echo "unknown")

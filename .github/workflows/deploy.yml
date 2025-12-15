@@ -71,16 +71,16 @@ jobs:
       packages: read
     
     steps:
-      - name: Checkout repository (for Caddyfile)
+      - name: Checkout repository (for Nginx configs)
         uses: actions/checkout@v4
 
-      - name: Copy Caddyfile to server
+      - name: Copy Nginx configs to server
         uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "Caddyfile"
+          source: "nginx/sites-available/*.conf"
           target: "/tmp/link-in-bio-deploy"
           strip_components: 0
 
@@ -129,8 +129,6 @@ jobs:
             sudo mkdir -p "${APP_DIR}"
             sudo mkdir -p "${APP_DIR}/data"
             sudo mkdir -p "${APP_DIR}/static/uploads"
-            sudo mkdir -p "${APP_DIR}/caddy_data"
-            sudo mkdir -p "${APP_DIR}/caddy_config"
             
             # Ensure current user owns the directory
             sudo chown -R $(whoami):$(whoami) "${APP_DIR}"
@@ -170,19 +168,37 @@ jobs:
             echo "✓ .env.social file created"
             
             # ==========================================
-            # 3. Copy Caddyfile from repository
+            # 3. Deploy Nginx configurations
             # ==========================================
-            echo "[3/7] Copying Caddyfile from repository..."
+            echo "[3/7] Deploying Nginx configurations..."
             
-            if [[ -f "/tmp/link-in-bio-deploy/Caddyfile" ]]; then
-              cp /tmp/link-in-bio-deploy/Caddyfile "${APP_DIR}/Caddyfile"
+            # Remove default Nginx configs to prevent conflicts
+            sudo rm -f /etc/nginx/sites-enabled/default
+            sudo rm -f /etc/nginx/sites-available/default
+            sudo rm -f /etc/nginx/conf.d/default.conf
+            
+            # Copy Nginx configurations from deployment
+            if [[ -d "/tmp/link-in-bio-deploy/nginx/sites-available" ]]; then
+              sudo cp /tmp/link-in-bio-deploy/nginx/sites-available/*.conf /etc/nginx/sites-available/
+              
+              # Enable all sites by creating symlinks
+              for conf in /etc/nginx/sites-available/*.festas-builds.com.conf; do
+                confname=$(basename "$conf")
+                sudo ln -sf "../sites-available/$confname" "/etc/nginx/sites-enabled/$confname"
+              done
+              
               rm -rf /tmp/link-in-bio-deploy
-              echo "✓ Caddyfile copied from repository (all 6 domains configured)"
+              echo "✓ Nginx configurations deployed (9 domains configured)"
             else
-              echo "⚠ Warning: Caddyfile not found in /tmp/link-in-bio-deploy"
-              echo "Creating fallback Caddyfile..."
-              printf '%s\n' ":80 {" "    reverse_proxy web:8000" "}" > Caddyfile
-              echo "✓ Fallback Caddyfile created"
+              echo "⚠ Warning: Nginx configs not found in /tmp/link-in-bio-deploy"
+              echo "Skipping Nginx configuration update"
+            fi
+            
+            # Test Nginx configuration
+            if sudo nginx -t 2>&1; then
+              echo "✓ Nginx configuration test passed"
+            else
+              echo "⚠ Nginx configuration test failed, but continuing deployment"
             fi
             
             # ==========================================
@@ -199,6 +215,8 @@ jobs:
               "    image: \"${COMPOSE_IMAGE}\"" \
               "    container_name: linktree_app" \
               "    restart: unless-stopped" \
+              "    ports:" \
+              "      - \"127.0.0.1:8000:8000\"" \
               "    volumes:" \
               "      - ./data:/app/data" \
               "      - ./static/uploads:/app/static/uploads" \
@@ -210,32 +228,10 @@ jobs:
               "      timeout: 10s" \
               "      retries: 3" \
               "      start_period: 40s" \
-              "    networks:" \
-              "      - caddy-network" \
-              "" \
-              "  caddy:" \
-              "    image: caddy:latest" \
-              "    container_name: caddy_server" \
-              "    restart: unless-stopped" \
-              "    ports:" \
-              "      - \"80:80\"" \
-              "      - \"443:443\"" \
-              "    volumes:" \
-              "      - ./Caddyfile:/etc/caddy/Caddyfile:ro" \
-              "      - ./caddy_data:/data" \
-              "      - ./caddy_config:/config" \
-              "    depends_on:" \
-              "      - web" \
-              "    networks:" \
-              "      - caddy-network" \
-              "" \
-              "volumes:" \
-              "  caddy_data:" \
-              "  caddy_config:" \
               "" \
               "networks:" \
-              "  caddy-network:" \
-              "    name: caddy-network" \
+              "  default:" \
+              "    name: linkinbio-network" \
               "    driver: bridge" \
               > docker-compose.yml
             
@@ -270,10 +266,10 @@ jobs:
             
             # Check container status
             RUNNING_CONTAINERS=$(docker compose ps --services --filter status=running | wc -l)
-            if [[ "$RUNNING_CONTAINERS" -ge 2 ]]; then
+            if [[ "$RUNNING_CONTAINERS" -ge 1 ]]; then
               echo "✓ All containers are running ($RUNNING_CONTAINERS services)"
             else
-              echo "⚠ Not all containers are running (only $RUNNING_CONTAINERS of 2)"
+              echo "⚠ Not all containers are running (only $RUNNING_CONTAINERS of 1)"
               docker compose ps
               docker compose logs --tail=50
               exit 1
@@ -295,24 +291,33 @@ jobs:
             fi
             
             # ==========================================
-            # 7. Validate and reload Caddy configuration
+            # 7. Reload Nginx and verify SSL certificates
             # ==========================================
-            echo "[7/7] Validating and reloading Caddy configuration..."
+            echo "[7/7] Reloading Nginx configuration..."
             
-            # Validate the Caddyfile before reloading
-            if docker compose exec -T caddy caddy validate --config /etc/caddy/Caddyfile; then
-              echo "✓ Caddyfile validation passed"
+            # Reload Nginx if configuration is valid
+            if sudo nginx -t >/dev/null 2>&1; then
+              echo "✓ Nginx configuration is valid"
               
-              # Reload Caddy with the new configuration
-              if docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile; then
-                echo "✓ Caddy configuration reloaded successfully"
+              if sudo systemctl reload nginx; then
+                echo "✓ Nginx reloaded successfully"
               else
-                echo "⚠ Caddy reload failed, but container is still running"
+                echo "⚠ Nginx reload failed"
+                sudo systemctl status nginx || true
               fi
             else
-              echo "⚠ Caddyfile validation failed. Showing Caddyfile contents:"
-              cat Caddyfile || true
-              echo "⚠ Caddy will continue with the previous configuration"
+              echo "⚠ Nginx configuration test failed, skipping reload"
+              sudo nginx -t || true
+            fi
+            
+            # Check SSL certificates status
+            echo ""
+            echo "Checking SSL certificates..."
+            if command -v certbot &> /dev/null; then
+              sudo certbot certificates 2>&1 | head -20 || echo "⚠ Could not retrieve certificate info"
+            else
+              echo "⚠ Certbot not installed. SSL certificates should be obtained manually."
+              echo "Run: sudo certbot --nginx -d festas-builds.com [and other domains]"
             fi
             
             # ==========================================
@@ -349,8 +354,11 @@ jobs:
             echo "=== Web Container Logs ==="
             docker compose logs --tail=100 web || true
             echo ""
-            echo "=== Caddy Container Logs ==="
-            docker compose logs --tail=50 caddy || true
+            echo "=== Nginx Status ==="
+            sudo systemctl status nginx || true
+            echo ""
+            echo "=== Nginx Error Logs ==="
+            sudo tail -50 /var/log/nginx/error.log || true
             echo ""
             echo "=== Directory Contents ==="
             ls -la || true

@@ -3,6 +3,9 @@ services:
     build: .
     container_name: linktree_app
     restart: unless-stopped
+    ports:
+      # Expose to host Nginx on 127.0.0.1
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./data:/app/data
       - ./static/uploads:/app/static/uploads
@@ -14,30 +17,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - caddy-network
-
-  caddy:
-    image: caddy:latest
-    container_name: caddy_server
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - web
-    networks:
-      - caddy-network
-
-volumes:
-  caddy_data:
-  caddy_config:
 
 networks:
-  caddy-network:
-    name: caddy-network
+  default:
+    name: linkinbio-network
     driver: bridge

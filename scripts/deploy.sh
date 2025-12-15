@@ -4,7 +4,7 @@
 #
 # This script is designed to be run on the target Hetzner server after cloning/updating the repo.
 # It ensures docker-compose.yml is written safely (heredoc), validates env files,
-# ensures Caddy volumes exist with correct ownership, and runs migrations with retries.
+# deploys Nginx configurations, and runs migrations with retries.
 #
 # Usage:
 #   ./scripts/deploy.sh
@@ -36,6 +36,8 @@ services:
     build: .
     container_name: linktree_app
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./data:/app/data
       - ./static/uploads:/app/static/uploads
@@ -48,23 +50,10 @@ services:
       retries: 3
       start_period: 40s
 
-  caddy:
-    image: caddy:latest
-    container_name: caddy_server
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - web
-
-volumes:
-  caddy_data:
-  caddy_config:
+networks:
+  default:
+    name: linkinbio-network
+    driver: bridge
 EOF
 
 # Validate docker-compose.yml syntax
@@ -101,23 +90,39 @@ fi
 echo "✓ .env.social file exists"
 
 # ==========================================
-# 3. Ensure Caddy volumes exist with correct ownership
+# 3. Deploy Nginx configurations (if available)
 # ==========================================
 echo ""
-echo "[3/6] Ensuring Caddy volumes have correct permissions..."
+echo "[3/6] Deploying Nginx configurations..."
 
-# Use a fixed compose project name so volume names are predictable
-export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-linkinbio}"
-
-for vol in "${COMPOSE_PROJECT_NAME}_caddy_data" "${COMPOSE_PROJECT_NAME}_caddy_config"; do
-  echo "  - Creating/checking volume: $vol"
-  docker volume create "$vol" >/dev/null 2>&1 || true
-  # Ensure volume is owned by UID 1000 (Caddy's default user)
-  docker run --rm -v "$vol":/data alpine sh -c "mkdir -p /data && chown -R 1000:1000 /data" 2>/dev/null || {
-    echo "  WARNING: Could not set ownership on $vol (may require sudo)"
-  }
-done
-echo "✓ Caddy volumes prepared"
+if [[ -d "nginx/sites-available" ]] && [[ -n "$(ls -A nginx/sites-available/*.conf 2>/dev/null)" ]]; then
+  # Remove default Nginx configs to prevent conflicts
+  sudo rm -f /etc/nginx/sites-enabled/default
+  sudo rm -f /etc/nginx/sites-available/default
+  sudo rm -f /etc/nginx/conf.d/default.conf
+  
+  # Copy configurations
+  sudo cp nginx/sites-available/*.conf /etc/nginx/sites-available/
+  
+  # Enable all sites by creating symlinks
+  for conf in /etc/nginx/sites-available/*.festas-builds.com.conf; do
+    if [[ -f "$conf" ]]; then
+      confname=$(basename "$conf")
+      sudo ln -sf "../sites-available/$confname" "/etc/nginx/sites-enabled/$confname"
+    fi
+  done
+  
+  # Test configuration
+  if sudo nginx -t; then
+    echo "✓ Nginx configuration deployed and validated"
+    sudo systemctl reload nginx || echo "⚠ Nginx reload failed"
+  else
+    echo "⚠ Nginx configuration test failed"
+  fi
+else
+  echo "⚠ No Nginx configurations found in nginx/sites-available/"
+  echo "Skipping Nginx deployment"
+fi
 
 # ==========================================
 # 4. Pull images and start containers

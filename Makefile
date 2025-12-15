@@ -123,7 +123,7 @@ minify: minify-css minify-js  ## Minify all static assets for production
 	@echo "Asset optimization complete!"
 	@echo "Minified files are in static/dist/"
 	@echo ""
-	@echo "For production, configure Caddy to serve"
+	@echo "For production, configure Nginx to serve"
 	@echo "from static/dist/ with gzip compression"
 	@echo "=========================================="
 

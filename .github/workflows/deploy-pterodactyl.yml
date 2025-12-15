@@ -250,15 +250,6 @@ jobs:
             fi
             echo "✓ .env credentials verified"
             
-            # Verify database connection before proceeding
-            echo "Verifying database connection..."
-            if ! sudo -u www-data php artisan migrate:status 2>&1 | grep -q -E "Migration table created successfully|Migration name"; then
-              echo "ERROR: Database connection failed. Checking .env file..."
-              sudo cat /var/www/pterodactyl/.env | grep DB_ || true
-              exit 1
-            fi
-            echo "✓ Database connection verified"
-            
             # Configure mail settings (use default local mail)
             sudo -u www-data php artisan p:environment:mail \
               --driver=mail \
@@ -274,23 +265,45 @@ jobs:
             echo "[6/9] Running database migrations..."
             
             # Run migrations with proper error handling
-            if ! sudo -u www-data php artisan migrate --seed --force; then
+            echo "Running migrations and seeding database..."
+            if ! sudo -u www-data php artisan migrate --seed --force 2>&1; then
               echo "ERROR: Database migration failed!"
-              echo "Checking database connection..."
-              sudo mysql -e "SHOW GRANTS FOR 'ptero'@'localhost';" || true
-              sudo mysql -e "SELECT user, host FROM mysql.user WHERE user='ptero';" || true
-              echo "Checking .env file database settings..."
-              sudo cat /var/www/pterodactyl/.env | grep DB_ || true
+              echo ""
+              echo "Debug Information:"
+              echo "===================="
+              echo "1. Checking database connection..."
+              sudo mysql -e "SHOW GRANTS FOR 'ptero'@'localhost';" 2>&1 || true
+              sudo mysql -e "SELECT user, host FROM mysql.user WHERE user='ptero';" 2>&1 || true
+              echo ""
+              echo "2. Checking .env file database settings..."
+              sudo cat /var/www/pterodactyl/.env | grep DB_ 2>&1 || true
+              echo ""
+              echo "3. Testing direct MySQL connection..."
+              sudo MYSQL_PWD="${PTERO_DB_PASSWORD}" mysql -u ptero -h 127.0.0.1 pterodactyl -e "SELECT 1;" 2>&1 || true
+              echo ""
+              echo "4. Checking Laravel logs for errors..."
+              sudo tail -50 /var/www/pterodactyl/storage/logs/laravel.log 2>&1 || echo "No Laravel logs found"
               exit 1
             fi
+            echo "✓ Migrations and seeding completed successfully"
             
-            # Verify migrations were successful
-            echo "Verifying migrations..."
+            # Verify migrations were successful by checking migration status
+            echo "Verifying migration status..."
+            if ! sudo -u www-data php artisan migrate:status 2>&1 | grep -q "Migration name"; then
+              echo "WARNING: Could not verify migration status"
+            else
+              echo "✓ Migration status verified"
+            fi
+            
+            # Verify expected tables exist
+            echo "Verifying database tables..."
             if ! sudo mysql pterodactyl -e "SHOW TABLES;" | grep -q "settings"; then
               echo "ERROR: Migrations did not create expected tables!"
+              echo "Current tables in database:"
               sudo mysql pterodactyl -e "SHOW TABLES;" || true
               exit 1
             fi
+            echo "✓ Expected database tables verified"
             
             echo "✓ Database migrations complete and verified"
             

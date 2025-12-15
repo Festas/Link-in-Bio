@@ -649,7 +649,7 @@ sleep 3
 # Flush any failed jobs from previous deployment attempts
 echo "Flushing failed queue jobs..."
 cd /var/www/pterodactyl
-sudo -u www-data php artisan queue:flush 2>/dev/null || echo "⚠ Queue flush skipped (first install)"
+sudo -u www-data php artisan queue:flush 2>/dev/null || echo "⚠ Queue flush failed or not needed"
 echo "✓ Queue worker started cleanly"
 
 # Add cron job for schedule (check if already exists to maintain idempotency)
@@ -751,10 +751,10 @@ else
   
   # Verify queue is processing without errors
   echo "Checking queue for recent errors..."
-  sleep 5
-  QUEUE_ERRORS=$(sudo journalctl -u pteroq --since "10 seconds ago" 2>/dev/null | grep -c "FAIL" || echo "0")
+  sleep 10
+  QUEUE_ERRORS=$(sudo journalctl -u pteroq --since "15 seconds ago" 2>/dev/null | grep -c "FAIL" || echo "0")
   if [[ "${QUEUE_ERRORS}" -gt "0" ]]; then
-    echo "⚠ WARNING: Queue has ${QUEUE_ERRORS} failed jobs in last 10 seconds"
+    echo "⚠ WARNING: Queue has ${QUEUE_ERRORS} failed jobs in last 15 seconds"
     echo "Checking logs..."
     sudo journalctl -u pteroq -n 20 --no-pager || true
     FAILED_SERVICES="${FAILED_SERVICES}pteroq-errors "

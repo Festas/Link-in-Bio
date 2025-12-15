@@ -224,12 +224,18 @@ if ! sudo grep -q "DB_USERNAME=ptero" /var/www/pterodactyl/.env; then
 fi
 echo "✓ .env credentials verified"
 
-# Configure mail settings (use default local mail)
+# Configure mail settings (use log driver to prevent SMTP failures)
 sudo -u www-data php artisan p:environment:mail \
   --driver=mail \
   --email=noreply@festas-builds.com \
   --from="Pterodactyl Panel" \
   --no-interaction
+
+# Force MAIL_MAILER to log to prevent SMTP failures
+echo "Forcing MAIL_MAILER to log mode to prevent email failures..."
+sudo -u www-data sed -i 's/^MAIL_MAILER=.*/MAIL_MAILER=log/' /var/www/pterodactyl/.env
+sudo -u www-data sed -i 's/^MAIL_HOST=.*/MAIL_HOST=localhost/' /var/www/pterodactyl/.env
+echo "✓ Mail configuration set to log mode"
 
 echo "✓ Panel configuration complete"
 
@@ -637,6 +643,15 @@ SERVICE_EOF
 sudo systemctl enable pteroq.service
 sudo systemctl start pteroq.service
 
+# Wait for queue worker to initialize
+sleep 3
+
+# Flush any failed jobs from previous deployment attempts
+echo "Flushing failed queue jobs..."
+cd /var/www/pterodactyl
+sudo -u www-data php artisan queue:flush 2>/dev/null || echo "⚠ Queue flush skipped (first install)"
+echo "✓ Queue worker started cleanly"
+
 # Add cron job for schedule (check if already exists to maintain idempotency)
 CRON_CMD="* * * * * php /var/www/pterodactyl/artisan schedule:run >> /dev/null 2>&1"
 if ! sudo crontab -u www-data -l 2>/dev/null | grep -q "pterodactyl/artisan schedule:run"; then
@@ -733,6 +748,19 @@ if ! sudo systemctl is-active --quiet pteroq; then
   FAILED_SERVICES="${FAILED_SERVICES}pteroq "
 else
   echo "✓ Pterodactyl Queue is running"
+  
+  # Verify queue is processing without errors
+  echo "Checking queue for recent errors..."
+  sleep 5
+  QUEUE_ERRORS=$(sudo journalctl -u pteroq --since "10 seconds ago" 2>/dev/null | grep -c "FAIL" || echo "0")
+  if [[ "${QUEUE_ERRORS}" -gt "0" ]]; then
+    echo "⚠ WARNING: Queue has ${QUEUE_ERRORS} failed jobs in last 10 seconds"
+    echo "Checking logs..."
+    sudo journalctl -u pteroq -n 20 --no-pager || true
+    FAILED_SERVICES="${FAILED_SERVICES}pteroq-errors "
+  else
+    echo "✓ Queue processing without errors"
+  fi
 fi
 
 if ! sudo systemctl is-active --quiet mariadb; then

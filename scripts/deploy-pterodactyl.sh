@@ -226,15 +226,11 @@ echo "✓ .env credentials verified"
 
 # Configure mail settings (use log driver to prevent SMTP failures)
 sudo -u www-data php artisan p:environment:mail \
-  --driver=mail \
+  --driver=log \
   --email=noreply@festas-builds.com \
   --from="Pterodactyl Panel" \
   --no-interaction
 
-# Force MAIL_MAILER to log to prevent SMTP failures
-echo "Forcing MAIL_MAILER to log mode to prevent email failures..."
-sudo -u www-data sed -i 's/^MAIL_MAILER=.*/MAIL_MAILER=log/' /var/www/pterodactyl/.env
-sudo -u www-data sed -i 's/^MAIL_HOST=.*/MAIL_HOST=localhost/' /var/www/pterodactyl/.env
 echo "✓ Mail configuration set to log mode"
 
 echo "✓ Panel configuration complete"
@@ -752,9 +748,9 @@ else
   # Verify queue is processing without errors
   echo "Checking queue for recent errors..."
   sleep 10
-  QUEUE_ERRORS=$(sudo journalctl -u pteroq --since "15 seconds ago" 2>/dev/null | grep -c "FAIL" || echo "0")
+  QUEUE_ERRORS=$(sudo journalctl -u pteroq --since "10 seconds ago" 2>/dev/null | grep -ci "failed\|exception" || echo "0")
   if [[ "${QUEUE_ERRORS}" -gt "0" ]]; then
-    echo "⚠ WARNING: Queue has ${QUEUE_ERRORS} failed jobs in last 15 seconds"
+    echo "⚠ WARNING: Queue has ${QUEUE_ERRORS} errors in last 10 seconds"
     echo "Checking logs..."
     sudo journalctl -u pteroq -n 20 --no-pager || true
     FAILED_SERVICES="${FAILED_SERVICES}pteroq-errors "

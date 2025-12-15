@@ -28,7 +28,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "scripts/deploy-pterodactyl.sh"
           target: "/tmp/"
-          strip_components: 1
+          strip_components: 1  # Removes 'scripts/' prefix, uploads as /tmp/deploy-pterodactyl.sh
       
       - name: Deploy Pterodactyl to Hetzner via SSH
         uses: appleboy/ssh-action@v1.0.3

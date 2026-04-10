@@ -166,7 +166,7 @@ body.theme-pastel {
     --color-bg: #fdf2f8;
     --color-bg-gradient: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 25%, #fbcfe8 50%, #f5d0fe 75%, #e9d5ff 100%);
     --color-text: #831843;
-    --color-text-muted: #9d174d;
+    --color-text-muted: #6b1033;
     --color-item-bg: rgba(255, 255, 255, 0.8);
     --color-item-bg-hover: rgba(255, 255, 255, 0.95);
     --color-item-text: #831843;
@@ -193,7 +193,7 @@ body.theme-neon {
     --color-bg: #0f0f23;
     --color-bg-gradient: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
     --color-text: #00ff88;
-    --color-text-muted: #00cc6a;
+    --color-text-muted: #33d98a;
     --color-item-bg: rgba(0, 255, 136, 0.05);
     --color-item-bg-hover: rgba(0, 255, 136, 0.12);
     --color-item-text: #00ff88;
@@ -1953,4 +1953,35 @@ body.theme-sakura .item-product:hover {
 
 #page-footer p {
     color: var(--color-text-muted);
+}
+
+/* Focus Styles for Accessibility */
+:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: var(--border-radius-sm);
+}
+
+.group-header:focus-visible,
+.faq-header:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+    border-radius: var(--border-radius-md);
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

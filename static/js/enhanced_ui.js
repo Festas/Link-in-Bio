@@ -87,6 +87,7 @@ document.head.appendChild(rippleStyle);
 
 // Parallax Background Effect
 function initParallax() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const parallaxElements = document.querySelectorAll('[data-parallax]');
     
     window.addEventListener('scroll', () => {
@@ -336,7 +337,9 @@ function initEnhancements() {
     initScrollReveal();
     initSmoothScroll();
     enhanceClickTracking();
-    initParallax();
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        initParallax();
+    }
     initLazyLoading();
     initTypingAnimation();
     initAutoplayVideos();

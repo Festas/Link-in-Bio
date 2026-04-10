@@ -41,13 +41,36 @@ function setupGlobalEventListeners() {
             const content = container.querySelector('.group-content, .faq-content');
             const icon = groupHeader.querySelector('svg');
             if (content) {
-                content.classList.toggle('hidden');
-                if (content.classList.contains('hidden')) {
+                const isHidden = content.classList.toggle('hidden');
+                groupHeader.setAttribute('aria-expanded', !isHidden);
+                if (isHidden) {
                     icon.style.transform = 'rotate(-90deg)';
                     if (groupHeader.classList.contains('faq-header')) icon.style.transform = 'rotate(0deg)';
                 } else {
                     icon.style.transform = 'rotate(0deg)';
                     if (groupHeader.classList.contains('faq-header')) icon.style.transform = 'rotate(180deg)';
+                }
+            }
+        }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            const groupHeader = e.target.closest('.group-header, .faq-header');
+            if (groupHeader) {
+                e.preventDefault();
+                const container = groupHeader.closest('.group-container, .glass-card');
+                const content = container.querySelector('.group-content, .faq-content');
+                const icon = groupHeader.querySelector('svg');
+                if (content) {
+                    const isHidden = content.classList.toggle('hidden');
+                    groupHeader.setAttribute('aria-expanded', !isHidden);
+                    if (isHidden) {
+                        icon.style.transform = 'rotate(-90deg)';
+                        if (groupHeader.classList.contains('faq-header')) icon.style.transform = 'rotate(0deg)';
+                    } else {
+                        icon.style.transform = 'rotate(0deg)';
+                        if (groupHeader.classList.contains('faq-header')) icon.style.transform = 'rotate(180deg)';
+                    }
                 }
             }
         }
@@ -77,7 +100,7 @@ const ItemRenderers = {
         wrapper.className = 'group-container glass-card mb-4 overflow-hidden rounded-2xl';
         
         let headerHTML = item.title ? 
-            `<div class="group-header flex justify-between items-center p-5 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors border-b border-white/10">
+            `<div class="group-header flex justify-between items-center p-5 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors border-b border-white/10" tabindex="0" role="button" aria-expanded="true">
                 <h3 class="text-xl font-bold text-white">${escapeHTML(item.title)}</h3>
                 <i data-lucide="chevron-down" class="chevron-icon w-5 h-5 text-white transition-transform"></i>
             </div>` : '';
@@ -119,7 +142,7 @@ const ItemRenderers = {
         wrapper.className = 'group-container glass-card mb-4 overflow-hidden rounded-2xl';
         
         const titleHTML = item.title ? 
-            `<div class="group-header flex justify-between items-center p-4 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors">
+            `<div class="group-header flex justify-between items-center p-4 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors" tabindex="0" role="button" aria-expanded="true">
                 <h3 class="text-lg font-bold text-white">${escapeHTML(item.title)}</h3>
                 <i data-lucide="chevron-down" class="chevron-icon w-5 h-5 text-white transition-transform"></i>
             </div>` : '';
@@ -266,7 +289,7 @@ const ItemRenderers = {
     },
     faq: (item) => {
         const div = document.createElement('div'); div.className = 'glass-card mb-4 overflow-hidden rounded-lg';
-        div.innerHTML = `<div class="faq-header flex justify-between items-center p-4 cursor-pointer bg-white bg-opacity-5 hover:bg-opacity-10 transition-colors"><span class="font-medium">${escapeHTML(item.title)}</span><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></div><div class="faq-content hidden p-4 border-t border-white border-opacity-10 text-sm text-gray-200 leading-relaxed">${escapeHTML(item.url)}</div>`; return div;
+        div.innerHTML = `<div class="faq-header flex justify-between items-center p-4 cursor-pointer bg-white bg-opacity-5 hover:bg-opacity-10 transition-colors" tabindex="0" role="button" aria-expanded="false"><span class="font-medium">${escapeHTML(item.title)}</span><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></div><div class="faq-content hidden p-4 border-t border-white border-opacity-10 text-sm text-gray-200 leading-relaxed">${escapeHTML(item.url)}</div>`; return div;
     },
     divider: (item) => {
         const div = document.createElement('div'); div.className = 'flex items-center py-4';

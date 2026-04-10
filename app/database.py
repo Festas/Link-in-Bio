@@ -20,7 +20,8 @@ def _get_db_path(filename: str) -> str:
     return os.path.join(DATA_DIR, filename)
 
 
-# Datenbank-Pfade mit zentralem Ordner
+# Datenbank-Pfade - connections are consolidated into the main database,
+# but path constants are kept for backward compatibility
 DATABASE_FILE = os.getenv("DATABASE_FILE", _get_db_path("linktree.db"))
 SPECIAL_PAGES_DB = os.getenv("SPECIAL_PAGES_DB", _get_db_path("special_pages.db"))
 CUSTOM_PAGES_DB = os.getenv("CUSTOM_PAGES_DB", _get_db_path("pages.db"))
@@ -51,35 +52,23 @@ def get_db_connection():
 
 @contextmanager
 def get_special_pages_db_connection():
-    """Special pages database connection for special_pages tables (impressum, datenschutz, ueber-mich, kontakt)"""
-    conn = sqlite3.connect(SPECIAL_PAGES_DB)
-    conn.row_factory = sqlite3.Row
-    try:
+    """Special pages database connection - now consolidated into main database."""
+    with get_db_connection() as conn:
         yield conn
-    finally:
-        conn.close()
 
 
 @contextmanager
 def get_custom_pages_db_connection():
-    """Custom pages database connection for pages table"""
-    conn = sqlite3.connect(CUSTOM_PAGES_DB)
-    conn.row_factory = sqlite3.Row
-    try:
+    """Custom pages database connection - now consolidated into main database."""
+    with get_db_connection() as conn:
         yield conn
-    finally:
-        conn.close()
 
 
 @contextmanager
 def get_mediakit_db_connection():
-    """Media Kit database connection for all mediakit tables"""
-    conn = sqlite3.connect(MEDIAKIT_DB)
-    conn.row_factory = sqlite3.Row
-    try:
+    """Media Kit database connection - now consolidated into main database."""
+    with get_db_connection() as conn:
         yield conn
-    finally:
-        conn.close()
 
 
 def init_db():
@@ -211,6 +200,126 @@ def init_main_db():
         )
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at)")
 
+        # --- Special pages tables (consolidated from special_pages.db) ---
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS special_pages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            page_key TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            subtitle TEXT,
+            content TEXT NOT NULL,
+            blocks TEXT,
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
+
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS special_page_blocks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            page_key TEXT NOT NULL,
+            block_type TEXT NOT NULL,
+            content TEXT NOT NULL,
+            settings TEXT,
+            position INTEGER NOT NULL,
+            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            FOREIGN KEY (page_key) REFERENCES special_pages(page_key) ON DELETE CASCADE
+        )"""
+        )
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_special_pages_key ON special_pages(page_key)")
+
+        # --- Custom pages table (consolidated from pages.db) ---
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS pages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            slug TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            bio TEXT,
+            image_url TEXT,
+            bg_image_url TEXT,
+            is_active BOOLEAN DEFAULT 1,
+            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pages_slug ON pages(slug)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pages_active ON pages(is_active)")
+
+        # --- Media kit tables (consolidated from mediakit.db) ---
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            section TEXT NOT NULL,
+            key TEXT NOT NULL,
+            value TEXT,
+            display_order INTEGER DEFAULT 0,
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            UNIQUE(section, key)
+        )"""
+        )
+
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            setting_key TEXT NOT NULL UNIQUE,
+            setting_value TEXT,
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
+
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_views (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            viewer_email TEXT,
+            viewer_ip TEXT,
+            viewer_country TEXT,
+            user_agent TEXT,
+            viewed_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
+
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_access_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL,
+            name TEXT,
+            company TEXT,
+            message TEXT,
+            status TEXT DEFAULT 'pending',
+            ip_address TEXT,
+            requested_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            approved_at DATETIME
+        )"""
+        )
+
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS mediakit_blocks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            block_type TEXT NOT NULL,
+            title TEXT,
+            content TEXT,
+            settings TEXT,
+            position INTEGER NOT NULL DEFAULT 0,
+            is_visible BOOLEAN DEFAULT 1,
+            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )"""
+        )
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_section ON mediakit_data(section)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_views_date ON mediakit_views(viewed_at)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_access_status ON mediakit_access_requests(status)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_blocks_position ON mediakit_blocks(position)")
+
+        # Additional performance indexes
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_clicks_country ON clicks(country_code)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pageviews_timestamp ON pageviews(timestamp)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_featured ON items(is_featured)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_type ON items(item_type)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pageviews_country ON pageviews(country_code)")
+
         # Migrationen (Fix für grid_columns)
         cursor.execute("PRAGMA table_info(items)")
         columns_items = [col[1] for col in cursor.fetchall()]
@@ -270,41 +379,10 @@ def init_main_db():
 
 
 def init_special_pages_db():
-    """Initialize special pages database for special_pages tables (impressum, datenschutz, ueber-mich, kontakt)"""
-    print("Initialisiere Special-Pages-Datenbank (special_pages.db)...")
-    with get_special_pages_db_connection() as conn:
+    """Initialize special pages data (tables already created in init_main_db)."""
+    print("Initialisiere Special-Pages-Daten...")
+    with get_db_connection() as conn:
         cursor = conn.cursor()
-
-        # Special pages content table
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS special_pages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            page_key TEXT NOT NULL UNIQUE,
-            title TEXT NOT NULL,
-            subtitle TEXT,
-            content TEXT NOT NULL,
-            blocks TEXT,
-            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
-        )"""
-        )
-
-        # Special page blocks table
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS special_page_blocks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            page_key TEXT NOT NULL,
-            block_type TEXT NOT NULL,
-            content TEXT NOT NULL,
-            settings TEXT,
-            position INTEGER NOT NULL,
-            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
-            updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
-            FOREIGN KEY (page_key) REFERENCES special_pages(page_key) ON DELETE CASCADE
-        )"""
-        )
-
-        # Create indexes for special pages database
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_special_pages_key ON special_pages(page_key)")
 
         # Initialize special pages with default content if not exists
         cursor.execute("SELECT COUNT(*) FROM special_pages")
@@ -336,33 +414,14 @@ def init_special_pages_db():
                 )
 
         conn.commit()
-        print("✓ Special-Pages-Datenbank initialisiert")
+        print("✓ Special-Pages-Daten initialisiert")
 
 
 def init_custom_pages_db():
-    """Initialize custom pages database for pages table"""
-    print("Initialisiere Custom-Pages-Datenbank (pages.db)...")
-    with get_custom_pages_db_connection() as conn:
+    """Initialize custom pages data (tables already created in init_main_db)."""
+    print("Initialisiere Custom-Pages-Daten...")
+    with get_db_connection() as conn:
         cursor = conn.cursor()
-
-        # Create pages table
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS pages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            slug TEXT NOT NULL UNIQUE,
-            title TEXT NOT NULL,
-            bio TEXT,
-            image_url TEXT,
-            bg_image_url TEXT,
-            is_active BOOLEAN DEFAULT 1,
-            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
-            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
-        )"""
-        )
-
-        # Create indexes for custom pages database
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pages_slug ON pages(slug)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pages_active ON pages(is_active)")
 
         # Create default page if none exists (for backward compatibility)
         cursor.execute("SELECT COUNT(*) FROM pages")
@@ -377,22 +436,18 @@ def init_custom_pages_db():
             default_image = ""
             default_bg = ""
 
-            # Try to get settings from main database if it already exists
-            if os.path.exists(DATABASE_FILE):
-                try:
-                    with get_db_connection() as main_conn:
-                        main_cursor = main_conn.cursor()
-                        main_cursor.execute(
-                            "SELECT key, value FROM settings WHERE key IN ('title', 'bio', 'image_url', 'bg_image_url')"
-                        )
-                        settings = {row[0]: row[1] for row in main_cursor.fetchall()}
-                        default_title = settings.get("title", default_title)
-                        default_bio = settings.get("bio", default_bio)
-                        default_image = settings.get("image_url", default_image)
-                        default_bg = settings.get("bg_image_url", default_bg)
-                except sqlite3.Error:
-                    # If main database doesn't have settings table yet or other DB error, use defaults
-                    pass
+            # Settings are in the same database now, read directly
+            try:
+                cursor.execute(
+                    "SELECT key, value FROM settings WHERE key IN ('title', 'bio', 'image_url', 'bg_image_url')"
+                )
+                settings = {row[0]: row[1] for row in cursor.fetchall()}
+                default_title = settings.get("title", default_title)
+                default_bio = settings.get("bio", default_bio)
+                default_image = settings.get("image_url", default_image)
+                default_bg = settings.get("bg_image_url", default_bg)
+            except sqlite3.Error:
+                pass
 
             cursor.execute(
                 """INSERT INTO pages (slug, title, bio, image_url, bg_image_url, is_active) 
@@ -401,16 +456,18 @@ def init_custom_pages_db():
             )
 
         conn.commit()
-        print("✓ Custom-Pages-Datenbank initialisiert")
+        print("✓ Custom-Pages-Daten initialisiert")
 
 
 def init_mediakit_db():
-    """Initialize Media Kit database for all mediakit tables"""
-    print("Initialisiere Media-Kit-Datenbank (mediakit.db)...")
-    with get_mediakit_db_connection() as conn:
+    """Initialize Media Kit tables in main DB and legacy mediakit.db for backward compatibility."""
+    # Tables are already created in init_main_db() for the consolidated DB.
+    # Also create them in the legacy MEDIAKIT_DB file for backward compatibility.
+    if MEDIAKIT_DB != DATABASE_FILE:
+        conn = sqlite3.connect(MEDIAKIT_DB)
+        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        # Media kit data table
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS mediakit_data (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -423,7 +480,6 @@ def init_mediakit_db():
         )"""
         )
 
-        # Media kit settings table (for access control, video pitch, etc.)
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS mediakit_settings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -433,7 +489,6 @@ def init_mediakit_db():
         )"""
         )
 
-        # Media kit views tracking table
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS mediakit_views (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -445,7 +500,6 @@ def init_mediakit_db():
         )"""
         )
 
-        # Media kit access requests table (for gated access)
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS mediakit_access_requests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -460,7 +514,6 @@ def init_mediakit_db():
         )"""
         )
 
-        # Media kit blocks table (new flexible block-based system)
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS mediakit_blocks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -475,14 +528,15 @@ def init_mediakit_db():
         )"""
         )
 
-        # Create indexes for mediakit database
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_section ON mediakit_data(section)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_views_date ON mediakit_views(viewed_at)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_access_status ON mediakit_access_requests(status)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_blocks_position ON mediakit_blocks(position)")
 
         conn.commit()
-        print("✓ Media-Kit-Datenbank initialisiert")
+        conn.close()
+
+    print("✓ Media-Kit-Tabellen initialisiert")
 
 
 def get_next_display_order(page_id: Optional[int] = None) -> int:

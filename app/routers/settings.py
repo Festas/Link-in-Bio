@@ -19,6 +19,7 @@ from ..auth_unified import require_auth
 from ..settings_service import SettingsService
 from ..config import BASE_DIR
 from ..sanitization import sanitize_custom_html
+from ..audit_log import log_action, ACTION_SETTINGS, RESOURCE_SETTINGS
 
 router = APIRouter()
 
@@ -39,6 +40,7 @@ async def update_settings(settings: Settings, user=Depends(require_auth)):
     if "custom_html_body" in data and data["custom_html_body"]:
         data["custom_html_body"] = sanitize_custom_html(data["custom_html_body"])
     SettingsService.update_settings(data)
+    log_action(ACTION_SETTINGS, RESOURCE_SETTINGS, None, user, {"keys": list(settings.model_dump().keys())})
     return Settings(**get_settings_from_db())
 
 

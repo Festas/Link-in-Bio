@@ -17,6 +17,7 @@ from ..database import (
 from ..auth_unified import require_auth
 from ..services import get_video_embed_url, scrape_link_details, save_optimized_image
 from ..cache_unified import cache
+from ..audit_log import log_action, ACTION_CREATE, ACTION_UPDATE, ACTION_DELETE, RESOURCE_ITEM
 
 router = APIRouter()
 
@@ -77,6 +78,7 @@ async def create_link(req: ItemCreate, background_tasks: BackgroundTasks, user=D
     # Schedule background scraping
     background_tasks.add_task(background_scrape_and_update, item_dict["id"], req.url)
     cache.invalidate("items")
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": "Loading...", "type": "link"})
     return Item(**item_dict)
 
 
@@ -87,50 +89,64 @@ async def create_video(req: ItemCreate, user=Depends(require_auth)):
         raise HTTPException(400, "URL fehlt")
     embed = get_video_embed_url(req.url) or req.url
     data = build_item_data("video", "Video", embed, page_id=req.page_id)
+    item_dict = create_item_in_db(data)
     cache.invalidate("items")
-    return Item(**create_item_in_db(data))
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": "Video", "type": "video"})
+    return Item(**item_dict)
 
 
 @router.post("/headers", response_model=Item)
 async def create_header(req: ItemCreate, user=Depends(require_auth)):
     """Create a header item."""
+    item_dict = create_item_in_db(build_item_data("header", req.title, page_id=req.page_id))
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("header", req.title, page_id=req.page_id)))
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title, "type": "header"})
+    return Item(**item_dict)
 
 
 @router.post("/slider_groups", response_model=Item)
 async def create_slider(req: ItemCreate, user=Depends(require_auth)):
     """Create a slider group item."""
+    item_dict = create_item_in_db(build_item_data("slider_group", req.title, page_id=req.page_id))
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("slider_group", req.title, page_id=req.page_id)))
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title, "type": "slider_group"})
+    return Item(**item_dict)
 
 
 @router.post("/grids", response_model=Item)
 async def create_grid(req: ItemCreate, user=Depends(require_auth)):
     """Create a grid item."""
+    item_dict = create_item_in_db(build_item_data("grid", req.title, page_id=req.page_id))
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("grid", req.title, page_id=req.page_id)))
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title, "type": "grid"})
+    return Item(**item_dict)
 
 
 @router.post("/faqs", response_model=Item)
 async def create_faq(req: ItemCreate, user=Depends(require_auth)):
     """Create a FAQ item."""
+    item_dict = create_item_in_db(build_item_data("faq", req.title, "", page_id=req.page_id))
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("faq", req.title, "", page_id=req.page_id)))
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title, "type": "faq"})
+    return Item(**item_dict)
 
 
 @router.post("/dividers", response_model=Item)
 async def create_divider(req: ItemCreate, user=Depends(require_auth)):
     """Create a divider item."""
+    item_dict = create_item_in_db(build_item_data("divider", req.title or "---", page_id=req.page_id))
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("divider", req.title or "---", page_id=req.page_id)))
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title or "---", "type": "divider"})
+    return Item(**item_dict)
 
 
 @router.post("/testimonials", response_model=Item)
 async def create_testimonial(req: ItemCreate, user=Depends(require_auth)):
     """Create a testimonial item."""
+    item_dict = create_item_in_db(build_item_data("testimonial", req.name, req.text, page_id=req.page_id))
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("testimonial", req.name, req.text, page_id=req.page_id)))
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.name, "type": "testimonial"})
+    return Item(**item_dict)
 
 
 @router.post("/products", response_model=Item)
@@ -146,28 +162,35 @@ async def create_product(req: ItemCreate, background_tasks: BackgroundTasks, use
     if not req.title:
         background_tasks.add_task(background_scrape_and_update, item_dict["id"], req.url)
     cache.invalidate("items")
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": title, "type": "product"})
     return Item(**item_dict)
 
 
 @router.post("/contact_form", response_model=Item)
 async def create_contact_form(req: ItemCreate, user=Depends(require_auth)):
     """Create a contact form item."""
+    item_dict = create_item_in_db(build_item_data("contact_form", req.title, page_id=req.page_id))
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("contact_form", req.title, page_id=req.page_id)))
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title, "type": "contact_form"})
+    return Item(**item_dict)
 
 
 @router.post("/email_form", response_model=Item)
 async def create_email_form(req: ItemCreate, user=Depends(require_auth)):
     """Create an email form item."""
+    item_dict = create_item_in_db(build_item_data("email_form", req.title, page_id=req.page_id))
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("email_form", req.title, page_id=req.page_id)))
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title, "type": "email_form"})
+    return Item(**item_dict)
 
 
 @router.post("/countdowns", response_model=Item)
 async def create_countdown(req: ItemCreate, user=Depends(require_auth)):
     """Create a countdown item."""
+    item_dict = create_item_in_db(build_item_data("countdown", req.title, req.target_datetime, page_id=req.page_id))
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("countdown", req.title, req.target_datetime, page_id=req.page_id)))
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title, "type": "countdown"})
+    return Item(**item_dict)
 
 
 @router.post("/music_embeds", response_model=Item)
@@ -175,15 +198,19 @@ async def create_music_embed(req: ItemCreate, user=Depends(require_auth)):
     """Create a music embed item (Spotify, Apple Music, SoundCloud)."""
     if not req.url:
         raise HTTPException(400, "URL fehlt")
+    item_dict = create_item_in_db(build_item_data("music_embed", req.title or "Music", req.url, page_id=req.page_id))
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("music_embed", req.title or "Music", req.url, page_id=req.page_id)))
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title or "Music", "type": "music_embed"})
+    return Item(**item_dict)
 
 
 @router.post("/text_blocks", response_model=Item)
 async def create_text_block(req: ItemCreate, user=Depends(require_auth)):
     """Create a text/bio block item."""
+    item_dict = create_item_in_db(build_item_data("text_block", req.title or "", req.text or req.url or "", page_id=req.page_id))
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("text_block", req.title or "", req.text or req.url or "", page_id=req.page_id)))
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title or "", "type": "text_block"})
+    return Item(**item_dict)
 
 
 @router.post("/social_embeds", response_model=Item)
@@ -191,8 +218,10 @@ async def create_social_embed(req: ItemCreate, user=Depends(require_auth)):
     """Create a social media embed item (YouTube, Instagram, TikTok)."""
     if not req.url:
         raise HTTPException(400, "URL fehlt")
+    item_dict = create_item_in_db(build_item_data("social_embed", req.title or "Social", req.url, page_id=req.page_id))
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("social_embed", req.title or "Social", req.url, page_id=req.page_id)))
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title or "Social", "type": "social_embed"})
+    return Item(**item_dict)
 
 
 @router.post("/map_embeds", response_model=Item)
@@ -200,8 +229,10 @@ async def create_map_embed(req: ItemCreate, user=Depends(require_auth)):
     """Create a map embed item."""
     if not req.url:
         raise HTTPException(400, "URL fehlt")
+    item_dict = create_item_in_db(build_item_data("map_embed", req.title or "Location", req.url, page_id=req.page_id))
     cache.invalidate("items")
-    return Item(**create_item_in_db(build_item_data("map_embed", req.title or "Location", req.url, page_id=req.page_id)))
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title or "Location", "type": "map_embed"})
+    return Item(**item_dict)
 
 
 # --- Item Management ---
@@ -214,6 +245,7 @@ async def update_item(id: int, item: ItemUpdate, user=Depends(require_auth)):
     if not updated:
         raise HTTPException(404, "Item nicht gefunden")
     cache.invalidate("items")
+    log_action(ACTION_UPDATE, RESOURCE_ITEM, str(id), user, item.model_dump(exclude_unset=True))
     return Item(**updated)
 
 
@@ -222,6 +254,7 @@ async def delete_item(id: int, user=Depends(require_auth)):
     """Delete an item."""
     delete_item_from_db(id)
     cache.invalidate("items")
+    log_action(ACTION_DELETE, RESOURCE_ITEM, str(id), user)
     return Response(status_code=204)
 
 
@@ -237,6 +270,7 @@ async def toggle_visibility(id: int, user=Depends(require_auth)):
     if not updated:
         raise HTTPException(404, "Item nicht gefunden")
     cache.invalidate("items")
+    log_action(ACTION_UPDATE, RESOURCE_ITEM, str(id), user, {"action": "toggle_visibility"})
     return Item(**dict(updated))
 
 

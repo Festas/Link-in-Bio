@@ -21,11 +21,13 @@ router = APIRouter()
 
 
 @router.get("", response_model=List[Subscriber])
-async def get_subscribers(user=Depends(require_auth)):
-    """Get all subscribers."""
+async def get_subscribers(user=Depends(require_auth), page: int = 1, per_page: int = 100):
+    """Get subscribers with optional pagination."""
+    offset = (page - 1) * per_page
     with get_db_connection() as conn:
         rows = conn.execute(
-            "SELECT id, email, subscribed_at, redirect_page_id FROM subscribers ORDER BY subscribed_at DESC"
+            "SELECT id, email, subscribed_at, redirect_page_id FROM subscribers ORDER BY subscribed_at DESC LIMIT ? OFFSET ?",
+            (per_page, offset),
         ).fetchall()
         return [dict(r) for r in rows]
 

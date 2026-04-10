@@ -28,10 +28,10 @@ async def get_public_pages():
 
 
 @router.get("/items", response_model=List[Item], dependencies=[Depends(limiter_standard)])
-async def get_public_items(request: Request, page_id: Optional[int] = None):
-    """Get public items with caching."""
+async def get_public_items(request: Request, page_id: Optional[int] = None, page: int = 1, per_page: int = 100):
+    """Get public items with caching and optional pagination."""
     user = await check_auth(request)
-    cache_key = f"items_{'admin' if user else 'public'}_{page_id or 'all'}"
+    cache_key = f"items_{'admin' if user else 'public'}_{page_id or 'all'}_{page}_{per_page}"
     cached = cache.get(cache_key)
     if cached:
         return cached
@@ -52,6 +52,7 @@ async def get_public_items(request: Request, page_id: Optional[int] = None):
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     query += " ORDER BY display_order ASC"
+    query += f" LIMIT {per_page} OFFSET {(page - 1) * per_page}"
 
     with get_db_connection() as conn:
         rows = conn.execute(query, params).fetchall()

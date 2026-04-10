@@ -38,6 +38,7 @@ Docker containers now expose ports to `127.0.0.1` instead of using an internal n
 | Cosmic Survivor | 80 | 127.0.0.1:8200 | cs.festas-builds.com |
 | RigPilot | 3000 | 127.0.0.1:3000 | rigpilot.festas-builds.com |
 | ImmoCalc | 3000 | 127.0.0.1:3100 | immocalc.festas-builds.com |
+| FIRE Simulator | 3000 | 127.0.0.1:3200 | fire.festas-builds.com |
 
 ## Migration Steps
 

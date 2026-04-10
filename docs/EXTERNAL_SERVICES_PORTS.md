@@ -19,6 +19,7 @@ The main Link-in-Bio application (`web` container) is the only service defined i
 | Cosmic Survivor | `cosmic-survivor` | 80 | 127.0.0.1:8200 | cs.festas-builds.com |
 | RigPilot | `rigpilot` | 3000 | 127.0.0.1:3000 | rigpilot.festas-builds.com |
 | ImmoCalc | `immocalc` | 3000 | 127.0.0.1:3100 | immocalc.festas-builds.com |
+| FIRE Simulator | `fire-simulator` | 3000 | 127.0.0.1:3200 | fire.festas-builds.com |
 
 ## Docker Compose Configuration Examples
 
@@ -249,7 +250,7 @@ When deploying a new external service:
 
 ```bash
 # One-liner to check all expected ports
-for port in 8000 8100 3001 8101 8804 8200 3000 3100; do
+for port in 8000 8100 3001 8101 8804 8200 3000 3100 3200; do
   echo -n "Port $port: "
   nc -z 127.0.0.1 $port && echo "✓ Open" || echo "✗ Closed"
 done

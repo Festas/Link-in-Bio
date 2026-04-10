@@ -175,6 +175,7 @@ DOMAINS=(
     "cs.festas-builds.com"
     "rigpilot.festas-builds.com"
     "immocalc.festas-builds.com"
+    "fire.festas-builds.com"
 )
 
 log_warn "⚠ IMPORTANT: Before obtaining SSL certificates, ensure:"

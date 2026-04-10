@@ -15,6 +15,7 @@ This directory contains Nginx server block configurations for all domains in the
 | cs.festas-builds.com | Cosmic Survivor Game | `cosmic-survivor:80` | `127.0.0.1:8200` |
 | rigpilot.festas-builds.com | RigPilot PC Builder | `rigpilot:3000` | `127.0.0.1:3000` |
 | immocalc.festas-builds.com | ImmoCalc Calculator | `immocalc:3000` | `127.0.0.1:3100` |
+| fire.festas-builds.com | FIRE Simulator | `fire-simulator:3000` | `127.0.0.1:3200` |
 
 ## Installation
 
@@ -35,6 +36,7 @@ sudo ln -sf ../sites-available/mc-stats.festas-builds.com.conf .
 sudo ln -sf ../sites-available/cs.festas-builds.com.conf .
 sudo ln -sf ../sites-available/rigpilot.festas-builds.com.conf .
 sudo ln -sf ../sites-available/immocalc.festas-builds.com.conf .
+sudo ln -sf ../sites-available/fire.festas-builds.com.conf .
 
 # Remove default Nginx config to prevent conflicts
 sudo rm -f /etc/nginx/sites-enabled/default
@@ -69,6 +71,7 @@ sudo certbot --nginx -d mc-stats.festas-builds.com
 sudo certbot --nginx -d cs.festas-builds.com
 sudo certbot --nginx -d rigpilot.festas-builds.com
 sudo certbot --nginx -d immocalc.festas-builds.com
+sudo certbot --nginx -d fire.festas-builds.com
 
 # Or obtain all certificates at once
 sudo certbot --nginx \
@@ -80,7 +83,8 @@ sudo certbot --nginx \
   -d mc-stats.festas-builds.com \
   -d cs.festas-builds.com \
   -d rigpilot.festas-builds.com \
-  -d immocalc.festas-builds.com
+  -d immocalc.festas-builds.com \
+  -d fire.festas-builds.com
 ```
 
 ### Auto-Renewal

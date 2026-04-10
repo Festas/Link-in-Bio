@@ -6,7 +6,7 @@
 
 ## Overview
 
-Successfully migrated all public-facing routing from Dockerized Caddy to Nginx running on the host server. All 9 domains are now served through Nginx with SSL/TLS via Certbot/Let's Encrypt.
+Successfully migrated all public-facing routing from Dockerized Caddy to Nginx running on the host server. All 10 domains are now served through Nginx with SSL/TLS via Certbot/Let's Encrypt.
 
 ## Migration Scope
 
@@ -23,11 +23,12 @@ Successfully migrated all public-facing routing from Dockerized Caddy to Nginx r
 | 7 | cs.festas-builds.com | Cosmic Survivor Game | ✅ Complete |
 | 8 | rigpilot.festas-builds.com | RigPilot PC Builder | ✅ Complete |
 | 9 | immocalc.festas-builds.com | ImmoCalc Calculator | ✅ Complete |
+| 10 | fire.festas-builds.com | FIRE Simulator | ✅ Complete |
 
 ### Files Changed
 
 **Created** (15 files):
-- `nginx/sites-available/*.conf` (9 server blocks)
+- `nginx/sites-available/*.conf` (10 server blocks)
 - `nginx/README.md`
 - `docs/NGINX_MIGRATION.md`
 - `docs/DEPLOYMENT_CHECKLIST.md`
@@ -86,6 +87,7 @@ Docker Containers (port exposed to localhost)
 | Cosmic Survivor | 80 | 8200 | 127.0.0.1 |
 | RigPilot | 3000 | 3000 | 127.0.0.1 |
 | ImmoCalc | 3000 | 3100 | 127.0.0.1 |
+| FIRE Simulator | 3000 | 3200 | 127.0.0.1 |
 
 ### Security Headers
 
@@ -191,7 +193,7 @@ sudo systemctl status nginx
 ### 3. SSL Certificates
 ```bash
 sudo certbot certificates
-# All 9 domains should have valid certificates
+# All 10 domains should have valid certificates
 ```
 
 ### 4. Port Accessibility
@@ -296,7 +298,7 @@ curl https://festas-builds.com
 
 All criteria met:
 
-- [x] All 9 domains have Nginx server blocks
+- [x] All 10 domains have Nginx server blocks
 - [x] All routing logic from Caddy preserved
 - [x] Security headers equivalent to Caddy
 - [x] Cache headers configured appropriately

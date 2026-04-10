@@ -23,6 +23,8 @@ router = APIRouter()
 @router.get("", response_model=List[Subscriber])
 async def get_subscribers(user=Depends(require_auth), page: int = 1, per_page: int = 100):
     """Get subscribers with optional pagination."""
+    page = max(1, page)
+    per_page = max(1, min(per_page, 500))
     offset = (page - 1) * per_page
     with get_db_connection() as conn:
         rows = conn.execute(

@@ -55,7 +55,11 @@ async function initializeAnalytics() {
     } catch (error) {
         console.error(error);
         if (loadingSpinner) {
-            loadingSpinner.innerHTML = `<p class="text-red-400 text-center">Fehler beim Laden der Analytics: ${error.message}</p>`;
+            const errorMsg = document.createElement('p');
+            errorMsg.className = 'text-red-400 text-center';
+            errorMsg.textContent = `Fehler beim Laden der Analytics: ${error.message}`;
+            loadingSpinner.innerHTML = '';
+            loadingSpinner.appendChild(errorMsg);
         }
     }
 }

@@ -17,6 +17,7 @@ from app.sanitization import (
     validate_slug,
     sanitize_integer,
     validate_json_keys,
+    sanitize_custom_html,
     ALLOWED_IMAGE_EXTENSIONS,
 )
 
@@ -302,3 +303,125 @@ class TestValidateJsonKeys:
     def test_empty_allowed_returns_empty(self):
         """Test empty allowed set returns empty dict."""
         assert validate_json_keys({"key": "value"}, frozenset()) == {}
+
+
+class TestSanitizeCustomHtml:
+    """Tests for sanitize_custom_html function."""
+
+    def test_none_returns_none(self):
+        """None input should return None."""
+        assert sanitize_custom_html(None) is None
+
+    def test_empty_string_returns_empty(self):
+        """Empty string should return empty string."""
+        assert sanitize_custom_html("") == ""
+
+    def test_safe_css_preserved(self):
+        """Safe CSS style tags should be preserved."""
+        html = '<style>body { color: red; }</style>'
+        assert sanitize_custom_html(html) == html
+
+    def test_safe_meta_preserved(self):
+        """Safe meta tags should be preserved."""
+        html = '<meta name="description" content="test">'
+        assert sanitize_custom_html(html) == html
+
+    def test_script_tag_removed(self):
+        """Script tags with content should be removed."""
+        html = '<script>alert("xss")</script>'
+        result = sanitize_custom_html(html)
+        assert "<script" not in result
+        assert "alert" not in result
+
+    def test_script_self_closing_removed(self):
+        """Self-closing script tags should be removed."""
+        html = '<script src="evil.js"/>'
+        result = sanitize_custom_html(html)
+        assert "<script" not in result
+
+    def test_script_with_attributes_removed(self):
+        """Script tags with attributes should be removed."""
+        html = '<script type="text/javascript">malicious()</script>'
+        result = sanitize_custom_html(html)
+        assert "<script" not in result
+
+    def test_iframe_removed(self):
+        """Iframe tags should be removed."""
+        html = '<iframe src="https://evil.com"></iframe>'
+        result = sanitize_custom_html(html)
+        assert "<iframe" not in result
+
+    def test_object_tag_removed(self):
+        """Object tags should be removed."""
+        html = '<object data="evil.swf"></object>'
+        result = sanitize_custom_html(html)
+        assert "<object" not in result
+
+    def test_embed_tag_removed(self):
+        """Embed tags should be removed."""
+        html = '<embed src="evil.swf">'
+        result = sanitize_custom_html(html)
+        assert "<embed" not in result
+
+    def test_form_tag_removed(self):
+        """Form tags should be removed."""
+        html = '<form action="https://evil.com"><input></form>'
+        result = sanitize_custom_html(html)
+        assert "<form" not in result
+
+    def test_base_tag_removed(self):
+        """Base tags should be removed."""
+        html = '<base href="https://evil.com">'
+        result = sanitize_custom_html(html)
+        assert "<base" not in result
+
+    def test_onclick_handler_removed(self):
+        """onclick event handlers should be removed."""
+        html = '<div onclick="alert(1)">click me</div>'
+        result = sanitize_custom_html(html)
+        assert "onclick" not in result
+        assert "<div" in result
+
+    def test_onload_handler_removed(self):
+        """onload event handlers should be removed."""
+        html = '<img src="x" onerror="alert(1)">'
+        result = sanitize_custom_html(html)
+        assert "onerror" not in result
+
+    def test_onmouseover_handler_removed(self):
+        """onmouseover event handlers should be removed."""
+        html = '<a onmouseover="steal()">link</a>'
+        result = sanitize_custom_html(html)
+        assert "onmouseover" not in result
+
+    def test_javascript_url_in_href_removed(self):
+        """javascript: URLs in href should be neutralized."""
+        html = '<a href="javascript:alert(1)">link</a>'
+        result = sanitize_custom_html(html)
+        assert "javascript:" not in result
+
+    def test_javascript_url_in_src_removed(self):
+        """javascript: URLs in src should be neutralized."""
+        html = '<img src="javascript:alert(1)">'
+        result = sanitize_custom_html(html)
+        assert "javascript:" not in result
+
+    def test_data_url_in_src_removed(self):
+        """data: URLs in src should be neutralized."""
+        html = '<img src="data:text/html,<script>alert(1)</script>">'
+        result = sanitize_custom_html(html)
+        assert "data:" not in result
+
+    def test_mixed_safe_and_dangerous(self):
+        """Safe content should be preserved while dangerous parts are removed."""
+        html = '<style>body{color:red}</style><script>alert(1)</script><div>hello</div>'
+        result = sanitize_custom_html(html)
+        assert "<style>" in result
+        assert "<div>hello</div>" in result
+        assert "<script" not in result
+
+    def test_case_insensitive_removal(self):
+        """Tag removal should be case-insensitive."""
+        html = '<SCRIPT>alert(1)</SCRIPT>'
+        result = sanitize_custom_html(html)
+        assert "alert" not in result.lower() or "script" not in result.lower()

@@ -18,6 +18,7 @@ from ..database import get_settings_from_db, get_db_connection
 from ..auth_unified import require_auth
 from ..settings_service import SettingsService
 from ..config import BASE_DIR
+from ..sanitization import sanitize_custom_html
 
 router = APIRouter()
 
@@ -32,7 +33,12 @@ async def get_settings():
 @router.put("", response_model=Settings)
 async def update_settings(settings: Settings, user=Depends(require_auth)):
     """Update application settings."""
-    SettingsService.update_settings(settings.model_dump())
+    data = settings.model_dump()
+    if "custom_html_head" in data and data["custom_html_head"]:
+        data["custom_html_head"] = sanitize_custom_html(data["custom_html_head"])
+    if "custom_html_body" in data and data["custom_html_body"]:
+        data["custom_html_body"] = sanitize_custom_html(data["custom_html_body"])
+    SettingsService.update_settings(data)
     return Settings(**get_settings_from_db())
 
 

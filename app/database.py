@@ -198,6 +198,19 @@ def init_main_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_reactions_item_id ON reactions(item_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_reactions_type ON reactions(reaction_type)")
 
+        # Sessions table for persistent session storage
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS sessions (
+            token_hash TEXT PRIMARY KEY,
+            username TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            ip TEXT,
+            user_agent TEXT
+        )"""
+        )
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at)")
+
         # Migrationen (Fix für grid_columns)
         cursor.execute("PRAGMA table_info(items)")
         columns_items = [col[1] for col in cursor.fetchall()]

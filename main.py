@@ -50,6 +50,7 @@ from app.config import BASE_DIR, UPLOAD_DIR, templates, configure_template_globa
 from app.middleware import add_security_headers, add_request_id
 from app.subdomain_middleware import SubdomainMiddleware, subdomain_middleware
 from app.exceptions import custom_http_exception_handler, general_exception_handler
+from app.csrf import CSRFMiddleware
 
 # Import new modular routers
 from app.routers import pages, items, media, settings, analytics, subscribers, public, tools
@@ -87,6 +88,7 @@ app = FastAPI(
 
 # Add ASGI middleware for subdomain handling (path rewriting)
 app.add_middleware(SubdomainMiddleware)
+app.add_middleware(CSRFMiddleware)
 
 app.middleware("http")(add_request_id)
 app.middleware("http")(add_security_headers)

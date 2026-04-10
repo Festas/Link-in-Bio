@@ -1,4 +1,4 @@
-import { escapeHTML, pSBC, apiFetch } from './utils.js';
+import { escapeHTML, pSBC, apiFetch, sanitizeURL } from './utils.js';
 import { socialIconSVG } from './icons.js';
 import { trackClick, subscribeEmail } from './api.js';
 
@@ -57,7 +57,7 @@ function setupGlobalEventListeners() {
 
 const ItemRenderers = {
     link: (item, isFeatured) => {
-        const a = document.createElement('a'); a.href = escapeHTML(item.url); a.target = "_blank"; a.rel = "noopener noreferrer";
+        const a = document.createElement('a'); a.href = sanitizeURL(item.url); a.target = "_blank"; a.rel = "noopener noreferrer";
         a.className = `item-link glass-card track-click flex items-center p-4 w-full transition-all duration-200 text-center ${isFeatured ? 'spotlight-item' : ''}`; a.dataset.itemId = item.id;
         let affiliateHTML = item.is_affiliate ? `<span class="item-affiliate-label text-xs absolute bottom-1 right-3 opacity-70 flex items-center space-x-1"><i data-lucide="euro" class="w-3 h-3"></i><span>Anzeige</span></span>` : '';
         a.innerHTML = `<div class="flex-shrink-0 w-12 h-12 mr-4">${item.image_url ? `<img src="${escapeHTML(item.image_url)}" alt="Icon" class="w-full h-full object-cover rounded-md" onerror="this.style.display='none';">` : `<div class="w-full h-full rounded-md" style="background-color: rgba(255,255,255,0.1);"></div>`}</div><div class="flex-grow text-left relative"><p class="item-title font-semibold">${escapeHTML(item.title)}</p>${affiliateHTML}</div><div class="flex-shrink-0 ml-4"><i data-lucide="arrow-up-right" class="w-5 h-5" style="color: var(--color-item-text);"></i></div>`;
@@ -67,8 +67,8 @@ const ItemRenderers = {
     video: (item) => {
         const div = document.createElement('div'); div.className = 'item-video-wrapper glass-card overflow-hidden';
         let iframeHTML = '';
-        if(item.url.includes('spotify')) { iframeHTML = `<iframe src="${escapeHTML(item.url)}" width="100%" height="152" frameborder="0" allowtransparency="true" allow="encrypted-media" class="style-rounded"></iframe>`; } 
-        else { div.classList.add('aspect-video'); iframeHTML = `<iframe src="${escapeHTML(item.url)}" width="100%" height="100%" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen class="style-rounded"></iframe>`; }
+        if(item.url.includes('spotify')) { iframeHTML = `<iframe src="${escapeHTML(sanitizeURL(item.url))}" width="100%" height="152" frameborder="0" allowtransparency="true" allow="encrypted-media" class="style-rounded"></iframe>`; } 
+        else { div.classList.add('aspect-video'); iframeHTML = `<iframe src="${escapeHTML(sanitizeURL(item.url))}" width="100%" height="100%" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen class="style-rounded"></iframe>`; }
         div.innerHTML = `<p class="item-title font-semibold p-4 pb-3">${escapeHTML(item.title)}</p>${iframeHTML}`; return div;
     },
     grid: (item) => {
@@ -87,7 +87,7 @@ const ItemRenderers = {
         if (item.children) { 
             item.children.forEach(child => { 
                 contentHTML += `
-                    <a href="${escapeHTML(child.url)}" 
+                    <a href="${escapeHTML(sanitizeURL(child.url))}" 
                        target="_blank" 
                        rel="noopener noreferrer" 
                        class="glass-card track-click relative overflow-hidden block aspect-square group hover:scale-[1.03] transition-all duration-300 rounded-xl shadow-lg hover:shadow-2xl border border-white/10 hover:border-white/30" 
@@ -290,7 +290,7 @@ const ItemRenderers = {
         }); return div;
     },
     product: (item, isFeatured) => {
-        const a = document.createElement('a'); a.href = escapeHTML(item.url); a.target = "_blank"; a.rel = "noopener noreferrer";
+        const a = document.createElement('a'); a.href = sanitizeURL(item.url); a.target = "_blank"; a.rel = "noopener noreferrer";
         a.className = `item-product glass-card track-click flex p-4 w-full transition-all duration-200 hover:scale-[1.02] ${isFeatured ? 'spotlight-item' : ''}`; a.dataset.itemId = item.id;
         a.innerHTML = `<div class="flex-shrink-0 w-24 h-24 mr-4">${item.image_url ? `<img src="${escapeHTML(item.image_url)}" alt="Produktbild" class="w-full h-full object-cover rounded-lg shadow-sm" onerror="this.style.display='none';">` : `<div class="w-full h-full rounded-lg bg-white bg-opacity-10 flex items-center justify-center"><i data-lucide="shopping-bag" class="w-8 h-8 text-white opacity-50"></i></div>`}</div><div class="flex-grow flex flex-col justify-between text-left"><div><p class="item-title font-bold text-lg leading-tight mb-1">${escapeHTML(item.title)}</p><p class="text-sm text-gray-300 opacity-80">Jetzt ansehen</p></div><div class="flex items-center justify-between mt-2"><span class="bg-white bg-opacity-20 px-2 py-1 rounded text-xs font-bold text-white">${escapeHTML(item.price || 'Angebot')}</span><div class="bg-white text-black rounded-full p-1.5"><i data-lucide="arrow-right" class="w-4 h-4"></i></div></div></div>`;
         return a;

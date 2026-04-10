@@ -32,6 +32,7 @@ from .analytics_enhanced import (
     extract_utm_params,
 )
 from .database import get_db_connection
+from .rate_limit import login_limiter
 
 # Initialize enhanced analytics
 analytics = EnhancedAnalytics(get_db_connection)
@@ -92,8 +93,20 @@ async def login(request: LoginRequest, http_request: Request, response: Response
     from .auth_unified import ADMIN_USERNAME, ADMIN_PASSWORD_HASH, REQUIRE_2FA, verify_password
     import os
 
+    client_ip = http_request.client.host
+
+    # Check rate limit before processing
+    blocked, retry_after = login_limiter.is_blocked(client_ip)
+    if blocked:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Zu viele fehlgeschlagene Versuche. Bitte warten Sie {retry_after} Sekunden.",
+            headers={"Retry-After": str(retry_after)},
+        )
+
     # Validate credentials
     if request.username != ADMIN_USERNAME:
+        login_limiter.record_failure(client_ip)
         return LoginResponse(success=False, message="Ungültige Anmeldedaten")
 
     # Check password
@@ -106,6 +119,7 @@ async def login(request: LoginRequest, http_request: Request, response: Response
         password_valid = request.password == plain_password
 
     if not password_valid:
+        login_limiter.record_failure(client_ip)
         return LoginResponse(success=False, message="Ungültige Anmeldedaten")
 
     # Check 2FA if enabled
@@ -114,7 +128,11 @@ async def login(request: LoginRequest, http_request: Request, response: Response
             return LoginResponse(success=False, requires_2fa=True, message="2FA Code erforderlich")
 
         if not verify_2fa_code(request.username, request.totp_code):
+            login_limiter.record_failure(client_ip)
             return LoginResponse(success=False, requires_2fa=True, message="Ungültiger 2FA Code")
+
+    # Successful login - clear rate limit
+    login_limiter.clear(client_ip)
 
     # Create session
     session_token = create_session(request.username, request.remember_me)

@@ -1,8 +1,4 @@
-import { setAuthToken, getAuthToken } from './utils.js';
-
-if (getAuthToken()) {
-    window.location.href = '/admin';
-}
+import { getCsrfToken } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('login-form');
@@ -22,33 +18,35 @@ async function handleLogin(e) {
     const username = usernameInput.value;
     const password = passwordInput.value;
     
-    const token = btoa(`${username}:${password}`);
-    
     const originalBtnText = button.textContent;
     button.textContent = 'Prüfe...';
     button.disabled = true;
     errorEl.textContent = '';
 
     try {
-        const response = await fetch('/api/auth/check', {
-            headers: {
-                'Authorization': `Basic ${token}`
-            }
+        const headers = { 'Content-Type': 'application/json' };
+        const csrfToken = getCsrfToken();
+        if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            credentials: 'include',
+            headers,
+            body: JSON.stringify({ username, password, remember_me: true })
         });
 
-        if (response.ok) {
-            setAuthToken(token);
+        const data = await response.json();
+
+        if (response.ok && data.success) {
             window.location.href = '/admin';
         } else if (response.status === 429) {
             throw new Error('Zu viele Versuche. Bitte warten.');
         } else {
-            throw new Error('Falscher Benutzername oder Passwort.');
+            throw new Error(data.message || 'Falscher Benutzername oder Passwort.');
         }
     } catch (error) {
         errorEl.textContent = error.message || 'Server nicht erreichbar.';
         button.textContent = originalBtnText;
         button.disabled = false;
-        
-        localStorage.removeItem('adminAuthToken');
     }
 }

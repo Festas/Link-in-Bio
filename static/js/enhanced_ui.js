@@ -86,17 +86,28 @@ rippleStyle.textContent = `
 document.head.appendChild(rippleStyle);
 
 // Parallax Background Effect
+let parallaxTicking = false;
+let parallaxHandler = null;
+
 function initParallax() {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const parallaxElements = document.querySelectorAll('[data-parallax]');
-    
-    window.addEventListener('scroll', () => {
-        parallaxElements.forEach(el => {
-            const speed = el.dataset.parallax || 0.5;
-            const yPos = -(window.pageYOffset * speed);
-            el.style.transform = `translateY(${yPos}px)`;
-        });
-    });
+    if (!parallaxElements.length) return;
+
+    parallaxHandler = () => {
+        if (!parallaxTicking) {
+            requestAnimationFrame(() => {
+                parallaxElements.forEach(el => {
+                    const speed = el.dataset.parallax || 0.5;
+                    const yPos = -(window.pageYOffset * speed);
+                    el.style.transform = `translateY(${yPos}px)`;
+                });
+                parallaxTicking = false;
+            });
+            parallaxTicking = true;
+        }
+    };
+    window.addEventListener('scroll', parallaxHandler, { passive: true });
 }
 
 // Lazy Loading Images
@@ -363,11 +374,22 @@ if (document.readyState === 'loading') {
     initEnhancements();
 }
 
+// Cleanup to prevent memory leaks
+function cleanupEnhancements() {
+    if (parallaxHandler) {
+        window.removeEventListener('scroll', parallaxHandler);
+        parallaxHandler = null;
+    }
+}
+
+window.addEventListener('beforeunload', cleanupEnhancements);
+
 // Export for use in other modules
 export {
     initScrollReveal,
     initSmoothScroll,
     enhanceClickTracking,
     initLazyLoading,
-    enhanceCountdowns
+    enhanceCountdowns,
+    cleanupEnhancements
 };

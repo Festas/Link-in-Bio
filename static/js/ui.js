@@ -1,8 +1,12 @@
 import { escapeHTML, pSBC, apiFetch, sanitizeURL } from './utils.js';
 import { socialIconSVG } from './icons.js';
 import { trackClick, subscribeEmail } from './api.js';
+import { CountdownManager } from './CountdownManager.js';
 
-const state = { countdownIntervals: [], delegationInitialized: false, swipers: [] };
+// Re-export applyTheme so existing imports from ui.js continue to work
+export { applyTheme } from './ThemeManager.js';
+
+const state = { delegationInitialized: false, swipers: [] };
 
 // Safe URL hostname checker to prevent incomplete URL substring matching
 function urlHostMatches(url, domain) {
@@ -22,11 +26,6 @@ function urlHostMatchesAny(url, domains) {
         return false;
     }
 }
-const CountdownManager = {
-    clearAll() { state.countdownIntervals.forEach(entry => clearInterval(entry.interval)); state.countdownIntervals = []; },
-    register(id, interval) { state.countdownIntervals.push({ id, interval }); },
-    remove(id) { state.countdownIntervals = state.countdownIntervals.filter(entry => entry.id !== id); }
-};
 
 function setupGlobalEventListeners() {
     if (state.delegationInitialized) return;
@@ -278,8 +277,8 @@ const ItemRenderers = {
         div.innerHTML = `<h3 class="item-title text-lg font-semibold mb-4 text-center">${escapeHTML(item.title)}</h3><div id="${timerId}" class="countdown-grid"></div>`;
         const updateTimer = () => {
             const now = new Date().getTime(); const distance = targetDate - now; const timerEl = document.getElementById(timerId);
-            if (!timerEl) { const entry = state.countdownIntervals.find(i => i.id === timerId); if (entry) clearInterval(entry.interval); CountdownManager.remove(timerId); return; }
-            if (distance < 0) { timerEl.innerHTML = `<p class="item-title col-span-4 text-xl font-bold text-center">Jetzt verfügbar!</p>`; const entry = state.countdownIntervals.find(i => i.id === timerId); if (entry) clearInterval(entry.interval); CountdownManager.remove(timerId); } 
+            if (!timerEl) { const entry = CountdownManager.getState().countdownIntervals.find(i => i.id === timerId); if (entry) clearInterval(entry.interval); CountdownManager.remove(timerId); return; }
+            if (distance < 0) { timerEl.innerHTML = `<p class="item-title col-span-4 text-xl font-bold text-center">Jetzt verfügbar!</p>`; const entry = CountdownManager.getState().countdownIntervals.find(i => i.id === timerId); if (entry) clearInterval(entry.interval); CountdownManager.remove(timerId); } 
             else {
                 const days = Math.floor(distance / (1000 * 60 * 60 * 24)); const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)); const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)); const seconds = Math.floor((distance % (1000 * 60)) / 1000);
                 timerEl.innerHTML = `<div class="countdown-box"><div class="countdown-value">${days}</div><div class="countdown-label">Tage</div></div><div class="countdown-box"><div class="countdown-value">${hours}</div><div class="countdown-label">Std</div></div><div class="countdown-box"><div class="countdown-value">${minutes}</div><div class="countdown-label">Min</div></div><div class="countdown-box"><div class="countdown-value">${seconds}</div><div class="countdown-label">Sek</div></div>`;
@@ -405,48 +404,6 @@ const ItemRenderers = {
         return div;
     }
 };
-
-export function applyTheme(settings) {
-    document.body.className = 'min-h-screen flex justify-center p-4';
-    if (settings.bg_image_url) { document.body.style.backgroundImage = `url('${escapeHTML(settings.bg_image_url)}')`; } else { document.body.style.backgroundImage = 'none'; }
-    if (settings.theme === 'theme-custom') {
-        document.body.classList.add(settings.theme);
-        let customStyle = document.getElementById('custom-theme-style');
-        if (!customStyle) { customStyle = document.createElement('style'); customStyle.id = 'custom-theme-style'; document.head.appendChild(customStyle); }
-        customStyle.innerHTML = `body.theme-custom { --color-bg: ${escapeHTML(settings.custom_bg_color)}; --color-text: ${escapeHTML(settings.custom_text_color)}; --color-text-muted: ${escapeHTML(settings.custom_text_color)}CC; --color-item-bg: ${escapeHTML(settings.custom_button_color)}CC; --color-item-text: ${escapeHTML(settings.custom_button_text_color)}; --color-item-bg-hover: ${pSBC(-0.10, settings.custom_button_color)}DD; --color-item-shadow: rgba(0, 0, 0, 0.2); --color-border: ${pSBC(-0.20, settings.custom_button_color)}55; } body.theme-custom .countdown-box { background-color: rgba(0, 0, 0, 0.1); } body.theme-custom .email-input { color: #111; } body.theme-custom .email-submit-button { background-color: var(--color-item-text); color: var(--color-item-bg); }`;
-    } else { document.body.classList.add(settings.theme || 'theme-dark'); }
-    document.body.classList.add(settings.button_style || 'style-rounded');
-
-    // Apply Google Font if configured
-    if (settings.font_family) {
-        const fontMap = {
-            'inter': 'Inter',
-            'poppins': 'Poppins',
-            'playfair': 'Playfair Display',
-            'space-grotesk': 'Space Grotesk',
-            'dm-sans': 'DM Sans',
-            'outfit': 'Outfit'
-        };
-        const fontName = fontMap[settings.font_family];
-        if (fontName) {
-            // Load Google Font dynamically
-            const existingLink = document.getElementById('google-font-link');
-            if (!existingLink) {
-                const link = document.createElement('link');
-                link.id = 'google-font-link';
-                link.rel = 'stylesheet';
-                link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}:wght@300;400;500;600;700;800;900&display=swap`;
-                document.head.appendChild(link);
-            }
-            document.body.classList.add(`font-${settings.font_family}`);
-        }
-    }
-
-    // Apply background pattern
-    if (settings.bg_pattern && settings.bg_pattern !== 'none') {
-        document.body.classList.add(`bg-pattern-${settings.bg_pattern}`);
-    }
-}
 
 // KORRIGIERT: Render Profile Header mit Smart Links
 export function renderProfileHeader(settings) {

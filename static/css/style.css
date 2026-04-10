@@ -1,31 +1,12 @@
 /* static/css/style.css - Professional Gaming/Tech Influencer Design - Beacons.ai Inspired */
+@import url('./variables.css');
 
 :root {
-    /* Eric's Professional Tech/Gaming Brand - Hamburg Edition */
-    --color-bg: #0a0e1a;
-    --color-bg-gradient: linear-gradient(135deg, #0a0e1a 0%, #1a1f3a 40%, #0f1628 100%);
-    --color-text: #ffffff;
-    --color-text-muted: #a0aec0;
-    --color-item-bg: rgba(255, 255, 255, 0.07);
-    --color-item-bg-hover: rgba(255, 255, 255, 0.12);
-    --color-item-text: #ffffff;
-    --color-item-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-    --color-border: rgba(255, 255, 255, 0.12);
-    
     /* Eric's Brand Colors - Tech Engineer meets Gaming */
-    --color-accent: #00e5ff; /* Vibrant cyan - tech/innovation */
-    --color-accent-hover: #00bcd4;
-    --color-accent-gradient: linear-gradient(135deg, #00e5ff 0%, #00bcd4 100%);
     --color-gaming-accent: #ff0080; /* Hot pink - gaming energy */
     --color-gaming-secondary: #7c3aed; /* Purple - gaming prestige */
     --color-tech-accent: #00e5ff; /* Primary tech color */
     --color-hamburg: #e63946; /* Hamburg red accent */
-    
-    /* Engineering-inspired precision */
-    --grid-size: 4px;
-    --border-radius-sm: 8px;
-    --border-radius-md: 12px;
-    --border-radius-lg: 16px;
 }
 
 /* --- THEME VARIATIONS --- */

@@ -1453,6 +1453,390 @@ button:focus-visible, a:focus-visible {
     text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
 }
 
+/* ============================================
+   Premium Themes
+   ============================================ */
+
+/* Y2K / Retro Internet Aesthetic */
+body.theme-y2k {
+    --color-bg: #f0f0f0;
+    --color-bg-gradient: linear-gradient(135deg, #ffffff 0%, #f0f0f0 40%, #e8e8e8 100%);
+    --color-text: #1a1a2e;
+    --color-text-muted: #555577;
+    --color-item-bg: rgba(163, 255, 18, 0.12);
+    --color-item-bg-hover: rgba(163, 255, 18, 0.25);
+    --color-item-text: #1a1a2e;
+    --color-item-shadow: 0 6px 24px rgba(163, 255, 18, 0.25), 0 4px 12px rgba(255, 20, 147, 0.15);
+    --color-border: rgba(163, 255, 18, 0.4);
+    --color-accent: #a3ff12;
+    --color-accent-hover: #8de00f;
+    --color-tech-accent: #00bfff;
+    --color-gaming-accent: #ff1493;
+}
+
+body.theme-y2k::before {
+    background:
+        radial-gradient(circle at 20% 30%, rgba(163, 255, 18, 0.25) 0%, transparent 45%),
+        radial-gradient(circle at 80% 70%, rgba(255, 20, 147, 0.2) 0%, transparent 45%),
+        radial-gradient(circle at 50% 10%, rgba(0, 191, 255, 0.15) 0%, transparent 40%);
+}
+
+body.theme-y2k::after {
+    background-image:
+        radial-gradient(rgba(163, 255, 18, 0.08) 2px, transparent 2px);
+    background-size: 20px 20px;
+}
+
+body.theme-y2k .profile-title {
+    text-shadow: 2px 2px 0 #a3ff12, -1px -1px 0 #ff1493;
+}
+
+body.theme-y2k .item-link:hover,
+body.theme-y2k .item-product:hover {
+    box-shadow: 4px 4px 0 #a3ff12, -2px -2px 0 #ff1493;
+    transform: translate(-2px, -2px);
+}
+
+/* Deep Ocean / Marine Theme */
+body.theme-ocean {
+    --color-bg: #0c1445;
+    --color-bg-gradient: linear-gradient(135deg, #0c1445 0%, #0d1b4a 30%, #1b2a5e 60%, #0c1445 100%);
+    --color-text: #e0f2fe;
+    --color-text-muted: #7dd3fc;
+    --color-item-bg: rgba(45, 212, 191, 0.08);
+    --color-item-bg-hover: rgba(45, 212, 191, 0.16);
+    --color-item-text: #e0f2fe;
+    --color-item-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(45, 212, 191, 0.1);
+    --color-border: rgba(45, 212, 191, 0.2);
+    --color-accent: #2dd4bf;
+    --color-accent-hover: #14b8a6;
+    --color-tech-accent: #2dd4bf;
+    --color-gaming-accent: #ff6b6b;
+}
+
+body.theme-ocean::before {
+    background:
+        radial-gradient(ellipse at 30% 80%, rgba(45, 212, 191, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 20%, rgba(255, 107, 107, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(13, 27, 74, 0.6) 0%, transparent 70%);
+}
+
+body.theme-ocean::after {
+    background-image:
+        linear-gradient(180deg, transparent 0%, rgba(45, 212, 191, 0.02) 50%, transparent 100%);
+    animation: ocean-drift 8s ease-in-out infinite alternate;
+}
+
+@keyframes ocean-drift {
+    0% { opacity: 0.3; }
+    100% { opacity: 0.8; }
+}
+
+body.theme-ocean .item-link:hover,
+body.theme-ocean .item-product:hover {
+    box-shadow: 0 0 20px rgba(45, 212, 191, 0.3), 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* Brutalist Design Theme */
+body.theme-brutalist {
+    --color-bg: #ffffff;
+    --color-bg-gradient: none;
+    --color-text: #000000;
+    --color-text-muted: #333333;
+    --color-item-bg: #ffffff;
+    --color-item-bg-hover: #f0f0f0;
+    --color-item-text: #000000;
+    --color-item-shadow: none;
+    --color-border: #000000;
+    --color-accent: #000000;
+    --color-accent-hover: #333333;
+    --color-tech-accent: #000000;
+    --color-gaming-accent: #ff0000;
+}
+
+body.theme-brutalist::before {
+    display: none;
+}
+
+body.theme-brutalist::after {
+    display: none;
+}
+
+body.theme-brutalist .item-link,
+body.theme-brutalist .item-product,
+body.theme-brutalist .glass-card {
+    border: 3px solid #000000;
+    border-radius: 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+    background: #ffffff;
+}
+
+body.theme-brutalist .item-link:hover,
+body.theme-brutalist .item-product:hover {
+    background: #000000;
+    color: #ffffff;
+    box-shadow: none;
+    transform: none;
+}
+
+body.theme-brutalist .profile-title {
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    text-shadow: none;
+}
+
+/* Gold / Black Luxury Theme */
+body.theme-luxury {
+    --color-bg: #000000;
+    --color-bg-gradient: linear-gradient(135deg, #000000 0%, #0a0a0a 40%, #111111 70%, #000000 100%);
+    --color-text: #faf3e0;
+    --color-text-muted: #c9b99a;
+    --color-item-bg: rgba(212, 175, 55, 0.06);
+    --color-item-bg-hover: rgba(212, 175, 55, 0.14);
+    --color-item-text: #faf3e0;
+    --color-item-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 15px rgba(212, 175, 55, 0.08);
+    --color-border: rgba(212, 175, 55, 0.25);
+    --color-accent: #d4af37;
+    --color-accent-hover: #c9a032;
+    --color-tech-accent: #d4af37;
+    --color-gaming-accent: #d4af37;
+}
+
+body.theme-luxury::before {
+    background:
+        radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 0% 100%, rgba(212, 175, 55, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 100% 100%, rgba(212, 175, 55, 0.05) 0%, transparent 40%);
+}
+
+body.theme-luxury::after {
+    background-image:
+        linear-gradient(rgba(212, 175, 55, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(212, 175, 55, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+}
+
+body.theme-luxury .profile-title {
+    text-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+    background: linear-gradient(135deg, #d4af37 0%, #f5e7a3 50%, #d4af37 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+body.theme-luxury .item-link:hover,
+body.theme-luxury .item-product:hover {
+    box-shadow: 0 0 25px rgba(212, 175, 55, 0.2), 0 10px 40px rgba(0, 0, 0, 0.6);
+    border-color: rgba(212, 175, 55, 0.5);
+}
+
+/* Vaporwave Aesthetic Theme */
+body.theme-vaporwave {
+    --color-bg: #1a1028;
+    --color-bg-gradient: linear-gradient(135deg, #e0c3fc 0%, #c4a8e8 25%, #a78bda 50%, #8ec5fc 100%);
+    --color-text: #1a1028;
+    --color-text-muted: #4a3660;
+    --color-item-bg: rgba(255, 255, 255, 0.45);
+    --color-item-bg-hover: rgba(255, 255, 255, 0.65);
+    --color-item-text: #1a1028;
+    --color-item-shadow: 0 8px 32px rgba(142, 68, 173, 0.2), 0 0 15px rgba(255, 113, 206, 0.1);
+    --color-border: rgba(255, 113, 206, 0.3);
+    --color-accent: #ff71ce;
+    --color-accent-hover: #ff4fc2;
+    --color-tech-accent: #01cdfe;
+    --color-gaming-accent: #ff71ce;
+}
+
+body.theme-vaporwave::before {
+    background:
+        radial-gradient(circle at 20% 80%, rgba(255, 113, 206, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(1, 205, 254, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(185, 103, 255, 0.15) 0%, transparent 60%);
+}
+
+body.theme-vaporwave::after {
+    background-image:
+        linear-gradient(0deg, rgba(255, 113, 206, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(1, 205, 254, 0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+body.theme-vaporwave .profile-title {
+    text-shadow: 3px 3px 0 rgba(255, 113, 206, 0.4), -1px -1px 0 rgba(1, 205, 254, 0.4);
+}
+
+body.theme-vaporwave .item-link:hover,
+body.theme-vaporwave .item-product:hover {
+    box-shadow: 0 0 30px rgba(255, 113, 206, 0.3), 0 0 60px rgba(1, 205, 254, 0.2);
+}
+
+/* Japanese Cherry Blossom Theme */
+body.theme-sakura {
+    --color-bg: #fce4ec;
+    --color-bg-gradient: linear-gradient(135deg, #fce4ec 0%, #fff0f3 30%, #ffffff 60%, #fce4ec 100%);
+    --color-text: #3e2723;
+    --color-text-muted: #6d4c41;
+    --color-item-bg: rgba(255, 255, 255, 0.7);
+    --color-item-bg-hover: rgba(255, 255, 255, 0.9);
+    --color-item-text: #3e2723;
+    --color-item-shadow: 0 4px 20px rgba(233, 30, 99, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05);
+    --color-border: rgba(233, 30, 99, 0.15);
+    --color-accent: #e91e63;
+    --color-accent-hover: #c2185b;
+    --color-tech-accent: #e91e63;
+    --color-gaming-accent: #81c784;
+}
+
+body.theme-sakura::before {
+    background:
+        radial-gradient(circle at 25% 25%, rgba(233, 30, 99, 0.1) 0%, transparent 45%),
+        radial-gradient(circle at 75% 75%, rgba(129, 199, 132, 0.1) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(252, 228, 236, 0.5) 0%, transparent 60%);
+}
+
+body.theme-sakura::after {
+    display: none;
+}
+
+body.theme-sakura .profile-title {
+    text-shadow: 0 0 15px rgba(233, 30, 99, 0.2);
+}
+
+body.theme-sakura .item-link:hover,
+body.theme-sakura .item-product:hover {
+    box-shadow: 0 6px 24px rgba(233, 30, 99, 0.15), 0 0 12px rgba(129, 199, 132, 0.1);
+    border-color: rgba(233, 30, 99, 0.3);
+}
+
+/* ============================================
+   Additional Button Styles
+   ============================================ */
+
+/* Shadow Style - Heavy drop shadow, scale-up on hover */
+.style-shadow .item-link, .style-shadow .item-product, .style-shadow .item-slider-wrapper, .style-shadow .item-video-wrapper, .style-shadow .item-countdown-wrapper, .style-shadow .item-email-form, .style-shadow .item-contact-form, .style-shadow .glass-card, .style-shadow .swiper-slide {
+    border: none;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    border-radius: 1rem;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.style-shadow .item-link:hover, .style-shadow .item-product:hover, .style-shadow .glass-card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Outline Style - Transparent with accent border, fill on hover */
+.style-outline .item-link, .style-outline .item-product, .style-outline .item-slider-wrapper, .style-outline .item-video-wrapper, .style-outline .item-countdown-wrapper, .style-outline .item-email-form, .style-outline .item-contact-form, .style-outline .glass-card, .style-outline .swiper-slide {
+    background: transparent;
+    border: 2px solid var(--color-accent);
+    border-radius: 1rem;
+    box-shadow: none;
+    transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.style-outline .item-link:hover, .style-outline .item-product:hover, .style-outline .glass-card:hover {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Soft Style - Cloud-like, subtle background, no visible border */
+.style-soft .item-link, .style-soft .item-product, .style-soft .item-slider-wrapper, .style-soft .item-video-wrapper, .style-soft .item-countdown-wrapper, .style-soft .item-email-form, .style-soft .item-contact-form, .style-soft .glass-card, .style-soft .swiper-slide {
+    border: none;
+    border-radius: 1.5rem;
+    background: var(--color-item-bg);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.style-soft .item-link:hover, .style-soft .item-product:hover, .style-soft .glass-card:hover {
+    background: var(--color-item-bg-hover);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   Google Fonts Integration Styles
+   ============================================ */
+
+.font-inter { font-family: 'Inter', sans-serif; }
+.font-poppins { font-family: 'Poppins', sans-serif; }
+.font-playfair { font-family: 'Playfair Display', serif; }
+.font-space-grotesk { font-family: 'Space Grotesk', sans-serif; }
+.font-dm-sans { font-family: 'DM Sans', sans-serif; }
+.font-outfit { font-family: 'Outfit', sans-serif; }
+.font-satoshi { font-family: 'Satoshi', sans-serif; }
+.font-cabinet { font-family: 'Cabinet Grotesk', sans-serif; }
+
+/* ============================================
+   Background Animated Pattern Styles
+   ============================================ */
+
+/* No pattern (default) */
+.bg-pattern-none {
+    /* No overlay pattern */
+}
+
+/* Subtle dot pattern overlay */
+.bg-pattern-dots::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    background-image: radial-gradient(circle, var(--color-accent, #00e5ff) 0.8px, transparent 0.8px);
+    background-size: 24px 24px;
+    opacity: 0.07;
+}
+
+/* Subtle grid lines overlay */
+.bg-pattern-grid::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+        linear-gradient(var(--color-accent, #00e5ff) 1px, transparent 1px),
+        linear-gradient(90deg, var(--color-accent, #00e5ff) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.05;
+}
+
+/* Animated wave pattern overlay */
+.bg-pattern-waves::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 200%;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 20px,
+            var(--color-accent, #00e5ff) 20px,
+            var(--color-accent, #00e5ff) 21px
+        );
+    opacity: 0.04;
+    animation: wave-shift 12s linear infinite;
+}
+
+@keyframes wave-shift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(-48px, -48px); }
+}
+
 
 
 

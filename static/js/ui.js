@@ -3,6 +3,25 @@ import { socialIconSVG } from './icons.js';
 import { trackClick, subscribeEmail } from './api.js';
 
 const state = { countdownIntervals: [], delegationInitialized: false, swipers: [] };
+
+// Safe URL hostname checker to prevent incomplete URL substring matching
+function urlHostMatches(url, domain) {
+    try {
+        const hostname = new URL(url).hostname;
+        return hostname === domain || hostname.endsWith('.' + domain);
+    } catch {
+        return false;
+    }
+}
+
+function urlHostMatchesAny(url, domains) {
+    try {
+        const hostname = new URL(url).hostname;
+        return domains.some(d => hostname === d || hostname.endsWith('.' + d));
+    } catch {
+        return false;
+    }
+}
 const CountdownManager = {
     clearAll() { state.countdownIntervals.forEach(entry => clearInterval(entry.interval)); state.countdownIntervals = []; },
     register(id, interval) { state.countdownIntervals.push({ id, interval }); },
@@ -281,16 +300,16 @@ const ItemRenderers = {
         div.className = 'item-music-embed glass-card overflow-hidden';
         const url = item.url || '';
         let embedHTML = '';
-        if (url.includes('spotify.com')) {
+        if (urlHostMatchesAny(url, ['spotify.com', 'open.spotify.com'])) {
             // Convert Spotify URL to embed URL
             const embedUrl = url.replace('open.spotify.com/', 'open.spotify.com/embed/');
             const isTrack = url.includes('/track/');
             const height = isTrack ? '152' : '352';
             embedHTML = `<iframe src="${escapeHTML(embedUrl)}" width="100%" height="${height}" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" style="border-radius: 12px;"></iframe>`;
-        } else if (url.includes('music.apple.com')) {
+        } else if (urlHostMatchesAny(url, ['music.apple.com'])) {
             const embedUrl = url.replace('music.apple.com', 'embed.music.apple.com');
             embedHTML = `<iframe src="${escapeHTML(embedUrl)}" width="100%" height="175" frameborder="0" allow="autoplay; encrypted-media" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-top-navigation-by-user-activation" loading="lazy" style="border-radius: 12px; overflow: hidden;"></iframe>`;
-        } else if (url.includes('soundcloud.com')) {
+        } else if (urlHostMatchesAny(url, ['soundcloud.com'])) {
             embedHTML = `<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff5500&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false" loading="lazy"></iframe>`;
         } else {
             embedHTML = `<div class="p-5 text-center"><i data-lucide="music" class="w-10 h-10 mx-auto mb-3 opacity-50"></i><p class="text-sm opacity-70">Unterstützter Link: Spotify, Apple Music, SoundCloud</p></div>`;
@@ -312,9 +331,9 @@ const ItemRenderers = {
         div.className = 'item-social-embed glass-card overflow-hidden';
         const url = item.url || '';
         let embedHTML = '';
-        if (url.includes('youtube.com/watch') || url.includes('youtu.be/')) {
+        if (urlHostMatchesAny(url, ['youtube.com', 'www.youtube.com']) && url.includes('/watch') || urlHostMatchesAny(url, ['youtu.be'])) {
             let videoId = '';
-            if (url.includes('youtu.be/')) {
+            if (urlHostMatchesAny(url, ['youtu.be'])) {
                 videoId = url.split('youtu.be/')[1]?.split(/[?&#]/)[0] || '';
             } else {
                 const match = url.match(/[?&]v=([^&#]+)/);
@@ -323,7 +342,7 @@ const ItemRenderers = {
             if (videoId) {
                 embedHTML = `<div class="aspect-video"><iframe src="https://www.youtube.com/embed/${escapeHTML(videoId)}" width="100%" height="100%" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
             }
-        } else if (url.includes('instagram.com/p/') || url.includes('instagram.com/reel/')) {
+        } else if (urlHostMatchesAny(url, ['instagram.com', 'www.instagram.com']) && (url.includes('/p/') || url.includes('/reel/'))) {
             embedHTML = `<div class="p-4"><blockquote class="instagram-media" data-instgrm-permalink="${escapeHTML(url)}" style="max-width:100%;"></blockquote></div>`;
             // Load Instagram embed script if not already loaded
             if (!document.querySelector('script[src*="instagram.com/embed"]')) {
@@ -334,7 +353,7 @@ const ItemRenderers = {
             } else if (window.instgrm) {
                 setTimeout(() => window.instgrm.Embeds.process(), 100);
             }
-        } else if (url.includes('tiktok.com/')) {
+        } else if (urlHostMatchesAny(url, ['tiktok.com', 'www.tiktok.com'])) {
             embedHTML = `<div class="p-4 text-center"><a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-3 rounded-lg transition-all" style="background: var(--color-item-bg-hover);"><i data-lucide="play" class="w-5 h-5"></i><span class="font-semibold">TikTok ansehen</span><i data-lucide="external-link" class="w-4 h-4 opacity-60"></i></a></div>`;
         } else {
             embedHTML = `<div class="p-5 text-center"><i data-lucide="share-2" class="w-10 h-10 mx-auto mb-3 opacity-50"></i><a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium underline opacity-80 hover:opacity-100">Öffnen</a></div>`;
@@ -348,15 +367,9 @@ const ItemRenderers = {
         div.className = 'item-map-embed glass-card overflow-hidden';
         const url = item.url || '';
         let embedHTML = '';
-        if (url.includes('google.com/maps') || url.includes('goo.gl/maps')) {
-            // Extract or build Google Maps embed URL
-            let embedUrl = url;
-            if (url.includes('/place/')) {
-                const placeMatch = url.match(/\/place\/([^/]+)/);
-                const place = placeMatch ? placeMatch[1] : '';
-                embedUrl = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1000!2d0!3d0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0!2s${encodeURIComponent(place)}!5e0!3m2!1sen!2s!4v1`;
-                embedHTML = `<div class="aspect-video"><iframe src="${escapeHTML(embedUrl)}" width="100%" height="100%" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>`;
-            } else if (url.includes('maps/embed')) {
+        if (urlHostMatchesAny(url, ['google.com', 'www.google.com', 'maps.google.com', 'goo.gl'])) {
+            // Handle Google Maps embed URL or link to maps
+            if (url.includes('maps/embed')) {
                 embedHTML = `<div class="aspect-video"><iframe src="${escapeHTML(url)}" width="100%" height="100%" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>`;
             } else {
                 embedHTML = `<div class="p-4 text-center"><a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-3 rounded-lg transition-all" style="background: var(--color-item-bg-hover);"><i data-lucide="map-pin" class="w-5 h-5"></i><span class="font-semibold">Auf Karte ansehen</span><i data-lucide="external-link" class="w-4 h-4 opacity-60"></i></a></div>`;

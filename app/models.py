@@ -106,6 +106,12 @@ class Settings(BaseModel):
     custom_button_text_color: Optional[str] = None
     custom_html_head: Optional[str] = None
     custom_html_body: Optional[str] = None
+    font_family: Optional[str] = None
+    bg_pattern: Optional[str] = None
+    verified_badge: Optional[bool] = None
+    footer_text: Optional[str] = None
+    show_views: Optional[bool] = None
+    show_share_button: Optional[bool] = None
 
 
 class AnalyticsData(BaseModel):

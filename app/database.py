@@ -131,6 +131,15 @@ def init_main_db():
         )"""
         )
 
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS pageviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            referer TEXT DEFAULT '',
+            country_code TEXT DEFAULT ''
+        )"""
+        )
+
         cursor.execute("""CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)""")
 
         cursor.execute(

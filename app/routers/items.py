@@ -170,6 +170,40 @@ async def create_countdown(req: ItemCreate, user=Depends(require_auth)):
     return Item(**create_item_in_db(build_item_data("countdown", req.title, req.target_datetime, page_id=req.page_id)))
 
 
+@router.post("/music_embeds", response_model=Item)
+async def create_music_embed(req: ItemCreate, user=Depends(require_auth)):
+    """Create a music embed item (Spotify, Apple Music, SoundCloud)."""
+    if not req.url:
+        raise HTTPException(400, "URL fehlt")
+    cache.invalidate("items")
+    return Item(**create_item_in_db(build_item_data("music_embed", req.title or "Music", req.url, page_id=req.page_id)))
+
+
+@router.post("/text_blocks", response_model=Item)
+async def create_text_block(req: ItemCreate, user=Depends(require_auth)):
+    """Create a text/bio block item."""
+    cache.invalidate("items")
+    return Item(**create_item_in_db(build_item_data("text_block", req.title or "", req.text or req.url or "", page_id=req.page_id)))
+
+
+@router.post("/social_embeds", response_model=Item)
+async def create_social_embed(req: ItemCreate, user=Depends(require_auth)):
+    """Create a social media embed item (YouTube, Instagram, TikTok)."""
+    if not req.url:
+        raise HTTPException(400, "URL fehlt")
+    cache.invalidate("items")
+    return Item(**create_item_in_db(build_item_data("social_embed", req.title or "Social", req.url, page_id=req.page_id)))
+
+
+@router.post("/map_embeds", response_model=Item)
+async def create_map_embed(req: ItemCreate, user=Depends(require_auth)):
+    """Create a map embed item."""
+    if not req.url:
+        raise HTTPException(400, "URL fehlt")
+    cache.invalidate("items")
+    return Item(**create_item_in_db(build_item_data("map_embed", req.title or "Location", req.url, page_id=req.page_id)))
+
+
 # --- Item Management ---
 
 

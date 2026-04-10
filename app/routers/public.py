@@ -96,6 +96,34 @@ async def track_click(item_id: int, request: Request):
     return Response(status_code=204)
 
 
+@router.post("/pageview", dependencies=[Depends(limiter_strict)])
+async def track_pageview(request: Request):
+    """Track a page view."""
+    try:
+        referer = request.headers.get("referer")
+        domain = urlparse(referer).netloc if referer else "(Direkt)"
+        ip = request.client.host
+        country = await get_country_from_ip(ip)
+        with get_db_connection() as conn:
+            conn.execute(
+                "INSERT INTO pageviews (referer, country_code) VALUES (?, ?)",
+                (domain, country),
+            )
+            conn.commit()
+    except Exception:
+        pass
+    return Response(status_code=204)
+
+
+@router.get("/pageviews/count", dependencies=[Depends(limiter_standard)])
+async def get_pageview_count():
+    """Get total page view count."""
+    with get_db_connection() as conn:
+        result = conn.execute("SELECT COUNT(*) FROM pageviews").fetchone()
+        count = result[0] if result else 0
+    return {"count": count}
+
+
 @router.post("/subscribe", dependencies=[Depends(limiter_strict)])
 async def subscribe(req: SubscribeRequest):
     """Handle newsletter subscription."""

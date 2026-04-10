@@ -1,5 +1,5 @@
 import { getProfileSettings, getItems } from './api.js';
-import { applyTheme, renderProfileHeader, renderItems } from './ui.js';
+import { applyTheme, renderProfileHeader, renderItems, renderFooter } from './ui.js';
 
 async function main() {
     try {
@@ -11,6 +11,7 @@ async function main() {
         applyTheme(settings);
         renderProfileHeader(settings);
         renderItems(items);
+        renderFooter(settings);
 
     } catch (error) {
         console.error('Fehler beim Initialisieren der Seite:', error);

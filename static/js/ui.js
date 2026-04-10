@@ -275,6 +275,98 @@ const ItemRenderers = {
         a.className = `item-product glass-card track-click flex p-4 w-full transition-all duration-200 hover:scale-[1.02] ${isFeatured ? 'spotlight-item' : ''}`; a.dataset.itemId = item.id;
         a.innerHTML = `<div class="flex-shrink-0 w-24 h-24 mr-4">${item.image_url ? `<img src="${escapeHTML(item.image_url)}" alt="Produktbild" class="w-full h-full object-cover rounded-lg shadow-sm" onerror="this.style.display='none';">` : `<div class="w-full h-full rounded-lg bg-white bg-opacity-10 flex items-center justify-center"><i data-lucide="shopping-bag" class="w-8 h-8 text-white opacity-50"></i></div>`}</div><div class="flex-grow flex flex-col justify-between text-left"><div><p class="item-title font-bold text-lg leading-tight mb-1">${escapeHTML(item.title)}</p><p class="text-sm text-gray-300 opacity-80">Jetzt ansehen</p></div><div class="flex items-center justify-between mt-2"><span class="bg-white bg-opacity-20 px-2 py-1 rounded text-xs font-bold text-white">${escapeHTML(item.price || 'Angebot')}</span><div class="bg-white text-black rounded-full p-1.5"><i data-lucide="arrow-right" class="w-4 h-4"></i></div></div></div>`;
         return a;
+    },
+    music_embed: (item) => {
+        const div = document.createElement('div');
+        div.className = 'item-music-embed glass-card overflow-hidden';
+        const url = item.url || '';
+        let embedHTML = '';
+        if (url.includes('spotify.com')) {
+            // Convert Spotify URL to embed URL
+            const embedUrl = url.replace('open.spotify.com/', 'open.spotify.com/embed/');
+            const isTrack = url.includes('/track/');
+            const height = isTrack ? '152' : '352';
+            embedHTML = `<iframe src="${escapeHTML(embedUrl)}" width="100%" height="${height}" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" style="border-radius: 12px;"></iframe>`;
+        } else if (url.includes('music.apple.com')) {
+            const embedUrl = url.replace('music.apple.com', 'embed.music.apple.com');
+            embedHTML = `<iframe src="${escapeHTML(embedUrl)}" width="100%" height="175" frameborder="0" allow="autoplay; encrypted-media" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-top-navigation-by-user-activation" loading="lazy" style="border-radius: 12px; overflow: hidden;"></iframe>`;
+        } else if (url.includes('soundcloud.com')) {
+            embedHTML = `<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff5500&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false" loading="lazy"></iframe>`;
+        } else {
+            embedHTML = `<div class="p-5 text-center"><i data-lucide="music" class="w-10 h-10 mx-auto mb-3 opacity-50"></i><p class="text-sm opacity-70">Unterstützter Link: Spotify, Apple Music, SoundCloud</p></div>`;
+        }
+        const titleHTML = item.title && item.title !== 'Music' ? `<p class="item-title font-semibold p-4 pb-2">${escapeHTML(item.title)}</p>` : '';
+        div.innerHTML = `${titleHTML}<div class="px-4 pb-4">${embedHTML}</div>`;
+        return div;
+    },
+    text_block: (item) => {
+        const div = document.createElement('div');
+        div.className = 'item-text-block glass-card p-5';
+        const titleHTML = item.title ? `<h3 class="item-title text-lg font-bold mb-3">${escapeHTML(item.title)}</h3>` : '';
+        const content = item.url || '';
+        div.innerHTML = `${titleHTML}<div class="text-block-content text-sm leading-relaxed" style="color: var(--color-text-muted);">${escapeHTML(content).replace(/\n/g, '<br>')}</div>`;
+        return div;
+    },
+    social_embed: (item) => {
+        const div = document.createElement('div');
+        div.className = 'item-social-embed glass-card overflow-hidden';
+        const url = item.url || '';
+        let embedHTML = '';
+        if (url.includes('youtube.com/watch') || url.includes('youtu.be/')) {
+            let videoId = '';
+            if (url.includes('youtu.be/')) {
+                videoId = url.split('youtu.be/')[1]?.split(/[?&#]/)[0] || '';
+            } else {
+                const match = url.match(/[?&]v=([^&#]+)/);
+                videoId = match ? match[1] : '';
+            }
+            if (videoId) {
+                embedHTML = `<div class="aspect-video"><iframe src="https://www.youtube.com/embed/${escapeHTML(videoId)}" width="100%" height="100%" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
+            }
+        } else if (url.includes('instagram.com/p/') || url.includes('instagram.com/reel/')) {
+            embedHTML = `<div class="p-4"><blockquote class="instagram-media" data-instgrm-permalink="${escapeHTML(url)}" style="max-width:100%;"></blockquote></div>`;
+            // Load Instagram embed script if not already loaded
+            if (!document.querySelector('script[src*="instagram.com/embed"]')) {
+                const script = document.createElement('script');
+                script.src = 'https://www.instagram.com/embed.js';
+                script.async = true;
+                document.body.appendChild(script);
+            } else if (window.instgrm) {
+                setTimeout(() => window.instgrm.Embeds.process(), 100);
+            }
+        } else if (url.includes('tiktok.com/')) {
+            embedHTML = `<div class="p-4 text-center"><a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-3 rounded-lg transition-all" style="background: var(--color-item-bg-hover);"><i data-lucide="play" class="w-5 h-5"></i><span class="font-semibold">TikTok ansehen</span><i data-lucide="external-link" class="w-4 h-4 opacity-60"></i></a></div>`;
+        } else {
+            embedHTML = `<div class="p-5 text-center"><i data-lucide="share-2" class="w-10 h-10 mx-auto mb-3 opacity-50"></i><a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium underline opacity-80 hover:opacity-100">Öffnen</a></div>`;
+        }
+        const titleHTML = item.title && item.title !== 'Social' ? `<p class="item-title font-semibold p-4 pb-2">${escapeHTML(item.title)}</p>` : '';
+        div.innerHTML = `${titleHTML}${embedHTML}`;
+        return div;
+    },
+    map_embed: (item) => {
+        const div = document.createElement('div');
+        div.className = 'item-map-embed glass-card overflow-hidden';
+        const url = item.url || '';
+        let embedHTML = '';
+        if (url.includes('google.com/maps') || url.includes('goo.gl/maps')) {
+            // Extract or build Google Maps embed URL
+            let embedUrl = url;
+            if (url.includes('/place/')) {
+                const placeMatch = url.match(/\/place\/([^/]+)/);
+                const place = placeMatch ? placeMatch[1] : '';
+                embedUrl = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1000!2d0!3d0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0!2s${encodeURIComponent(place)}!5e0!3m2!1sen!2s!4v1`;
+                embedHTML = `<div class="aspect-video"><iframe src="${escapeHTML(embedUrl)}" width="100%" height="100%" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>`;
+            } else if (url.includes('maps/embed')) {
+                embedHTML = `<div class="aspect-video"><iframe src="${escapeHTML(url)}" width="100%" height="100%" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>`;
+            } else {
+                embedHTML = `<div class="p-4 text-center"><a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-3 rounded-lg transition-all" style="background: var(--color-item-bg-hover);"><i data-lucide="map-pin" class="w-5 h-5"></i><span class="font-semibold">Auf Karte ansehen</span><i data-lucide="external-link" class="w-4 h-4 opacity-60"></i></a></div>`;
+            }
+        } else {
+            embedHTML = `<div class="p-4 text-center"><a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-3 rounded-lg transition-all" style="background: var(--color-item-bg-hover);"><i data-lucide="map-pin" class="w-5 h-5"></i><span class="font-semibold">Standort ansehen</span><i data-lucide="external-link" class="w-4 h-4 opacity-60"></i></a></div>`;
+        }
+        const titleHTML = item.title && item.title !== 'Location' ? `<p class="item-title font-semibold p-4 pb-2">${escapeHTML(item.title)}</p>` : '';
+        div.innerHTML = `${titleHTML}${embedHTML}`;
+        return div;
     }
 };
 
@@ -288,7 +380,36 @@ export function applyTheme(settings) {
         customStyle.innerHTML = `body.theme-custom { --color-bg: ${escapeHTML(settings.custom_bg_color)}; --color-text: ${escapeHTML(settings.custom_text_color)}; --color-text-muted: ${escapeHTML(settings.custom_text_color)}CC; --color-item-bg: ${escapeHTML(settings.custom_button_color)}CC; --color-item-text: ${escapeHTML(settings.custom_button_text_color)}; --color-item-bg-hover: ${pSBC(-0.10, settings.custom_button_color)}DD; --color-item-shadow: rgba(0, 0, 0, 0.2); --color-border: ${pSBC(-0.20, settings.custom_button_color)}55; } body.theme-custom .countdown-box { background-color: rgba(0, 0, 0, 0.1); } body.theme-custom .email-input { color: #111; } body.theme-custom .email-submit-button { background-color: var(--color-item-text); color: var(--color-item-bg); }`;
     } else { document.body.classList.add(settings.theme || 'theme-dark'); }
     document.body.classList.add(settings.button_style || 'style-rounded');
-    // Picasso avatar & decorative header removed — no runtime class toggling.
+
+    // Apply Google Font if configured
+    if (settings.font_family) {
+        const fontMap = {
+            'inter': 'Inter',
+            'poppins': 'Poppins',
+            'playfair': 'Playfair Display',
+            'space-grotesk': 'Space Grotesk',
+            'dm-sans': 'DM Sans',
+            'outfit': 'Outfit'
+        };
+        const fontName = fontMap[settings.font_family];
+        if (fontName) {
+            // Load Google Font dynamically
+            const existingLink = document.getElementById('google-font-link');
+            if (!existingLink) {
+                const link = document.createElement('link');
+                link.id = 'google-font-link';
+                link.rel = 'stylesheet';
+                link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}:wght@300;400;500;600;700;800;900&display=swap`;
+                document.head.appendChild(link);
+            }
+            document.body.classList.add(`font-${settings.font_family}`);
+        }
+    }
+
+    // Apply background pattern
+    if (settings.bg_pattern && settings.bg_pattern !== 'none') {
+        document.body.classList.add(`bg-pattern-${settings.bg_pattern}`);
+    }
 }
 
 // KORRIGIERT: Render Profile Header mit Smart Links
@@ -331,8 +452,38 @@ export function renderProfileHeader(settings) {
     });
 
     header.style.position = 'relative'; 
+
+    // Verified badge HTML
+    const verifiedBadge = settings.verified_badge ? `<svg class="inline-block w-5 h-5 ml-1 align-middle" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-accent, #3b82f6);"/></svg>` : '';
+
+    // Share button HTML
+    const shareButtonHTML = settings.show_share_button !== false ? `<button id="share-btn" class="share-button p-2 glass-card rounded-full transition-all hover:scale-110" title="Teilen" style="background: var(--color-item-bg); border: 1px solid var(--color-border);"><i data-lucide="share-2" class="w-4 h-4"></i></button>` : '';
+
     // Render header with left-aligned profile image (no automatic centering)
-    header.innerHTML = `<div class="animate-entry text-left" style="animation-delay: 0ms;"><img id="profile-image" src="${escapeHTML(settings.image_url || 'https://placehold.co/100x100/374151/FFFFFF?text=Bild')}" alt="Profilbild" class="w-24 h-24 rounded-full mb-4 object-cover border-4 shadow-lg" style="border-color: var(--color-border);" onerror="this.src='https://placehold.co/100x100/374151/FFFFFF?text=Bild'; this.onerror=null;"><h1 id="profile-title" class="profile-title text-2xl text-shadow-md">${escapeHTML(settings.title || 'Titel')}</h1><p id="profile-bio" class="profile-bio text-sm mt-2 opacity-90">${escapeHTML(settings.bio || 'Bio')}</p></div><div id="social-links" class="flex justify-start space-x-3 mt-5 animate-entry" style="animation-delay: 100ms;">${socialLinksHTML}</div>`;
+    header.innerHTML = `<div class="animate-entry text-left" style="animation-delay: 0ms;"><div class="flex items-start justify-between"><div class="flex-grow"><img id="profile-image" src="${escapeHTML(settings.image_url || 'https://placehold.co/100x100/374151/FFFFFF?text=Bild')}" alt="Profilbild" class="w-24 h-24 rounded-full mb-4 object-cover border-4 shadow-lg" style="border-color: var(--color-border);" onerror="this.src='https://placehold.co/100x100/374151/FFFFFF?text=Bild'; this.onerror=null;"></div>${shareButtonHTML}</div><h1 id="profile-title" class="profile-title text-2xl text-shadow-md">${escapeHTML(settings.title || 'Titel')}${verifiedBadge}</h1><p id="profile-bio" class="profile-bio text-sm mt-2 opacity-90">${escapeHTML(settings.bio || 'Bio')}</p></div><div id="social-links" class="flex justify-start space-x-3 mt-5 animate-entry" style="animation-delay: 100ms;">${socialLinksHTML}</div><div id="page-stats" class="flex justify-start space-x-4 mt-3 animate-entry" style="animation-delay: 150ms;"></div>`;
+
+    // Setup share button
+    const shareBtn = header.querySelector('#share-btn');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', () => showShareModal(settings));
+    }
+
+    // Load and display page view count
+    if (settings.show_views) {
+        apiFetch('/api/pageviews/count')
+            .then(r => r.json())
+            .then(data => {
+                const statsEl = document.getElementById('page-stats');
+                if (statsEl && data.count > 0) {
+                    statsEl.innerHTML = `<span class="text-xs flex items-center gap-1 opacity-60"><i data-lucide="eye" class="w-3 h-3"></i> ${data.count.toLocaleString()} Aufrufe</span>`;
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                }
+            })
+            .catch(() => {});
+    }
+
+    // Track pageview
+    apiFetch('/api/pageview', { method: 'POST' }).catch(() => {});
     header.classList.remove('opacity-0');
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
@@ -466,4 +617,107 @@ export function initSwipers() {
     } catch (e) {
         console.error('initSwipers error', e);
     }
+}
+
+// Share Modal - QR Code + Social Sharing
+function showShareModal(settings) {
+    // Remove existing modal if any
+    const existing = document.getElementById('share-modal');
+    if (existing) existing.remove();
+
+    const pageUrl = window.location.href;
+    const pageTitle = settings.title || document.title;
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pageUrl)}&bgcolor=ffffff&color=000000&format=svg`;
+
+    const modal = document.createElement('div');
+    modal.id = 'share-modal';
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.6)';
+    modal.style.backdropFilter = 'blur(8px)';
+    modal.innerHTML = `
+        <div class="glass-card p-6 rounded-2xl max-w-sm w-full text-center relative animate-entry" style="background: var(--color-bg); border: 1px solid var(--color-border);">
+            <button id="close-share-modal" class="absolute top-3 right-3 p-1 rounded-full hover:bg-white/10 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <h3 class="text-lg font-bold mb-4" style="color: var(--color-text);">Teilen</h3>
+            <div class="mb-4 flex justify-center">
+                <img src="${qrApiUrl}" alt="QR Code" class="w-40 h-40 rounded-lg" style="background: white; padding: 8px;">
+            </div>
+            <div class="flex items-center gap-2 mb-4 p-2 rounded-lg" style="background: var(--color-item-bg);">
+                <input type="text" value="${escapeHTML(pageUrl)}" readonly class="flex-grow text-sm bg-transparent outline-none text-center" style="color: var(--color-text);" id="share-url-input">
+                <button id="copy-url-btn" class="p-2 rounded-md hover:bg-white/10 transition-colors flex-shrink-0" title="Kopieren">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="flex justify-center gap-3">
+                <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent(pageTitle)}" target="_blank" rel="noopener noreferrer" class="p-3 rounded-full hover:bg-white/10 transition-all hover:scale-110" title="X/Twitter">
+                    <i data-lucide="twitter" class="w-5 h-5"></i>
+                </a>
+                <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}" target="_blank" rel="noopener noreferrer" class="p-3 rounded-full hover:bg-white/10 transition-all hover:scale-110" title="Facebook">
+                    <i data-lucide="facebook" class="w-5 h-5"></i>
+                </a>
+                <a href="https://wa.me/?text=${encodeURIComponent(pageTitle + ' ' + pageUrl)}" target="_blank" rel="noopener noreferrer" class="p-3 rounded-full hover:bg-white/10 transition-all hover:scale-110" title="WhatsApp">
+                    <i data-lucide="message-circle" class="w-5 h-5"></i>
+                </a>
+                <a href="mailto:?subject=${encodeURIComponent(pageTitle)}&body=${encodeURIComponent(pageUrl)}" class="p-3 rounded-full hover:bg-white/10 transition-all hover:scale-110" title="E-Mail">
+                    <i data-lucide="mail" class="w-5 h-5"></i>
+                </a>
+            </div>
+        </div>`;
+
+    document.body.appendChild(modal);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    // Close modal handlers
+    modal.querySelector('#close-share-modal').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+    // Copy URL handler
+    modal.querySelector('#copy-url-btn').addEventListener('click', () => {
+        const input = modal.querySelector('#share-url-input');
+        navigator.clipboard.writeText(input.value).then(() => {
+            const btn = modal.querySelector('#copy-url-btn');
+            btn.innerHTML = '<i data-lucide="check" class="w-4 h-4" style="color: var(--color-accent);"></i>';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            setTimeout(() => {
+                btn.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i>';
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }, 2000);
+        }).catch(() => {
+            input.select();
+            document.execCommand('copy');
+        });
+    });
+
+    // Use native share if available on mobile
+    if (navigator.share) {
+        // Add native share button
+        const nativeBtn = document.createElement('button');
+        nativeBtn.className = 'w-full mt-3 p-3 rounded-lg font-semibold text-sm transition-all hover:scale-[1.02]';
+        nativeBtn.style.cssText = 'background: var(--color-accent); color: var(--color-bg);';
+        nativeBtn.innerHTML = '<i data-lucide="share" class="w-4 h-4 inline mr-2"></i>Mehr Optionen...';
+        nativeBtn.addEventListener('click', () => {
+            navigator.share({ title: pageTitle, url: pageUrl }).catch(() => {});
+        });
+        modal.querySelector('.glass-card').appendChild(nativeBtn);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+}
+
+// Render footer with branding
+export function renderFooter(settings) {
+    const footerText = settings.footer_text;
+    if (!footerText) return;
+
+    const existingFooter = document.getElementById('page-footer');
+    if (existingFooter) existingFooter.remove();
+
+    const footer = document.createElement('footer');
+    footer.id = 'page-footer';
+    footer.className = 'text-center py-6 mt-8 animate-entry';
+    footer.style.animationDelay = '500ms';
+    footer.innerHTML = `<p class="text-xs opacity-40">${escapeHTML(footerText)}</p>`;
+    
+    const container = document.querySelector('.w-full.max-w-md') || document.querySelector('main') || document.body;
+    container.appendChild(footer);
 }

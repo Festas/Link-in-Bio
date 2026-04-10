@@ -424,4 +424,4 @@ class TestSanitizeCustomHtml:
         """Tag removal should be case-insensitive."""
         html = '<SCRIPT>alert(1)</SCRIPT>'
         result = sanitize_custom_html(html)
-        assert "alert" not in result.lower() or "script" not in result.lower()
+        assert "alert" not in result.lower() and "script" not in result.lower()

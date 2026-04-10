@@ -16,6 +16,7 @@ from typing import List
 from ..models import Subscriber, Message
 from ..database import get_db_connection
 from ..auth_unified import require_auth
+from ..config import MAX_PER_PAGE
 
 router = APIRouter()
 
@@ -24,7 +25,7 @@ router = APIRouter()
 async def get_subscribers(user=Depends(require_auth), page: int = 1, per_page: int = 100):
     """Get subscribers with optional pagination."""
     page = max(1, page)
-    per_page = max(1, min(per_page, 500))
+    per_page = max(1, min(per_page, MAX_PER_PAGE))
     offset = (page - 1) * per_page
     with get_db_connection() as conn:
         rows = conn.execute(

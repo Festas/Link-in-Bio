@@ -9,6 +9,8 @@ import re
 
 from fastapi import APIRouter, Depends, HTTPException
 
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
 from ..models import AnalyticsData
 from ..database import get_db_connection
 from ..auth_unified import require_auth
@@ -70,10 +72,9 @@ async def get_advanced_analytics(
     Supports filtering by date range, item, country, and referrer.
     """
     # Validate date format (YYYY-MM-DD)
-    _date_re = re.compile(r"^\d{4}-\d{2}-\d{2}$")
     for date_val, name in [(start_date, "start_date"), (end_date, "end_date")]:
         if date_val:
-            if not _date_re.match(date_val):
+            if not _DATE_RE.match(date_val):
                 raise HTTPException(status_code=400, detail=f"Invalid {name} format. Use YYYY-MM-DD.")
             try:
                 dt.strptime(date_val, "%Y-%m-%d")

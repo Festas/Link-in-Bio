@@ -11,6 +11,9 @@ load_dotenv()
 UPLOAD_DIR = BASE_DIR / "static" / "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+# Pagination
+MAX_PER_PAGE = 500
+
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 # --- VENDOR CONFIGURATION ---

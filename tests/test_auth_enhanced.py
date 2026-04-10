@@ -109,9 +109,11 @@ class TestSessionManagement:
 
     def setup_method(self):
         """Clear sessions before each test."""
-        from app.auth_unified import sessions
+        from app.database import get_db_connection
 
-        sessions.clear()
+        with get_db_connection() as conn:
+            conn.execute("DELETE FROM sessions")
+            conn.commit()
 
     def test_create_session(self):
         """Test session creation."""
@@ -140,13 +142,18 @@ class TestSessionManagement:
 
     def test_session_expiry(self):
         """Test that expired sessions are invalid."""
-        from app.auth_unified import sessions
+        from app.auth_unified import _hash_token
+        from app.database import get_db_connection
 
         # Create a session
         token = create_session("testuser")
 
-        # Manually expire it
-        sessions[token]["expires_at"] = datetime.now(timezone.utc) - timedelta(hours=1)
+        # Manually expire it in the database
+        token_hash = _hash_token(token)
+        expired = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+        with get_db_connection() as conn:
+            conn.execute("UPDATE sessions SET expires_at = ? WHERE token_hash = ?", (expired, token_hash))
+            conn.commit()
 
         # Should be invalid
         username = validate_session(token)
@@ -154,22 +161,32 @@ class TestSessionManagement:
 
     def test_remember_me_extends_session(self):
         """Test that remember_me creates longer sessions."""
-        from app.auth_unified import sessions, SESSION_EXPIRY_HOURS
+        from app.auth_unified import _hash_token, SESSION_EXPIRY_HOURS
+        from app.database import get_db_connection
 
         # Normal session
         token1 = create_session("testuser", remember_me=False)
-        normal_expiry = sessions[token1]["expires_at"]
+        token1_hash = _hash_token(token1)
+        with get_db_connection() as conn:
+            row1 = conn.execute("SELECT created_at, expires_at FROM sessions WHERE token_hash = ?", (token1_hash,)).fetchone()
 
         # Remember me session
         token2 = create_session("testuser", remember_me=True)
-        extended_expiry = sessions[token2]["expires_at"]
+        token2_hash = _hash_token(token2)
+        with get_db_connection() as conn:
+            row2 = conn.execute("SELECT created_at, expires_at FROM sessions WHERE token_hash = ?", (token2_hash,)).fetchone()
+
+        normal_created = datetime.fromisoformat(row1["created_at"])
+        normal_expiry = datetime.fromisoformat(row1["expires_at"])
+        extended_created = datetime.fromisoformat(row2["created_at"])
+        extended_expiry = datetime.fromisoformat(row2["expires_at"])
 
         # Extended session should expire later
         assert extended_expiry > normal_expiry
 
         # Should be approximately 7x longer
-        normal_duration = (normal_expiry - sessions[token1]["created_at"]).total_seconds()
-        extended_duration = (extended_expiry - sessions[token2]["created_at"]).total_seconds()
+        normal_duration = (normal_expiry - normal_created).total_seconds()
+        extended_duration = (extended_expiry - extended_created).total_seconds()
         assert extended_duration > normal_duration * 6
 
 
@@ -217,34 +234,45 @@ class TestSessionCleanup:
 
     def setup_method(self):
         """Clear sessions before each test."""
-        from app.auth_unified import sessions
+        from app.database import get_db_connection
 
-        sessions.clear()
+        with get_db_connection() as conn:
+            conn.execute("DELETE FROM sessions")
+            conn.commit()
 
     def test_cleanup_expired_sessions(self):
         """Test cleaning up expired sessions."""
-        from app.auth_unified import sessions
+        from app.auth_unified import _hash_token
+        from app.database import get_db_connection
 
         # Create some sessions
         token1 = create_session("user1")
         token2 = create_session("user2")
         token3 = create_session("user3")
 
-        # Expire some of them
-        sessions[token1]["expires_at"] = datetime.now(timezone.utc) - timedelta(hours=1)
-        sessions[token2]["expires_at"] = datetime.now(timezone.utc) - timedelta(hours=2)
-        # token3 remains valid
+        # Expire some of them in the database
+        expired = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+        expired2 = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+        with get_db_connection() as conn:
+            conn.execute("UPDATE sessions SET expires_at = ? WHERE token_hash = ?", (expired, _hash_token(token1)))
+            conn.execute("UPDATE sessions SET expires_at = ? WHERE token_hash = ?", (expired2, _hash_token(token2)))
+            conn.commit()
 
-        assert len(sessions) == 3
+        with get_db_connection() as conn:
+            count = conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
+            assert count == 3
 
         # Cleanup
         cleanup_expired_sessions()
 
         # Only valid session should remain
-        assert len(sessions) == 1
-        assert token3 in sessions
-        assert token1 not in sessions
-        assert token2 not in sessions
+        with get_db_connection() as conn:
+            count = conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
+            assert count == 1
+
+        assert validate_session(token3) == "user3"
+        assert validate_session(token1) is None
+        assert validate_session(token2) is None
 
 
 class TestCookieDomain:

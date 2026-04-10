@@ -48,8 +48,15 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             return response
 
         # For non-safe methods to /api/ endpoints, validate CSRF
+        # Skip CSRF for:
+        # - Requests with Basic auth (API clients - not auto-sent by browsers)
+        # - Requests without any auth (session cookie or Basic) - they'll be
+        #   rejected by the auth layer anyway, so CSRF doesn't add value
         if request.method not in SAFE_METHODS and request.url.path.startswith("/api/"):
-            if not _is_exempt(request.url.path):
+            auth_header = request.headers.get("Authorization", "")
+            has_basic_auth = auth_header.startswith("Basic ")
+            has_session_cookie = "session_token" in request.cookies
+            if not _is_exempt(request.url.path) and not has_basic_auth and has_session_cookie:
                 cookie_token = request.cookies.get("csrf_token")
                 header_token = request.headers.get("X-CSRF-Token")
                 if not cookie_token or not header_token or cookie_token != header_token:

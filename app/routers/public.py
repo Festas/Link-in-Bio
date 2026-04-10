@@ -52,7 +52,8 @@ async def get_public_items(request: Request, page_id: Optional[int] = None, page
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     query += " ORDER BY display_order ASC"
-    query += f" LIMIT {per_page} OFFSET {(page - 1) * per_page}"
+    query += " LIMIT ? OFFSET ?"
+    params.extend([per_page, (page - 1) * per_page])
 
     with get_db_connection() as conn:
         rows = conn.execute(query, params).fetchall()

@@ -465,76 +465,78 @@ def init_mediakit_db():
     # Also create them in the legacy MEDIAKIT_DB file for backward compatibility.
     if MEDIAKIT_DB != DATABASE_FILE:
         conn = sqlite3.connect(MEDIAKIT_DB)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
+        try:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
 
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS mediakit_data (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            section TEXT NOT NULL,
-            key TEXT NOT NULL,
-            value TEXT,
-            display_order INTEGER DEFAULT 0,
-            updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
-            UNIQUE(section, key)
-        )"""
-        )
+            cursor.execute(
+                """CREATE TABLE IF NOT EXISTS mediakit_data (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                section TEXT NOT NULL,
+                key TEXT NOT NULL,
+                value TEXT,
+                display_order INTEGER DEFAULT 0,
+                updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+                UNIQUE(section, key)
+            )"""
+            )
 
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS mediakit_settings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            setting_key TEXT NOT NULL UNIQUE,
-            setting_value TEXT,
-            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
-        )"""
-        )
+            cursor.execute(
+                """CREATE TABLE IF NOT EXISTS mediakit_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                setting_key TEXT NOT NULL UNIQUE,
+                setting_value TEXT,
+                updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+            )"""
+            )
 
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS mediakit_views (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            viewer_email TEXT,
-            viewer_ip TEXT,
-            viewer_country TEXT,
-            user_agent TEXT,
-            viewed_at DATETIME DEFAULT (datetime('now', 'localtime'))
-        )"""
-        )
+            cursor.execute(
+                """CREATE TABLE IF NOT EXISTS mediakit_views (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                viewer_email TEXT,
+                viewer_ip TEXT,
+                viewer_country TEXT,
+                user_agent TEXT,
+                viewed_at DATETIME DEFAULT (datetime('now', 'localtime'))
+            )"""
+            )
 
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS mediakit_access_requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT NOT NULL,
-            name TEXT,
-            company TEXT,
-            message TEXT,
-            status TEXT DEFAULT 'pending',
-            ip_address TEXT,
-            requested_at DATETIME DEFAULT (datetime('now', 'localtime')),
-            approved_at DATETIME
-        )"""
-        )
+            cursor.execute(
+                """CREATE TABLE IF NOT EXISTS mediakit_access_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
+                name TEXT,
+                company TEXT,
+                message TEXT,
+                status TEXT DEFAULT 'pending',
+                ip_address TEXT,
+                requested_at DATETIME DEFAULT (datetime('now', 'localtime')),
+                approved_at DATETIME
+            )"""
+            )
 
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS mediakit_blocks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            block_type TEXT NOT NULL,
-            title TEXT,
-            content TEXT,
-            settings TEXT,
-            position INTEGER NOT NULL DEFAULT 0,
-            is_visible BOOLEAN DEFAULT 1,
-            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
-            updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
-        )"""
-        )
+            cursor.execute(
+                """CREATE TABLE IF NOT EXISTS mediakit_blocks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                block_type TEXT NOT NULL,
+                title TEXT,
+                content TEXT,
+                settings TEXT,
+                position INTEGER NOT NULL DEFAULT 0,
+                is_visible BOOLEAN DEFAULT 1,
+                created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+                updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+            )"""
+            )
 
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_section ON mediakit_data(section)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_views_date ON mediakit_views(viewed_at)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_access_status ON mediakit_access_requests(status)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_blocks_position ON mediakit_blocks(position)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_section ON mediakit_data(section)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_views_date ON mediakit_views(viewed_at)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_access_status ON mediakit_access_requests(status)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_mediakit_blocks_position ON mediakit_blocks(position)")
 
-        conn.commit()
-        conn.close()
+            conn.commit()
+        finally:
+            conn.close()
 
     print("✓ Media-Kit-Tabellen initialisiert")
 

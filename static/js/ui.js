@@ -1,8 +1,12 @@
-import { escapeHTML, pSBC, apiFetch } from './utils.js';
+import { escapeHTML, pSBC, apiFetch, sanitizeURL } from './utils.js';
 import { socialIconSVG } from './icons.js';
 import { trackClick, subscribeEmail } from './api.js';
+import { CountdownManager } from './CountdownManager.js';
 
-const state = { countdownIntervals: [], delegationInitialized: false, swipers: [] };
+// Re-export applyTheme so existing imports from ui.js continue to work
+export { applyTheme } from './ThemeManager.js';
+
+const state = { delegationInitialized: false, swipers: [] };
 
 // Safe URL hostname checker to prevent incomplete URL substring matching
 function urlHostMatches(url, domain) {
@@ -22,11 +26,6 @@ function urlHostMatchesAny(url, domains) {
         return false;
     }
 }
-const CountdownManager = {
-    clearAll() { state.countdownIntervals.forEach(entry => clearInterval(entry.interval)); state.countdownIntervals = []; },
-    register(id, interval) { state.countdownIntervals.push({ id, interval }); },
-    remove(id) { state.countdownIntervals = state.countdownIntervals.filter(entry => entry.id !== id); }
-};
 
 function setupGlobalEventListeners() {
     if (state.delegationInitialized) return;
@@ -41,8 +40,9 @@ function setupGlobalEventListeners() {
             const content = container.querySelector('.group-content, .faq-content');
             const icon = groupHeader.querySelector('svg');
             if (content) {
-                content.classList.toggle('hidden');
-                if (content.classList.contains('hidden')) {
+                const isHidden = content.classList.toggle('hidden');
+                groupHeader.setAttribute('aria-expanded', !isHidden);
+                if (isHidden) {
                     icon.style.transform = 'rotate(-90deg)';
                     if (groupHeader.classList.contains('faq-header')) icon.style.transform = 'rotate(0deg)';
                 } else {
@@ -52,12 +52,34 @@ function setupGlobalEventListeners() {
             }
         }
     });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            const groupHeader = e.target.closest('.group-header, .faq-header');
+            if (groupHeader) {
+                e.preventDefault();
+                const container = groupHeader.closest('.group-container, .glass-card');
+                const content = container.querySelector('.group-content, .faq-content');
+                const icon = groupHeader.querySelector('svg');
+                if (content) {
+                    const isHidden = content.classList.toggle('hidden');
+                    groupHeader.setAttribute('aria-expanded', !isHidden);
+                    if (isHidden) {
+                        icon.style.transform = 'rotate(-90deg)';
+                        if (groupHeader.classList.contains('faq-header')) icon.style.transform = 'rotate(0deg)';
+                    } else {
+                        icon.style.transform = 'rotate(0deg)';
+                        if (groupHeader.classList.contains('faq-header')) icon.style.transform = 'rotate(180deg)';
+                    }
+                }
+            }
+        }
+    });
     state.delegationInitialized = true;
 }
 
 const ItemRenderers = {
     link: (item, isFeatured) => {
-        const a = document.createElement('a'); a.href = escapeHTML(item.url); a.target = "_blank"; a.rel = "noopener noreferrer";
+        const a = document.createElement('a'); a.href = sanitizeURL(item.url); a.target = "_blank"; a.rel = "noopener noreferrer";
         a.className = `item-link glass-card track-click flex items-center p-4 w-full transition-all duration-200 text-center ${isFeatured ? 'spotlight-item' : ''}`; a.dataset.itemId = item.id;
         let affiliateHTML = item.is_affiliate ? `<span class="item-affiliate-label text-xs absolute bottom-1 right-3 opacity-70 flex items-center space-x-1"><i data-lucide="euro" class="w-3 h-3"></i><span>Anzeige</span></span>` : '';
         a.innerHTML = `<div class="flex-shrink-0 w-12 h-12 mr-4">${item.image_url ? `<img src="${escapeHTML(item.image_url)}" alt="Icon" class="w-full h-full object-cover rounded-md" onerror="this.style.display='none';">` : `<div class="w-full h-full rounded-md" style="background-color: rgba(255,255,255,0.1);"></div>`}</div><div class="flex-grow text-left relative"><p class="item-title font-semibold">${escapeHTML(item.title)}</p>${affiliateHTML}</div><div class="flex-shrink-0 ml-4"><i data-lucide="arrow-up-right" class="w-5 h-5" style="color: var(--color-item-text);"></i></div>`;
@@ -67,8 +89,8 @@ const ItemRenderers = {
     video: (item) => {
         const div = document.createElement('div'); div.className = 'item-video-wrapper glass-card overflow-hidden';
         let iframeHTML = '';
-        if(item.url.includes('spotify')) { iframeHTML = `<iframe src="${escapeHTML(item.url)}" width="100%" height="152" frameborder="0" allowtransparency="true" allow="encrypted-media" class="style-rounded"></iframe>`; } 
-        else { div.classList.add('aspect-video'); iframeHTML = `<iframe src="${escapeHTML(item.url)}" width="100%" height="100%" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen class="style-rounded"></iframe>`; }
+        if(item.url.includes('spotify')) { iframeHTML = `<iframe src="${escapeHTML(sanitizeURL(item.url))}" width="100%" height="152" frameborder="0" allowtransparency="true" allow="encrypted-media" class="style-rounded"></iframe>`; } 
+        else { div.classList.add('aspect-video'); iframeHTML = `<iframe src="${escapeHTML(sanitizeURL(item.url))}" width="100%" height="100%" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen class="style-rounded"></iframe>`; }
         div.innerHTML = `<p class="item-title font-semibold p-4 pb-3">${escapeHTML(item.title)}</p>${iframeHTML}`; return div;
     },
     grid: (item) => {
@@ -77,7 +99,7 @@ const ItemRenderers = {
         wrapper.className = 'group-container glass-card mb-4 overflow-hidden rounded-2xl';
         
         let headerHTML = item.title ? 
-            `<div class="group-header flex justify-between items-center p-5 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors border-b border-white/10">
+            `<div class="group-header flex justify-between items-center p-5 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors border-b border-white/10" tabindex="0" role="button" aria-expanded="true">
                 <h3 class="text-xl font-bold text-white">${escapeHTML(item.title)}</h3>
                 <i data-lucide="chevron-down" class="chevron-icon w-5 h-5 text-white transition-transform"></i>
             </div>` : '';
@@ -87,7 +109,7 @@ const ItemRenderers = {
         if (item.children) { 
             item.children.forEach(child => { 
                 contentHTML += `
-                    <a href="${escapeHTML(child.url)}" 
+                    <a href="${escapeHTML(sanitizeURL(child.url))}" 
                        target="_blank" 
                        rel="noopener noreferrer" 
                        class="glass-card track-click relative overflow-hidden block aspect-square group hover:scale-[1.03] transition-all duration-300 rounded-xl shadow-lg hover:shadow-2xl border border-white/10 hover:border-white/30" 
@@ -119,7 +141,7 @@ const ItemRenderers = {
         wrapper.className = 'group-container glass-card mb-4 overflow-hidden rounded-2xl';
         
         const titleHTML = item.title ? 
-            `<div class="group-header flex justify-between items-center p-4 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors">
+            `<div class="group-header flex justify-between items-center p-4 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors" tabindex="0" role="button" aria-expanded="true">
                 <h3 class="text-lg font-bold text-white">${escapeHTML(item.title)}</h3>
                 <i data-lucide="chevron-down" class="chevron-icon w-5 h-5 text-white transition-transform"></i>
             </div>` : '';
@@ -255,8 +277,8 @@ const ItemRenderers = {
         div.innerHTML = `<h3 class="item-title text-lg font-semibold mb-4 text-center">${escapeHTML(item.title)}</h3><div id="${timerId}" class="countdown-grid"></div>`;
         const updateTimer = () => {
             const now = new Date().getTime(); const distance = targetDate - now; const timerEl = document.getElementById(timerId);
-            if (!timerEl) { const entry = state.countdownIntervals.find(i => i.id === timerId); if (entry) clearInterval(entry.interval); CountdownManager.remove(timerId); return; }
-            if (distance < 0) { timerEl.innerHTML = `<p class="item-title col-span-4 text-xl font-bold text-center">Jetzt verfügbar!</p>`; const entry = state.countdownIntervals.find(i => i.id === timerId); if (entry) clearInterval(entry.interval); CountdownManager.remove(timerId); } 
+            if (!timerEl) { const entry = CountdownManager.getState().countdownIntervals.find(i => i.id === timerId); if (entry) clearInterval(entry.interval); CountdownManager.remove(timerId); return; }
+            if (distance < 0) { timerEl.innerHTML = `<p class="item-title col-span-4 text-xl font-bold text-center">Jetzt verfügbar!</p>`; const entry = CountdownManager.getState().countdownIntervals.find(i => i.id === timerId); if (entry) clearInterval(entry.interval); CountdownManager.remove(timerId); } 
             else {
                 const days = Math.floor(distance / (1000 * 60 * 60 * 24)); const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)); const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)); const seconds = Math.floor((distance % (1000 * 60)) / 1000);
                 timerEl.innerHTML = `<div class="countdown-box"><div class="countdown-value">${days}</div><div class="countdown-label">Tage</div></div><div class="countdown-box"><div class="countdown-value">${hours}</div><div class="countdown-label">Std</div></div><div class="countdown-box"><div class="countdown-value">${minutes}</div><div class="countdown-label">Min</div></div><div class="countdown-box"><div class="countdown-value">${seconds}</div><div class="countdown-label">Sek</div></div>`;
@@ -266,7 +288,7 @@ const ItemRenderers = {
     },
     faq: (item) => {
         const div = document.createElement('div'); div.className = 'glass-card mb-4 overflow-hidden rounded-lg';
-        div.innerHTML = `<div class="faq-header flex justify-between items-center p-4 cursor-pointer bg-white bg-opacity-5 hover:bg-opacity-10 transition-colors"><span class="font-medium">${escapeHTML(item.title)}</span><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></div><div class="faq-content hidden p-4 border-t border-white border-opacity-10 text-sm text-gray-200 leading-relaxed">${escapeHTML(item.url)}</div>`; return div;
+        div.innerHTML = `<div class="faq-header flex justify-between items-center p-4 cursor-pointer bg-white bg-opacity-5 hover:bg-opacity-10 transition-colors" tabindex="0" role="button" aria-expanded="false"><span class="font-medium">${escapeHTML(item.title)}</span><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></div><div class="faq-content hidden p-4 border-t border-white border-opacity-10 text-sm text-gray-200 leading-relaxed">${escapeHTML(item.url)}</div>`; return div;
     },
     divider: (item) => {
         const div = document.createElement('div'); div.className = 'flex items-center py-4';
@@ -290,7 +312,7 @@ const ItemRenderers = {
         }); return div;
     },
     product: (item, isFeatured) => {
-        const a = document.createElement('a'); a.href = escapeHTML(item.url); a.target = "_blank"; a.rel = "noopener noreferrer";
+        const a = document.createElement('a'); a.href = sanitizeURL(item.url); a.target = "_blank"; a.rel = "noopener noreferrer";
         a.className = `item-product glass-card track-click flex p-4 w-full transition-all duration-200 hover:scale-[1.02] ${isFeatured ? 'spotlight-item' : ''}`; a.dataset.itemId = item.id;
         a.innerHTML = `<div class="flex-shrink-0 w-24 h-24 mr-4">${item.image_url ? `<img src="${escapeHTML(item.image_url)}" alt="Produktbild" class="w-full h-full object-cover rounded-lg shadow-sm" onerror="this.style.display='none';">` : `<div class="w-full h-full rounded-lg bg-white bg-opacity-10 flex items-center justify-center"><i data-lucide="shopping-bag" class="w-8 h-8 text-white opacity-50"></i></div>`}</div><div class="flex-grow flex flex-col justify-between text-left"><div><p class="item-title font-bold text-lg leading-tight mb-1">${escapeHTML(item.title)}</p><p class="text-sm text-gray-300 opacity-80">Jetzt ansehen</p></div><div class="flex items-center justify-between mt-2"><span class="bg-white bg-opacity-20 px-2 py-1 rounded text-xs font-bold text-white">${escapeHTML(item.price || 'Angebot')}</span><div class="bg-white text-black rounded-full p-1.5"><i data-lucide="arrow-right" class="w-4 h-4"></i></div></div></div>`;
         return a;
@@ -382,48 +404,6 @@ const ItemRenderers = {
         return div;
     }
 };
-
-export function applyTheme(settings) {
-    document.body.className = 'min-h-screen flex justify-center p-4';
-    if (settings.bg_image_url) { document.body.style.backgroundImage = `url('${escapeHTML(settings.bg_image_url)}')`; } else { document.body.style.backgroundImage = 'none'; }
-    if (settings.theme === 'theme-custom') {
-        document.body.classList.add(settings.theme);
-        let customStyle = document.getElementById('custom-theme-style');
-        if (!customStyle) { customStyle = document.createElement('style'); customStyle.id = 'custom-theme-style'; document.head.appendChild(customStyle); }
-        customStyle.innerHTML = `body.theme-custom { --color-bg: ${escapeHTML(settings.custom_bg_color)}; --color-text: ${escapeHTML(settings.custom_text_color)}; --color-text-muted: ${escapeHTML(settings.custom_text_color)}CC; --color-item-bg: ${escapeHTML(settings.custom_button_color)}CC; --color-item-text: ${escapeHTML(settings.custom_button_text_color)}; --color-item-bg-hover: ${pSBC(-0.10, settings.custom_button_color)}DD; --color-item-shadow: rgba(0, 0, 0, 0.2); --color-border: ${pSBC(-0.20, settings.custom_button_color)}55; } body.theme-custom .countdown-box { background-color: rgba(0, 0, 0, 0.1); } body.theme-custom .email-input { color: #111; } body.theme-custom .email-submit-button { background-color: var(--color-item-text); color: var(--color-item-bg); }`;
-    } else { document.body.classList.add(settings.theme || 'theme-dark'); }
-    document.body.classList.add(settings.button_style || 'style-rounded');
-
-    // Apply Google Font if configured
-    if (settings.font_family) {
-        const fontMap = {
-            'inter': 'Inter',
-            'poppins': 'Poppins',
-            'playfair': 'Playfair Display',
-            'space-grotesk': 'Space Grotesk',
-            'dm-sans': 'DM Sans',
-            'outfit': 'Outfit'
-        };
-        const fontName = fontMap[settings.font_family];
-        if (fontName) {
-            // Load Google Font dynamically
-            const existingLink = document.getElementById('google-font-link');
-            if (!existingLink) {
-                const link = document.createElement('link');
-                link.id = 'google-font-link';
-                link.rel = 'stylesheet';
-                link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}:wght@300;400;500;600;700;800;900&display=swap`;
-                document.head.appendChild(link);
-            }
-            document.body.classList.add(`font-${settings.font_family}`);
-        }
-    }
-
-    // Apply background pattern
-    if (settings.bg_pattern && settings.bg_pattern !== 'none') {
-        document.body.classList.add(`bg-pattern-${settings.bg_pattern}`);
-    }
-}
 
 // KORRIGIERT: Render Profile Header mit Smart Links
 export function renderProfileHeader(settings) {

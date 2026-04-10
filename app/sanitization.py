@@ -388,3 +388,71 @@ def validate_json_keys(data: dict, allowed_keys: frozenset) -> dict:
         return {}
 
     return {k: v for k, v in data.items() if k in allowed_keys}
+
+
+# --- Custom HTML sanitization for admin-entered HTML (head/body injections) ---
+
+# Tags that are dangerous and should be completely removed (with contents)
+_DANGEROUS_TAGS_RE = re.compile(
+    r"<\s*(script|iframe|object|embed|form|base)\b[^>]*>.*?</\s*\1\s*>",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Self-closing dangerous tags
+_DANGEROUS_SELF_CLOSING_RE = re.compile(
+    r"<\s*(script|iframe|object|embed|form|base)\b[^>]*/?\s*>",
+    re.IGNORECASE,
+)
+
+# on* event handler attributes (onclick, onload, onerror, etc.)
+_EVENT_HANDLERS_RE = re.compile(
+    r"""\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)""",
+    re.IGNORECASE,
+)
+
+# javascript: URLs in href and src attributes
+_JAVASCRIPT_URL_RE = re.compile(
+    r"""(href|src)\s*=\s*(["'])\s*javascript\s*:.*?\2""",
+    re.IGNORECASE,
+)
+
+# data: URLs in src attributes
+_DATA_URL_SRC_RE = re.compile(
+    r"""src\s*=\s*(["'])\s*data\s*:.*?\1""",
+    re.IGNORECASE,
+)
+
+
+def sanitize_custom_html(content: str) -> str:
+    """
+    Sanitize admin-entered custom HTML (e.g. custom_html_head, custom_html_body).
+    Allows legitimate CSS/HTML customization but strips XSS vectors.
+    """
+    if not content:
+        return content
+
+    import logging as _logging
+
+    _logger = _logging.getLogger(__name__)
+
+    result = content
+
+    # Remove dangerous tags with their contents
+    result = _DANGEROUS_TAGS_RE.sub("", result)
+
+    # Remove self-closing dangerous tags
+    result = _DANGEROUS_SELF_CLOSING_RE.sub("", result)
+
+    # Strip on* event handler attributes
+    result = _EVENT_HANDLERS_RE.sub("", result)
+
+    # Strip javascript: URLs from href and src
+    result = _JAVASCRIPT_URL_RE.sub(r'\1=""', result)
+
+    # Strip data: URLs from src
+    result = _DATA_URL_SRC_RE.sub('src=""', result)
+
+    if result != content:
+        _logger.warning("Sanitized potentially dangerous custom HTML content")
+
+    return result

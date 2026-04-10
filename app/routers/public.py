@@ -4,6 +4,7 @@ Handles public-facing endpoints (items, clicks, subscriptions, contact).
 """
 
 import sqlite3
+import logging
 from urllib.parse import urlparse
 from typing import Optional, List
 
@@ -15,6 +16,9 @@ from ..auth_unified import check_auth
 from ..services import get_country_from_ip
 from ..rate_limit import limiter_standard, limiter_strict
 from ..cache_unified import cache
+from ..config import MAX_PER_PAGE
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -28,10 +32,12 @@ async def get_public_pages():
 
 
 @router.get("/items", response_model=List[Item], dependencies=[Depends(limiter_standard)])
-async def get_public_items(request: Request, page_id: Optional[int] = None):
-    """Get public items with caching."""
+async def get_public_items(request: Request, page_id: Optional[int] = None, page: int = 1, per_page: int = 100):
+    """Get public items with caching and optional pagination."""
+    page = max(1, page)
+    per_page = max(1, min(per_page, MAX_PER_PAGE))
     user = await check_auth(request)
-    cache_key = f"items_{'admin' if user else 'public'}_{page_id or 'all'}"
+    cache_key = f"items_{'admin' if user else 'public'}_{page_id or 'all'}_{page}_{per_page}"
     cached = cache.get(cache_key)
     if cached:
         return cached
@@ -52,6 +58,8 @@ async def get_public_items(request: Request, page_id: Optional[int] = None):
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     query += " ORDER BY display_order ASC"
+    query += " LIMIT ? OFFSET ?"
+    params.extend([per_page, (page - 1) * per_page])
 
     with get_db_connection() as conn:
         rows = conn.execute(query, params).fetchall()
@@ -91,8 +99,7 @@ async def track_click(item_id: int, request: Request):
             )
             conn.commit()
     except Exception:
-        # Silently ignore click tracking errors to not affect user experience
-        pass
+        logger.debug("Click tracking failed for item %s", item_id, exc_info=True)
     return Response(status_code=204)
 
 
@@ -111,7 +118,7 @@ async def track_pageview(request: Request):
             )
             conn.commit()
     except Exception:
-        pass
+        logger.debug("Pageview tracking failed", exc_info=True)
     return Response(status_code=204)
 
 

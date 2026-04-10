@@ -1,31 +1,12 @@
 /* static/css/style.css - Professional Gaming/Tech Influencer Design - Beacons.ai Inspired */
+@import url('./variables.css');
 
 :root {
-    /* Eric's Professional Tech/Gaming Brand - Hamburg Edition */
-    --color-bg: #0a0e1a;
-    --color-bg-gradient: linear-gradient(135deg, #0a0e1a 0%, #1a1f3a 40%, #0f1628 100%);
-    --color-text: #ffffff;
-    --color-text-muted: #a0aec0;
-    --color-item-bg: rgba(255, 255, 255, 0.07);
-    --color-item-bg-hover: rgba(255, 255, 255, 0.12);
-    --color-item-text: #ffffff;
-    --color-item-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-    --color-border: rgba(255, 255, 255, 0.12);
-    
     /* Eric's Brand Colors - Tech Engineer meets Gaming */
-    --color-accent: #00e5ff; /* Vibrant cyan - tech/innovation */
-    --color-accent-hover: #00bcd4;
-    --color-accent-gradient: linear-gradient(135deg, #00e5ff 0%, #00bcd4 100%);
     --color-gaming-accent: #ff0080; /* Hot pink - gaming energy */
     --color-gaming-secondary: #7c3aed; /* Purple - gaming prestige */
     --color-tech-accent: #00e5ff; /* Primary tech color */
     --color-hamburg: #e63946; /* Hamburg red accent */
-    
-    /* Engineering-inspired precision */
-    --grid-size: 4px;
-    --border-radius-sm: 8px;
-    --border-radius-md: 12px;
-    --border-radius-lg: 16px;
 }
 
 /* --- THEME VARIATIONS --- */
@@ -166,7 +147,7 @@ body.theme-pastel {
     --color-bg: #fdf2f8;
     --color-bg-gradient: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 25%, #fbcfe8 50%, #f5d0fe 75%, #e9d5ff 100%);
     --color-text: #831843;
-    --color-text-muted: #9d174d;
+    --color-text-muted: #6b1033;
     --color-item-bg: rgba(255, 255, 255, 0.8);
     --color-item-bg-hover: rgba(255, 255, 255, 0.95);
     --color-item-text: #831843;
@@ -193,7 +174,7 @@ body.theme-neon {
     --color-bg: #0f0f23;
     --color-bg-gradient: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
     --color-text: #00ff88;
-    --color-text-muted: #00cc6a;
+    --color-text-muted: #33d98a;
     --color-item-bg: rgba(0, 255, 136, 0.05);
     --color-item-bg-hover: rgba(0, 255, 136, 0.12);
     --color-item-text: #00ff88;
@@ -1953,4 +1934,35 @@ body.theme-sakura .item-product:hover {
 
 #page-footer p {
     color: var(--color-text-muted);
+}
+
+/* Focus Styles for Accessibility */
+:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: var(--border-radius-sm);
+}
+
+.group-header:focus-visible,
+.faq-header:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+    border-radius: var(--border-radius-md);
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

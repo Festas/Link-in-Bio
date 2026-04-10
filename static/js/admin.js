@@ -7,12 +7,10 @@ import * as UI from './admin_ui.js';
 import { organizeItems, getSortableConfig, isGroup } from './groups.js';
 import { requireAuth, logout } from './utils.js';
 import { initializePageManagement, getCurrentPageId } from './admin_pages.js';
-import { initMediaKitBlocks } from './admin_mediakit_blocks.js';
 import { initDashboard } from './admin_dashboard.js';
 import { initKeyboardShortcuts, recordAction } from './admin_keyboard.js';
 import { initSmartFeatures } from './admin_smart_features.js';
 import { initScheduling, showScheduleCalendar } from './admin_scheduling.js';
-import { initPreviewPanel, togglePreview } from './admin_preview_panel.js';
 
 // Helper für Fallback-Script-Loading
 function loadScript(src) {
@@ -38,7 +36,7 @@ async function initAdmin() {
         }
     });
 
-    function switchTab(tabName) {
+    async function switchTab(tabName) {
         // Update old .tab-button styles (for backwards compatibility)
         document.querySelectorAll('.tab-button').forEach(b => {
              b.classList.toggle('border-blue-400', b.dataset.tab === tabName);
@@ -68,7 +66,10 @@ async function initAdmin() {
             initializeSubscribers();
             initializeInbox();
         }
-        if (tabName === 'mediakit') initMediaKitBlocks();
+        if (tabName === 'mediakit') {
+            const { initMediaKitBlocks } = await import('./admin_mediakit_blocks.js');
+            initMediaKitBlocks();
+        }
         // Profil wird global initialisiert, muss hier nicht neu geladen werden
     }
 
@@ -425,6 +426,9 @@ async function initAdmin() {
         initDashboard();
         initSmartFeatures();
         initScheduling();
+        
+        // Lazy-load preview panel
+        const { initPreviewPanel, togglePreview } = await import('./admin_preview_panel.js');
         initPreviewPanel();
         
         // Initialize keyboard shortcuts with callbacks

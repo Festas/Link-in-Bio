@@ -34,61 +34,59 @@ export const pSBC = (p, c0, c1, l) => {
     else return "#" + (4294967296 + r * 16777216 + g * 65536 + b * 256 + (f ? m(a * 255) : 0)).toString(16).slice(1, f ? undefined : -2)
 };
 
-export function getAuthToken() {
-    return localStorage.getItem('adminAuthToken');
+export function sanitizeURL(url) {
+    if (!url || typeof url !== 'string') return '#';
+    const trimmed = url.trim().toLowerCase();
+    if (trimmed.startsWith('javascript:') || trimmed.startsWith('data:') || trimmed.startsWith('vbscript:')) {
+        return '#';
+    }
+    return url;
 }
 
-export function setAuthToken(token) {
-    localStorage.setItem('adminAuthToken', token);
-}
-
-export function removeAuthToken() {
-    localStorage.removeItem('adminAuthToken');
-}
-
-export function isAuthenticated() {
-    return !!getAuthToken();
+export function getCsrfToken() {
+    const match = document.cookie.match(/(^|;\s*)csrf_token=([^;]*)/);
+    return match ? decodeURIComponent(match[2]) : '';
 }
 
 export async function logout() {
-    // Call the server to invalidate the session and clear the cookie
     try {
+        const csrfToken = getCsrfToken();
+        const headers = {};
+        if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
         await fetch('/api/auth/logout', {
             method: 'POST',
-            credentials: 'include'  // Include cookies in the request
+            credentials: 'include',
+            headers
         });
     } catch (error) {
-        // Continue with logout even if the server call fails
         console.warn('Logout request failed:', error);
     }
-    
-    removeAuthToken();
     window.location.href = '/login';
 }
 
 export function requireAuth() {
-    if (!isAuthenticated() && !window.location.pathname.startsWith('/login')) {
-        window.location.href = '/login';
-        return false;
-    }
     return true;
 }
 
 export async function apiFetch(endpoint, options = {}) {
     const headers = options.headers || {};
-    
-    const token = getAuthToken();
-    if (token) {
-        headers['Authorization'] = `Basic ${token}`;
-    }
 
     if (!(options.body instanceof FormData) && !headers['Content-Type']) {
         headers['Content-Type'] = 'application/json';
     }
 
+    const method = (options.method || 'GET').toUpperCase();
+    if (method !== 'GET' && method !== 'HEAD') {
+        const csrfToken = getCsrfToken();
+        if (csrfToken) {
+            headers['X-CSRF-Token'] = csrfToken;
+        }
+    }
+
     const config = {
         ...options,
-        headers: headers
+        headers: headers,
+        credentials: 'include'
     };
 
     try {

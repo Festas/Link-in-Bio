@@ -58,7 +58,11 @@ export async function loadItems() {
         
     } catch(e) {
         console.error(e);
-        listLoadingSpinner.innerHTML = `<p class="text-red-400 text-center">Fehler: ${e.message}</p>`;
+        const errorMsg = document.createElement('p');
+        errorMsg.className = 'text-red-400 text-center';
+        errorMsg.textContent = `Fehler: ${e.message}`;
+        listLoadingSpinner.innerHTML = '';
+        listLoadingSpinner.appendChild(errorMsg);
     }
 }
 

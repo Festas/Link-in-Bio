@@ -18,7 +18,15 @@ async function main() {
         
         const spinner = document.getElementById('loading-spinner');
         if (spinner) {
-             spinner.innerHTML = '<p style="color: var(--color-text-muted); text-align: center; margin-top: 2rem;">Inhalte konnten nicht geladen werden.</p>';
+             spinner.innerHTML = `
+                <div style="text-align: center; margin-top: 2rem;">
+                    <p style="color: var(--color-text-muted); margin-bottom: 1rem;">Inhalte konnten nicht geladen werden.</p>
+                    <button onclick="window.location.reload()" 
+                            style="padding: 0.5rem 1.5rem; border-radius: 8px; background: var(--color-accent); color: var(--color-bg); border: none; cursor: pointer; font-weight: 600;"
+                            aria-label="Seite neu laden">
+                        Erneut versuchen
+                    </button>
+                </div>`;
         }
 
         // Fallback: Basis-Theme laden, damit die Seite nicht komplett kaputt aussieht

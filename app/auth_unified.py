@@ -7,8 +7,8 @@ import os
 import secrets
 import base64
 import logging
-import pyotp
 import hashlib
+import pyotp
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Tuple
 from fastapi import Request, HTTPException, Depends
@@ -21,9 +21,6 @@ logger = logging.getLogger(__name__)
 # Password hashing context using bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Session store (in production, use Redis)
-sessions: Dict[str, Dict] = {}
-
 # 2FA secrets store (in production, store in database)
 totp_secrets: Dict[str, str] = {}
 
@@ -33,6 +30,14 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")  # No default - must be set if 
 ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")  # Preferred
 SESSION_EXPIRY_HOURS = int(os.getenv("SESSION_EXPIRY_HOURS", "24"))
 REQUIRE_2FA = os.getenv("REQUIRE_2FA", "false").lower() in ("true", "1", "yes")
+
+SECRET_KEY = os.getenv("SECRET_KEY", "")
+if not SECRET_KEY:
+    SECRET_KEY = secrets.token_urlsafe(32)
+    logger.warning(
+        "⚠️  SECRET_KEY not configured - using random key. "
+        "Sessions will not survive restarts. Set SECRET_KEY in your .env file."
+    )
 
 # Password requirements
 MIN_PASSWORD_LENGTH = 12
@@ -190,22 +195,33 @@ def validate_admin_password_on_startup():
 
 
 # ============================================================================
-# Session Management
+# Session Management (Database-backed)
 # ============================================================================
+
+
+def _hash_token(token: str) -> str:
+    """Hash a session token for secure storage."""
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 def create_session(username: str, remember_me: bool = False) -> str:
     """Create a new session and return session token."""
-    session_token = secrets.token_urlsafe(32)
-    expiry_hours = SESSION_EXPIRY_HOURS * 7 if remember_me else SESSION_EXPIRY_HOURS
+    from .database import get_db_connection
 
-    sessions[session_token] = {
-        "username": username,
-        "created_at": datetime.now(timezone.utc),
-        "expires_at": datetime.now(timezone.utc) + timedelta(hours=expiry_hours),
-        "ip": None,  # Set by caller
-        "user_agent": None,  # Set by caller
-    }
+    session_token = secrets.token_urlsafe(32)
+    token_hash = _hash_token(session_token)
+    expiry_hours = SESSION_EXPIRY_HOURS * 7 if remember_me else SESSION_EXPIRY_HOURS
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(hours=expiry_hours)
+
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT OR REPLACE INTO sessions (token_hash, username, created_at, expires_at, ip, user_agent) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (token_hash, username, now.isoformat(), expires_at.isoformat(), None, None),
+        )
+        conn.commit()
 
     return session_token
 
@@ -215,54 +231,90 @@ def validate_session(session_token: str) -> Optional[str]:
     Validate a session token and return username if valid.
     Returns None if session is invalid or expired.
     """
-    if session_token not in sessions:
+    from .database import get_db_connection
+
+    token_hash = _hash_token(session_token)
+    now = datetime.now(timezone.utc).isoformat()
+
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT username, expires_at FROM sessions WHERE token_hash = ?",
+            (token_hash,),
+        )
+        row = cursor.fetchone()
+
+    if not row:
         return None
 
-    session = sessions[session_token]
-
-    # Check expiry
-    if datetime.now(timezone.utc) > session["expires_at"]:
-        del sessions[session_token]
+    if now > row["expires_at"]:
+        invalidate_session(session_token)
         return None
 
-    return session["username"]
+    return row["username"]
 
 
 def invalidate_session(session_token: str):
     """Invalidate a session (logout)."""
-    if session_token in sessions:
-        del sessions[session_token]
+    from .database import get_db_connection
+
+    token_hash = _hash_token(session_token)
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM sessions WHERE token_hash = ?", (token_hash,))
+        conn.commit()
 
 
 def cleanup_expired_sessions():
-    """Remove expired sessions from memory."""
-    now = datetime.now(timezone.utc)
-    expired = [token for token, session in sessions.items() if now > session["expires_at"]]
-    for token in expired:
-        del sessions[token]
+    """Remove expired sessions from database."""
+    from .database import get_db_connection
 
-    if expired:
-        logger.info(f"Cleaned up {len(expired)} expired sessions")
+    now = datetime.now(timezone.utc).isoformat()
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM sessions WHERE expires_at < ?", (now,))
+        deleted = cursor.rowcount
+        conn.commit()
+
+    if deleted:
+        logger.info(f"Cleaned up {deleted} expired sessions")
 
 
 def get_active_sessions_count() -> int:
     """Get the count of active sessions."""
+    from .database import get_db_connection
+
     cleanup_expired_sessions()
-    return len(sessions)
+    now = datetime.now(timezone.utc).isoformat()
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) as cnt FROM sessions WHERE expires_at >= ?", (now,))
+        row = cursor.fetchone()
+    return row["cnt"] if row else 0
 
 
 def get_session_info(session_token: str) -> Optional[Dict]:
     """Get information about a session."""
-    if session_token not in sessions:
+    from .database import get_db_connection
+
+    token_hash = _hash_token(session_token)
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT username, created_at, expires_at, ip, user_agent FROM sessions WHERE token_hash = ?",
+            (token_hash,),
+        )
+        row = cursor.fetchone()
+
+    if not row:
         return None
 
-    session = sessions[session_token]
     return {
-        "username": session["username"],
-        "created_at": session["created_at"].isoformat(),
-        "expires_at": session["expires_at"].isoformat(),
-        "ip": session.get("ip"),
-        "user_agent": session.get("user_agent"),
+        "username": row["username"],
+        "created_at": row["created_at"],
+        "expires_at": row["expires_at"],
+        "ip": row["ip"],
+        "user_agent": row["user_agent"],
     }
 
 

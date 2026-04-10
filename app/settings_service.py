@@ -6,6 +6,7 @@ Centralizes all settings management with caching support.
 from typing import Dict, Any, Optional
 from .database import get_settings_from_db, get_db_connection
 from .cache_unified import cache, SETTINGS_TTL
+from .sanitization import sanitize_custom_html
 import json
 import logging
 
@@ -58,6 +59,11 @@ class SettingsService:
     def update_settings(settings_dict: Dict[str, Any]) -> bool:
         """Update multiple settings at once."""
         try:
+            # Sanitize custom HTML fields as a safety net
+            for key in ("custom_html_head", "custom_html_body"):
+                if key in settings_dict and settings_dict[key]:
+                    settings_dict[key] = sanitize_custom_html(settings_dict[key])
+
             with get_db_connection() as conn:
                 cursor = conn.cursor()
                 for key, value in settings_dict.items():

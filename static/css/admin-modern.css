@@ -1,4 +1,5 @@
 /* Admin Panel - Professional Gaming/Tech Influencer Design */
+@import url('./variables.css');
 
 :root {
     --admin-bg: #0a0a0f;
@@ -67,60 +68,60 @@ button:not(:disabled):active, .btn:active {
 }
 
 /* Primary Button */
-.bg-blue-600, button[type="submit"] {
-    background: var(--admin-accent-gradient) !important;
+body .bg-blue-600, body button[type="submit"] {
+    background: var(--admin-accent-gradient);
     border: none;
     box-shadow: 0 4px 14px rgba(0, 217, 255, 0.4);
 }
 
-.bg-blue-600:hover, button[type="submit"]:hover {
+body .bg-blue-600:hover, body button[type="submit"]:hover {
     box-shadow: 0 6px 20px rgba(0, 217, 255, 0.5);
 }
 
 /* Input Fields Enhancement */
-input[type="text"],
-input[type="email"],
-input[type="url"],
-input[type="password"],
-input[type="datetime-local"],
-textarea,
-select {
-    background: var(--admin-surface) !important;
-    border: 2px solid var(--admin-border) !important;
-    color: var(--admin-text) !important;
-    padding: 0.75rem 1rem !important;
-    border-radius: 10px !important;
-    transition: all 0.3s ease !important;
-    font-size: 0.95rem !important;
+body input[type="text"],
+body input[type="email"],
+body input[type="url"],
+body input[type="password"],
+body input[type="datetime-local"],
+body textarea,
+body select {
+    background: var(--admin-surface);
+    border: 2px solid var(--admin-border);
+    color: var(--admin-text);
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
 }
 
-input:focus,
-textarea:focus,
-select:focus {
-    border-color: var(--admin-accent) !important;
-    box-shadow: 0 0 0 4px rgba(0, 217, 255, 0.15) !important;
-    outline: none !important;
-    background: var(--admin-surface-hover) !important;
+body input:focus,
+body textarea:focus,
+body select:focus {
+    border-color: var(--admin-accent);
+    box-shadow: 0 0 0 4px rgba(0, 217, 255, 0.15);
+    outline: none;
+    background: var(--admin-surface-hover);
 }
 
-input::placeholder,
-textarea::placeholder {
-    color: var(--admin-text-muted) !important;
+body input::placeholder,
+body textarea::placeholder {
+    color: var(--admin-text-muted);
 }
 
 /* Card/Section Enhancement */
-.bg-gray-800, section {
-    background: rgba(37, 45, 61, 0.5) !important;
+body .bg-gray-800, body section {
+    background: rgba(37, 45, 61, 0.5);
     backdrop-filter: blur(20px);
-    border: 1px solid var(--admin-border) !important;
-    border-radius: 16px !important;
-    box-shadow: var(--admin-shadow) !important;
+    border: 1px solid var(--admin-border);
+    border-radius: 16px;
+    box-shadow: var(--admin-shadow);
     transition: all 0.3s ease;
 }
 
-.bg-gray-800:hover, section:hover {
-    border-color: rgba(0, 217, 255, 0.3) !important;
-    box-shadow: var(--admin-shadow-lg) !important;
+body .bg-gray-800:hover, body section:hover {
+    border-color: rgba(0, 217, 255, 0.3);
+    box-shadow: var(--admin-shadow-lg);
 }
 
 /* Tab System Enhancement */
@@ -131,8 +132,8 @@ textarea::placeholder {
     font-weight: 600;
 }
 
-.tab-button.border-blue-400 {
-    color: var(--admin-accent) !important;
+body .tab-button.border-blue-400 {
+    color: var(--admin-accent);
 }
 
 .tab-button.border-blue-400::after {
@@ -146,8 +147,8 @@ textarea::placeholder {
     border-radius: 3px 3px 0 0;
 }
 
-.tab-button:not(.border-blue-400):hover {
-    color: rgba(255, 255, 255, 0.9) !important;
+body .tab-button:not(.border-blue-400):hover {
+    color: rgba(255, 255, 255, 0.9);
     background: rgba(255, 255, 255, 0.05);
 }
 
@@ -180,11 +181,11 @@ textarea::placeholder {
 }
 
 /* Page Selector Enhancement */
-#page-selector {
-    background: var(--admin-surface) !important;
-    border: 2px solid var(--admin-border) !important;
-    padding: 0.75rem 1rem !important;
-    border-radius: 10px !important;
+body #page-selector {
+    background: var(--admin-surface);
+    border: 2px solid var(--admin-border);
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
     font-weight: 600;
 }
 
@@ -216,9 +217,9 @@ textarea::placeholder {
 }
 
 /* Modal Enhancement */
-.modal {
+body .modal {
     backdrop-filter: blur(10px);
-    background-color: rgba(0, 0, 0, 0.85) !important;
+    background-color: rgba(0, 0, 0, 0.85);
     position: fixed;
     top: 0;
     left: 0;
@@ -270,9 +271,9 @@ textarea::placeholder {
     border: none;
 }
 
-.modal .bg-gray-800, .modal .bg-white {
-    border-radius: 20px !important;
-    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5) !important;
+body .modal .bg-gray-800, body .modal .bg-white {
+    border-radius: 20px;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
     border: 1px solid var(--admin-border);
     animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -447,9 +448,9 @@ kbd {
 }
 
 /* ===== SELECTION HIGHLIGHT ===== */
-.admin-item-card.selected {
-    border-color: var(--admin-accent) !important;
-    background: rgba(0, 217, 255, 0.05) !important;
+body .admin-item-card.selected {
+    border-color: var(--admin-accent);
+    background: rgba(0, 217, 255, 0.05);
 }
 
 /* ===== QUICK SEARCH MODAL ===== */
@@ -1216,6 +1217,16 @@ kbd {
     .welcome-banner h2 {
         font-size: 1.25rem;
     }
+}
+
+/* Admin Focus Styles */
+.admin-tab:focus-visible,
+.admin-btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
 }
 
 /* Print Styles */

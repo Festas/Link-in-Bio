@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }}</title>
+    <meta name="description" content="{{ page_description | e }}">
+    <!-- OG and Twitter meta tags -->
+    <meta property="og:title" content="{{ page_title | e }}">
+    <meta property="og:description" content="{{ page_description | e }}">
+    <meta property="og:image" content="{{ page_image | e }}">
+    <meta property="og:url" content="{{ page_url | e }}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ page_title | e }}">
+    <meta name="twitter:description" content="{{ page_description | e }}">
+    <meta name="twitter:image" content="{{ page_image | e }}">
+    <!-- Schema.org -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "ProfilePage",
+        "name": "{{ page_title | e }}",
+        "description": "{{ page_description | e }}",
+        "url": "{{ page_url | e }}",
+        "mainEntity": {
+            "@type": "Person",
+            "name": "{{ page_title | e }}",
+            "url": "{{ page_url | e }}",
+            "image": "{{ page_image | e }}"
+        }
+    }
+    </script>
+    {% if settings.get('font_family') and settings.get('font_family') != 'Inter' %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family={{ settings.get('font_family') | urlencode }}:wght@400;500;600;700&display=swap" rel="stylesheet">
+    {% endif %}
+    <link rel="stylesheet" href="/static/css/bio.css?v={{ version }}">
+    {% if custom_html_head %}{{ custom_html_head | safe }}{% endif %}
+</head>
+<body style="
+    --bg-color: {{ settings.get('custom_bg_color') or '#0f0f11' }};
+    --text-color: {{ settings.get('custom_text_color') or '#fafafa' }};
+    --btn-bg: {{ settings.get('custom_button_color') or '#1e1e22' }};
+    --btn-text: {{ settings.get('custom_button_text_color') or '#fafafa' }};
+    --font: {{ settings.get('font_family') or 'Inter' }}, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    {% if settings.get('bg_image_url') %}--bg-image: url('{{ settings.get('bg_image_url') }}');{% endif %}
+" data-btn-style="{{ settings.get('button_style') or 'rounded' }}" data-pattern="{{ settings.get('bg_pattern') or 'none' }}">
+    {% block content %}{% endblock %}
+    <script src="/static/js/bio.js?v={{ version }}" defer></script>
+    {% if custom_html_body %}{{ custom_html_body | safe }}{% endif %}
+</body>
+</html>

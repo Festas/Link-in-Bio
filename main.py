@@ -33,6 +33,7 @@ logger = get_logger(__name__)
 
 from app.database import (
     init_db,
+    get_db_connection,
     get_settings_from_db,
     get_page_by_slug,
     get_all_pages,
@@ -396,16 +397,32 @@ async def get_index_html(request: Request):
 
     page_url = f"https://{APP_DOMAIN}" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}"
     settings = get_settings_from_db()
+
+    # Fetch active items for SSR
+    with get_db_connection() as conn:
+        if page_id:
+            rows = conn.execute(
+                "SELECT * FROM items WHERE page_id = ? AND is_active = 1 AND (publish_on IS NULL OR publish_on <= datetime('now', 'localtime')) AND (expires_on IS NULL OR expires_on >= datetime('now', 'localtime')) ORDER BY display_order ASC",
+                (page_id,),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM items WHERE is_active = 1 AND (publish_on IS NULL OR publish_on <= datetime('now', 'localtime')) AND (expires_on IS NULL OR expires_on >= datetime('now', 'localtime')) ORDER BY display_order ASC"
+            ).fetchall()
+        items = [dict(r) for r in rows]
+
     context = {
         "page_title": page_title,
         "page_description": page_description,
         "page_image": page_image_url,
         "page_url": page_url,
         "page_id": page_id,
+        "settings": settings,
+        "items": items,
         "custom_html_head": settings.get("custom_html_head", ""),
         "custom_html_body": settings.get("custom_html_body", ""),
     }
-    return templates.TemplateResponse(request=request, name="index.html", context=context)
+    return templates.TemplateResponse(request=request, name="index_fresh.html", context=context)
 
 
 @app.get("/{page_slug}", response_class=HTMLResponse, dependencies=[Depends(limiter_standard)])
@@ -451,16 +468,32 @@ async def get_page_html(request: Request, page_slug: str):
 
     page_url = f"https://{APP_DOMAIN}/{page_slug}" if APP_DOMAIN != "127.0.0.1" else f"http://{APP_DOMAIN}/{page_slug}"
     settings = get_settings_from_db()
+
+    # Fetch active items for SSR
+    with get_db_connection() as conn:
+        if page_id:
+            rows = conn.execute(
+                "SELECT * FROM items WHERE page_id = ? AND is_active = 1 AND (publish_on IS NULL OR publish_on <= datetime('now', 'localtime')) AND (expires_on IS NULL OR expires_on >= datetime('now', 'localtime')) ORDER BY display_order ASC",
+                (page_id,),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM items WHERE is_active = 1 AND (publish_on IS NULL OR publish_on <= datetime('now', 'localtime')) AND (expires_on IS NULL OR expires_on >= datetime('now', 'localtime')) ORDER BY display_order ASC"
+            ).fetchall()
+        items = [dict(r) for r in rows]
+
     context = {
         "page_title": page_title,
         "page_description": page_description,
         "page_image": page_image_url,
         "page_url": page_url,
         "page_id": page_id,
+        "settings": settings,
+        "items": items,
         "custom_html_head": settings.get("custom_html_head", ""),
         "custom_html_body": settings.get("custom_html_body", ""),
     }
-    return templates.TemplateResponse(request=request, name="index.html", context=context)
+    return templates.TemplateResponse(request=request, name="index_fresh.html", context=context)
 
 
 if __name__ == "__main__":

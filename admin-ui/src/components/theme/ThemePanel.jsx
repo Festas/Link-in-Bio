@@ -2,6 +2,24 @@ import { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
 import useEditorStore from '../../stores/editorStore.js';
 import THEME_TEMPLATES, { THEME_CATEGORIES, GOOGLE_FONTS, BUTTON_STYLES, BG_PATTERNS, ANIMATIONS } from '../../utils/themes.js';
+import TemplateGallery from './TemplateGallery.jsx';
+
+const FONT_PAIRINGS = [
+  { id: 'classic', name: 'Classic', heading: 'Playfair Display', body: 'Inter' },
+  { id: 'modern', name: 'Modern', heading: 'Space Grotesk', body: 'DM Sans' },
+  { id: 'creative', name: 'Creative', heading: 'Outfit', body: 'Quicksand' },
+  { id: 'elegant', name: 'Elegant', heading: 'Merriweather', body: 'Lato' },
+  { id: 'bold', name: 'Bold', heading: 'Oswald', body: 'Roboto' },
+  { id: 'tech', name: 'Tech', heading: 'JetBrains Mono', body: 'Sora' },
+];
+
+const GRADIENT_DIRECTIONS = [
+  { value: 'to bottom', label: '↓ Top to Bottom' },
+  { value: 'to right', label: '→ Left to Right' },
+  { value: 'to bottom right', label: '↘ Diagonal' },
+  { value: 'to bottom left', label: '↙ Reverse Diagonal' },
+  { value: 'to top', label: '↑ Bottom to Top' },
+];
 
 export default function ThemePanel() {
   const { settings, updateSettings } = useEditorStore();
@@ -22,6 +40,7 @@ export default function ThemePanel() {
       <div className="flex gap-1 mb-4 bg-[var(--editor-bg)] rounded-lg p-1">
         {[
           { id: 'templates', label: 'Templates' },
+          { id: 'gallery', label: 'Gallery' },
           { id: 'colors', label: 'Colors' },
           { id: 'typography', label: 'Fonts' },
           { id: 'style', label: 'Style' },
@@ -106,6 +125,13 @@ export default function ThemePanel() {
         </div>
       )}
 
+      {/* Gallery */}
+      {section === 'gallery' && (
+        <div className="animate-fade-in">
+          <TemplateGallery />
+        </div>
+      )}
+
       {/* Colors */}
       {section === 'colors' && (
         <div className="space-y-4 animate-fade-in">
@@ -129,6 +155,58 @@ export default function ThemePanel() {
             value={settings.custom_button_text_color || '#fafafa'}
             onChange={v => updateSettings({ custom_button_text_color: v })}
           />
+
+          {/* Gradient Builder */}
+          <div className="pt-3 border-t border-[var(--editor-border)]">
+            <div className="text-xs font-medium text-[var(--editor-text-muted)] uppercase tracking-wider mb-3">
+              Gradient Background
+            </div>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <ColorPicker
+                    label="Start Color"
+                    value={settings.gradient_start || '#667eea'}
+                    onChange={v => updateSettings({ gradient_start: v })}
+                  />
+                </div>
+                <div className="flex-1">
+                  <ColorPicker
+                    label="End Color"
+                    value={settings.gradient_end || '#764ba2'}
+                    onChange={v => updateSettings({ gradient_end: v })}
+                  />
+                </div>
+              </div>
+              <div className="settings-field">
+                <label>Direction</label>
+                <select
+                  value={settings.gradient_direction || 'to bottom right'}
+                  onChange={e => updateSettings({ gradient_direction: e.target.value })}
+                >
+                  {GRADIENT_DIRECTIONS.map(d => (
+                    <option key={d.value} value={d.value}>{d.label}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={() => updateSettings({
+                  custom_bg_color: settings.gradient_start || '#667eea',
+                  bg_gradient: `linear-gradient(${settings.gradient_direction || 'to bottom right'}, ${settings.gradient_start || '#667eea'}, ${settings.gradient_end || '#764ba2'})`,
+                })}
+                className="w-full py-2 text-xs font-medium text-indigo-400 border border-indigo-500/30 rounded-xl hover:bg-indigo-500/10 transition-colors"
+              >
+                Apply Gradient
+              </button>
+              {/* Preview */}
+              <div
+                className="h-10 rounded-xl border border-[var(--editor-border)]"
+                style={{
+                  background: `linear-gradient(${settings.gradient_direction || 'to bottom right'}, ${settings.gradient_start || '#667eea'}, ${settings.gradient_end || '#764ba2'})`,
+                }}
+              />
+            </div>
+          </div>
 
           {/* Background Options */}
           <div className="pt-3 border-t border-[var(--editor-border)]">
@@ -187,6 +265,29 @@ export default function ThemePanel() {
             <p className="text-lg font-bold mb-1">Hello World</p>
             <p className="text-sm opacity-70">The quick brown fox jumps over the lazy dog.</p>
             <p className="text-xs opacity-50 mt-2">0123456789 !@#$%</p>
+          </div>
+
+          {/* Font Pairings */}
+          <div className="pt-3 border-t border-[var(--editor-border)]">
+            <div className="text-xs font-medium text-[var(--editor-text-muted)] uppercase tracking-wider mb-3">
+              Font Pairings
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {FONT_PAIRINGS.map(pair => (
+                <button
+                  key={pair.id}
+                  onClick={() => updateSettings({ font_family: pair.body, heading_font: pair.heading })}
+                  className={`p-3 rounded-xl border text-left transition-all hover:border-indigo-500/50 ${
+                    settings.font_family === pair.body && settings.heading_font === pair.heading
+                      ? 'border-indigo-500 bg-indigo-500/10'
+                      : 'border-[var(--editor-border)] hover:bg-[var(--editor-surface-hover)]'
+                  }`}
+                >
+                  <div className="text-xs font-bold mb-0.5" style={{ fontFamily: `'${pair.heading}', sans-serif` }}>{pair.name}</div>
+                  <div className="text-[9px] text-[var(--editor-text-muted)]">{pair.heading} + {pair.body}</div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { useMemo, useState } from 'react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Eye, EyeOff, Trash2 } from 'lucide-react';
@@ -9,11 +9,23 @@ import BLOCK_TYPES from '../../utils/blockTypes.js';
 export default function BlockList() {
   const { blocks, selectedBlockId, editBlock, reorderBlocks, deleteBlock, toggleBlockVisibility } = useEditorStore();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const [activeId, setActiveId] = useState(null);
+  const [overId, setOverId] = useState(null);
 
   const items = useMemo(() => blocks.map(b => b.id), [blocks]);
 
+  const handleDragStart = (event) => {
+    setActiveId(event.active.id);
+  };
+
+  const handleDragOver = (event) => {
+    setOverId(event.over?.id || null);
+  };
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
+    setActiveId(null);
+    setOverId(null);
     if (!over || active.id === over.id) return;
     const oldIndex = blocks.findIndex(b => b.id === active.id);
     const newIndex = blocks.findIndex(b => b.id === over.id);
@@ -23,12 +35,19 @@ export default function BlockList() {
     reorderBlocks(newBlocks);
   };
 
+  const handleDragCancel = () => {
+    setActiveId(null);
+    setOverId(null);
+  };
+
+  const activeBlock = activeId ? blocks.find(b => b.id === activeId) : null;
+
   if (blocks.length === 0) {
     return (
       <div className="px-3 pb-3">
         <div className="text-center py-8 text-[var(--editor-text-muted)]">
           <p className="text-sm mb-1">No blocks yet</p>
-          <p className="text-xs">Click "Add Block" to get started</p>
+          <p className="text-xs">Click &quot;Add Block&quot; to get started</p>
         </div>
       </div>
     );
@@ -36,30 +55,62 @@ export default function BlockList() {
 
   return (
     <div className="px-2 pb-2">
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
         <SortableContext items={items} strategy={verticalListSortingStrategy}>
           {blocks.map(block => (
-            <SortableBlockItem
-              key={block.id}
-              block={block}
-              isSelected={selectedBlockId === block.id}
-              onEdit={() => editBlock(block.id)}
-              onDelete={() => deleteBlock(block.id)}
-              onToggle={() => toggleBlockVisibility(block.id)}
-            />
+            <div key={block.id}>
+              {/* Insertion indicator */}
+              {overId === block.id && activeId && activeId !== block.id && (
+                <div className="h-0.5 bg-indigo-500 rounded-full mx-2 my-0.5 transition-all" />
+              )}
+              <SortableBlockItem
+                block={block}
+                isSelected={selectedBlockId === block.id}
+                onEdit={() => editBlock(block.id)}
+                onDelete={() => deleteBlock(block.id)}
+                onToggle={() => toggleBlockVisibility(block.id)}
+                isDragActive={activeId === block.id}
+              />
+            </div>
           ))}
         </SortableContext>
+        <DragOverlay dropAnimation={{ duration: 200 }}>
+          {activeBlock ? <DragOverlayItem block={activeBlock} /> : null}
+        </DragOverlay>
       </DndContext>
     </div>
   );
 }
 
-function SortableBlockItem({ block, isSelected, onEdit, onDelete, onToggle }) {
+function DragOverlayItem({ block }) {
+  const btEntry = Object.entries(BLOCK_TYPES).find(([, bt]) => bt.type === block.item_type);
+  const bt = btEntry?.[1];
+  const Icon = bt?.icon;
+  const color = bt?.color || '#6366f1';
+  const label = bt?.label || block.item_type;
+
+  return (
+    <div className="flex items-center gap-2 px-2 py-2 rounded-xl bg-[var(--editor-surface)] border border-indigo-500/50 shadow-xl shadow-indigo-500/10 opacity-90">
+      <div className="p-0.5 text-[var(--editor-text-muted)]">
+        <GripVertical size={14} />
+      </div>
+      <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: color + '20', color }}>
+        {Icon && <Icon size={14} />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm truncate">{block.title || label}</div>
+        <div className="text-[10px] text-[var(--editor-text-muted)]">{label}</div>
+      </div>
+    </div>
+  );
+}
+
+function SortableBlockItem({ block, isSelected, onEdit, onDelete, onToggle, isDragActive }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transition: transition || 'transform 200ms ease',
+    opacity: isDragging ? 0.3 : 1,
     zIndex: isDragging ? 50 : 'auto',
   };
 

@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
-import { X, Check, Trash2, Eye, EyeOff, Star, StarOff, Calendar } from 'lucide-react';
+import { X, Check, Trash2, Eye, EyeOff, Star, StarOff, Calendar, Palette } from 'lucide-react';
 import useEditorStore from '../../stores/editorStore.js';
 import BLOCK_TYPES from '../../utils/blockTypes.js';
+
+const SCROLL_ANIMATIONS = [
+  { value: 'none', label: 'None' },
+  { value: 'fadeIn', label: 'Fade In' },
+  { value: 'slideUp', label: 'Slide Up' },
+  { value: 'slideLeft', label: 'Slide Left' },
+  { value: 'scaleIn', label: 'Scale In' },
+];
 
 export default function BlockEditor() {
   const { blocks, editingBlockId, clearSelection, updateBlock, deleteBlock, toggleBlockVisibility } = useEditorStore();
@@ -24,6 +32,8 @@ export default function BlockEditor() {
   const color = bt?.color || '#6366f1';
   const label = bt?.label || block.item_type;
 
+  const blockStyle = draft.block_style ? (typeof draft.block_style === 'string' ? JSON.parse(draft.block_style) : draft.block_style) : {};
+
   const handleSave = () => {
     const updates = {};
     for (const field of fields) {
@@ -37,6 +47,10 @@ export default function BlockEditor() {
     if (draft.publish_on !== block.publish_on) updates.publish_on = draft.publish_on;
     if (draft.expires_on !== block.expires_on) updates.expires_on = draft.expires_on;
     if (draft.image_url !== block.image_url) updates.image_url = draft.image_url;
+    // Block style
+    if (JSON.stringify(draft.block_style) !== JSON.stringify(block.block_style)) {
+      updates.block_style = draft.block_style;
+    }
 
     if (Object.keys(updates).length > 0) {
       updateBlock(block.id, updates);
@@ -45,6 +59,11 @@ export default function BlockEditor() {
 
   const handleFieldChange = (key, value) => {
     setDraft(d => ({ ...d, [key]: value }));
+  };
+
+  const handleStyleChange = (key, value) => {
+    const current = draft.block_style ? (typeof draft.block_style === 'string' ? JSON.parse(draft.block_style) : draft.block_style) : {};
+    setDraft(d => ({ ...d, block_style: { ...current, [key]: value } }));
   };
 
   // Auto-save on blur
@@ -179,6 +198,70 @@ export default function BlockEditor() {
               onChange={e => handleFieldChange('expires_on', e.target.value)}
               onBlur={handleBlur}
             />
+          </div>
+        </div>
+
+        {/* Block Style */}
+        <div className="space-y-3 pt-2 border-t border-[var(--editor-border)]">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--editor-text-muted)] uppercase mb-2">
+            <Palette size={12} />
+            Block Style
+          </div>
+          <div className="settings-field">
+            <label>Background Color</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={blockStyle.backgroundColor || '#18181b'}
+                onChange={e => handleStyleChange('backgroundColor', e.target.value)}
+                onBlur={handleBlur}
+                className="color-swatch"
+              />
+              <input
+                type="text"
+                value={blockStyle.backgroundColor || ''}
+                onChange={e => handleStyleChange('backgroundColor', e.target.value)}
+                onBlur={handleBlur}
+                placeholder="#18181b"
+                className="flex-1 px-3 py-1.5 bg-[var(--editor-bg)] border border-[var(--editor-border)] rounded-lg text-sm font-mono"
+              />
+            </div>
+          </div>
+          <div className="settings-field">
+            <label>Border Radius: {blockStyle.borderRadius || 0}px</label>
+            <input
+              type="range"
+              min="0"
+              max="32"
+              value={blockStyle.borderRadius || 0}
+              onChange={e => handleStyleChange('borderRadius', parseInt(e.target.value))}
+              onBlur={handleBlur}
+              className="w-full accent-indigo-500"
+            />
+          </div>
+          <div className="settings-field">
+            <label>Padding: {blockStyle.padding || 0}px</label>
+            <input
+              type="range"
+              min="0"
+              max="48"
+              value={blockStyle.padding || 0}
+              onChange={e => handleStyleChange('padding', parseInt(e.target.value))}
+              onBlur={handleBlur}
+              className="w-full accent-indigo-500"
+            />
+          </div>
+          <div className="settings-field">
+            <label>Animation on Scroll</label>
+            <select
+              value={blockStyle.animation || 'none'}
+              onChange={e => handleStyleChange('animation', e.target.value)}
+              onBlur={handleBlur}
+            >
+              {SCROLL_ANIMATIONS.map(a => (
+                <option key={a.value} value={a.value}>{a.label}</option>
+              ))}
+            </select>
           </div>
         </div>
 

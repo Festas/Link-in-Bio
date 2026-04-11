@@ -32,7 +32,8 @@ export default function BlockEditor() {
   const color = bt?.color || '#6366f1';
   const label = bt?.label || block.item_type;
 
-  const blockStyle = draft.block_style ? (typeof draft.block_style === 'string' ? JSON.parse(draft.block_style) : draft.block_style) : {};
+  const parseBlockStyle = (raw) => raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : {};
+  const blockStyle = parseBlockStyle(draft.block_style);
 
   const handleSave = () => {
     const updates = {};
@@ -62,7 +63,7 @@ export default function BlockEditor() {
   };
 
   const handleStyleChange = (key, value) => {
-    const current = draft.block_style ? (typeof draft.block_style === 'string' ? JSON.parse(draft.block_style) : draft.block_style) : {};
+    const current = parseBlockStyle(draft.block_style);
     setDraft(d => ({ ...d, block_style: { ...current, [key]: value } }));
   };
 

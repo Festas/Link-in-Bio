@@ -3,7 +3,7 @@ import useEditorStore from '../../stores/editorStore.js';
 import BLOCK_TYPES from '../../utils/blockTypes.js';
 
 export default function FloatingToolbar({ blockId, position }) {
-  const { blocks, editBlock, deleteBlock, toggleBlockVisibility, reorderBlocks } = useEditorStore();
+  const { blocks, editBlock, deleteBlock, toggleBlockVisibility, reorderBlocks, addBlock } = useEditorStore();
   const block = blocks.find(b => b.id === blockId);
   if (!block) return null;
   
@@ -21,7 +21,6 @@ export default function FloatingToolbar({ blockId, position }) {
     reorderBlocks(newBlocks);
   };
   const duplicate = () => {
-    const { addBlock } = useEditorStore.getState();
     const btEntry = Object.entries(BLOCK_TYPES).find(([,bt]) => bt.type === block.item_type);
     if (btEntry) {
       const bt = btEntry[1];

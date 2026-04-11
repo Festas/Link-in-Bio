@@ -322,8 +322,8 @@ const BLOCK_TYPES = {
     color: '#059669',
     defaults: { title: '', url: '' },
     fields: [
-      { key: 'title', label: 'Buttons JSON', type: 'text' },
-      { key: 'url', label: 'e.g. [{"label":"Shop","url":"https://..."}]', type: 'textarea' },
+      { key: 'title', label: 'Label', type: 'text' },
+      { key: 'url', label: 'Buttons Configuration (JSON)', type: 'textarea' },
     ],
   },
 };

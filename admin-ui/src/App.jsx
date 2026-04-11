@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import useEditorStore from './stores/editorStore.js';
 import EditorLayout from './components/editor/EditorLayout.jsx';
 import LoadingScreen from './components/common/LoadingScreen.jsx';

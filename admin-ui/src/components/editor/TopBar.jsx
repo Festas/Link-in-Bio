@@ -1,17 +1,21 @@
 import {
   Undo2, Redo2, Smartphone, Tablet, Monitor, ExternalLink,
-  LogOut, Save, Loader2,
+  LogOut, Save, Loader2, Eye,
 } from 'lucide-react';
 import useEditorStore from '../../stores/editorStore.js';
 import { logout } from '../../utils/api.js';
 
 export default function TopBar() {
   const {
-    undo, redo, saving, settings,
+    undo, redo, saving, settings, updateSettings,
     previewDevice, setPreviewDevice,
   } = useEditorStore();
   const canUndo = useEditorStore(s => s.historyIndex > 0);
   const canRedo = useEditorStore(s => s.historyIndex < s.history.length - 1);
+
+  const handlePublish = async () => {
+    await updateSettings({ ...settings });
+  };
 
   return (
     <header className="h-14 border-b border-[var(--editor-border)] bg-[var(--editor-surface)] flex items-center px-4 gap-2 shrink-0">
@@ -44,7 +48,7 @@ export default function TopBar() {
       </div>
 
       {/* Device Switcher */}
-      <div className="flex items-center gap-1 bg-[var(--editor-bg)] rounded-lg p-1">
+      <div className="flex items-center bg-[var(--editor-bg)] rounded-xl p-1 border border-[var(--editor-border)]">
         {[
           { id: 'phone', icon: Smartphone, label: 'Phone' },
           { id: 'tablet', icon: Tablet, label: 'Tablet' },
@@ -53,9 +57,9 @@ export default function TopBar() {
           <button
             key={id}
             onClick={() => setPreviewDevice(id)}
-            className={`p-1.5 rounded-md transition-colors ${
+            className={`p-1.5 rounded-lg transition-all ${
               previewDevice === id
-                ? 'bg-indigo-500 text-white'
+                ? 'bg-indigo-500 text-white shadow-sm shadow-indigo-500/30'
                 : 'text-[var(--editor-text-muted)] hover:text-[var(--editor-text)]'
             }`}
             title={label}
@@ -76,16 +80,25 @@ export default function TopBar() {
         </div>
       )}
 
-      {/* View Live */}
+      {/* Preview */}
       <a
         href="/"
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-[var(--editor-border)] hover:bg-[var(--editor-surface-hover)] transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-xl border border-[var(--editor-border)] hover:bg-[var(--editor-surface-hover)] transition-colors"
       >
-        <ExternalLink size={14} />
-        <span className="hidden sm:inline">View Page</span>
+        <Eye size={14} />
+        <span className="hidden sm:inline">Preview</span>
       </a>
+
+      {/* Publish */}
+      <button
+        onClick={handlePublish}
+        className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white transition-colors shadow-sm shadow-emerald-500/25"
+      >
+        <Save size={14} />
+        <span className="hidden sm:inline">Publish</span>
+      </button>
 
       {/* Logout */}
       <button

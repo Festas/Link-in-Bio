@@ -7,6 +7,7 @@ import {
   HelpCircle, Minus, Image, SlidersHorizontal, Grid3X3,
   Clock, Music, MapPin, AlignLeft, Share2,
   Megaphone, FileDown, Headphones, Layers, Star, Quote,
+  Play, FileText, Space, Images, Rows3,
 } from 'lucide-react';
 
 const BLOCK_TYPES = {
@@ -259,6 +260,70 @@ const BLOCK_TYPES = {
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'url', label: 'Audio URL', type: 'url' },
+    ],
+  },
+  embed: {
+    type: 'social_embeds',
+    label: 'Universal Embed',
+    icon: Play,
+    category: 'media',
+    color: '#e11d48',
+    defaults: { title: '', url: '' },
+    fields: [
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'url', label: 'URL (YouTube, Spotify, SoundCloud, TikTok)', type: 'url' },
+    ],
+  },
+  rich_text: {
+    type: 'text_blocks',
+    label: 'Rich Text',
+    icon: FileText,
+    category: 'content',
+    color: '#6d28d9',
+    defaults: { title: '', text: '' },
+    fields: [
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'text', label: 'Markdown Content', type: 'textarea' },
+    ],
+  },
+  spacer: {
+    type: 'dividers',
+    label: 'Spacer',
+    icon: Space,
+    category: 'layout',
+    color: '#71717a',
+    defaults: { title: 'md' },
+    fields: [
+      { key: 'title', label: 'Size', type: 'select', options: [
+        { value: 'sm', label: 'Small' },
+        { value: 'md', label: 'Medium' },
+        { value: 'lg', label: 'Large' },
+        { value: 'xl', label: 'Extra Large' },
+      ]},
+    ],
+  },
+  image_carousel: {
+    type: 'slider_groups',
+    label: 'Image Carousel',
+    icon: Images,
+    category: 'content',
+    color: '#0891b2',
+    defaults: { title: '', url: '' },
+    fields: [
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'url', label: 'Image URLs (one per line)', type: 'textarea' },
+    ],
+  },
+  button_group: {
+    type: 'links',
+    label: 'Button Group',
+    icon: Rows3,
+    category: 'links',
+    color: '#059669',
+    defaults: { title: '', url: '' },
+    fields: [
+      { key: 'title', label: 'Label', type: 'text' },
+      { key: 'url', label: 'Buttons Configuration (JSON)', type: 'textarea' },
     ],
   },
 };

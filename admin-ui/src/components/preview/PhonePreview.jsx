@@ -1,5 +1,7 @@
+import { useState, useRef } from 'react';
 import useEditorStore from '../../stores/editorStore.js';
-import { Link, ExternalLink, Star, ShoppingBag } from 'lucide-react';
+import { Link, ExternalLink, Star, ShoppingBag, Plus } from 'lucide-react';
+import FloatingToolbar from '../editor/FloatingToolbar.jsx';
 
 const DEVICE_SIZES = {
   phone: { width: 375, height: 720, radius: 40, border: 6 },
@@ -8,8 +10,12 @@ const DEVICE_SIZES = {
 };
 
 export default function PhonePreview() {
-  const { blocks, settings, previewDevice } = useEditorStore();
+  const { blocks, settings, previewDevice, setShowPaletteModal } = useEditorStore();
   const device = DEVICE_SIZES[previewDevice];
+  const [hoveredBlockId, setHoveredBlockId] = useState(null);
+  const [toolbarBlockId, setToolbarBlockId] = useState(null);
+  const [toolbarPos, setToolbarPos] = useState(null);
+  const containerRef = useRef(null);
 
   const themeClass = `preview-theme-${settings.theme || 'dark'}`;
   const bgColor = settings.custom_bg_color || undefined;
@@ -19,8 +25,27 @@ export default function PhonePreview() {
 
   const activeBlocks = blocks.filter(b => b.is_active !== false);
 
+  const handleBlockClick = (e, blockId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (toolbarBlockId === blockId) {
+      setToolbarBlockId(null);
+      setToolbarPos(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    setToolbarBlockId(blockId);
+    setToolbarPos({ top: rect.top - (containerRect?.top || 0) });
+  };
+
+  const handleCanvasClick = () => {
+    setToolbarBlockId(null);
+    setToolbarPos(null);
+  };
+
   return (
-    <div className="relative z-10 transition-all duration-300">
+    <div className="relative z-10 transition-all duration-300" ref={containerRef}>
       <div
         className={themeClass}
         style={{
@@ -43,6 +68,7 @@ export default function PhonePreview() {
         {/* Content */}
         <div
           className="h-full overflow-y-auto overflow-x-hidden"
+          onClick={handleCanvasClick}
           style={{
             background: settings.bg_image_url
               ? `url(${settings.bg_image_url}) center/cover no-repeat`
@@ -84,14 +110,41 @@ export default function PhonePreview() {
 
             {/* Blocks */}
             <div className="space-y-3">
-              {activeBlocks.map(block => (
-                <PreviewBlock
-                  key={block.id}
-                  block={block}
-                  buttonColor={buttonColor}
-                  buttonTextColor={buttonTextColor}
-                  settings={settings}
-                />
+              {activeBlocks.map((block, idx) => (
+                <div key={block.id}>
+                  <div
+                    className="relative"
+                    onMouseEnter={() => setHoveredBlockId(block.id)}
+                    onMouseLeave={() => setHoveredBlockId(null)}
+                    onClick={(e) => handleBlockClick(e, block.id)}
+                  >
+                    {/* Hover ring */}
+                    {hoveredBlockId === block.id && toolbarBlockId !== block.id && (
+                      <div className="absolute inset-0 rounded-xl ring-2 ring-indigo-500/40 pointer-events-none z-20" />
+                    )}
+                    {/* Floating toolbar */}
+                    {toolbarBlockId === block.id && toolbarPos && (
+                      <FloatingToolbar blockId={block.id} position={toolbarPos} />
+                    )}
+                    <PreviewBlock
+                      block={block}
+                      buttonColor={buttonColor}
+                      buttonTextColor={buttonTextColor}
+                      settings={settings}
+                    />
+                  </div>
+                  {/* Insert button between blocks */}
+                  {idx < activeBlocks.length - 1 && (
+                    <div className="flex justify-center py-1 opacity-0 hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setShowPaletteModal(true); }}
+                        className="w-6 h-6 rounded-full bg-indigo-500/20 hover:bg-indigo-500/40 flex items-center justify-center text-indigo-400 transition-colors"
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
 

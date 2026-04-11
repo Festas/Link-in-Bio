@@ -17,6 +17,22 @@
     <meta name="twitter:description" content="{{ page_description | e }}">
     <meta name="twitter:image" content="{{ page_image | e }}">
 
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "ProfilePage",
+        "name": "{{ page_title | e }}",
+        "description": "{{ page_description | e }}",
+        "url": "{{ page_url | e }}",
+        "mainEntity": {
+            "@type": "Person",
+            "name": "{{ page_title | e }}",
+            "url": "{{ page_url | e }}",
+            "image": "{{ page_image | e }}"
+        }
+    }
+    </script>
+
     <script src="{{ vendor.tailwindcss }}?v={{ version }}"></script>
     <link rel="stylesheet" href="{{ vendor.swiper_css }}?v={{ version }}" />
     <script src="{{ vendor.swiper_js }}?v={{ version }}"></script>

@@ -26,6 +26,7 @@ const useEditorStore = create((set, get) => ({
   // View
   previewDevice: 'phone', // phone | tablet | desktop
   sidebarTab: 'blocks', // blocks | theme | analytics | pages | settings
+  showPaletteModal: false,
 
   // ── Actions ──
   init: async () => {
@@ -181,7 +182,30 @@ const useEditorStore = create((set, get) => ({
   // ── View ──
   setPreviewDevice: (device) => set({ previewDevice: device }),
   setSidebarTab: (tab) => set({ sidebarTab: tab }),
+  setShowPaletteModal: (v) => set({ showPaletteModal: v }),
   clearError: () => set({ error: null }),
+
+  // ── Duplicate Block ──
+  duplicateBlock: async (id) => {
+    const { blocks, currentPageId } = get();
+    const block = blocks.find(b => b.id === id);
+    if (!block) return;
+    set({ saving: true });
+    try {
+      await api.createItem(block.item_type, {
+        title: block.title,
+        url: block.url,
+        text: block.text,
+        image_url: block.image_url,
+        page_id: currentPageId,
+      });
+      const items = await api.getItems(currentPageId);
+      set({ blocks: flattenItems(items), saving: false, dirty: false });
+      get().pushHistory();
+    } catch (e) {
+      set({ saving: false, error: e.message });
+    }
+  },
 }));
 
 /** Flatten nested items into a flat list for the editor */

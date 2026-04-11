@@ -181,14 +181,26 @@ jobs:
             if [[ -d "/tmp/link-in-bio-deploy/nginx/sites-available" ]]; then
               sudo cp /tmp/link-in-bio-deploy/nginx/sites-available/*.conf /etc/nginx/sites-available/
               
-              # Enable all sites by creating symlinks
+              # Enable sites - only if SSL certificates exist (or site doesn't need SSL)
+              ENABLED_COUNT=0
+              SKIPPED_COUNT=0
               for conf in /etc/nginx/sites-available/*.festas-builds.com.conf; do
                 confname=$(basename "$conf")
-                sudo ln -sf "../sites-available/$confname" "/etc/nginx/sites-enabled/$confname"
+                domain="${confname%.conf}"
+
+                # Check if this config references SSL certs that don't exist
+                if grep -q 'ssl_certificate' "$conf" && [[ ! -d "/etc/letsencrypt/live/$domain" ]]; then
+                  echo "  ⚠ Skipping $domain — SSL certificate not found at /etc/letsencrypt/live/$domain"
+                  sudo rm -f "/etc/nginx/sites-enabled/$confname"
+                  SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+                else
+                  sudo ln -sf "../sites-available/$confname" "/etc/nginx/sites-enabled/$confname"
+                  ENABLED_COUNT=$((ENABLED_COUNT + 1))
+                fi
               done
               
               rm -rf /tmp/link-in-bio-deploy
-              echo "✓ Nginx configurations deployed (9 domains configured)"
+              echo "✓ Nginx configurations deployed ($ENABLED_COUNT domains enabled, $SKIPPED_COUNT skipped - missing SSL certs)"
             else
               echo "⚠ Warning: Nginx configs not found in /tmp/link-in-bio-deploy"
               echo "Skipping Nginx configuration update"
@@ -316,18 +328,33 @@ jobs:
             # Test configuration before starting
             if sudo nginx -t >/dev/null 2>&1; then
               echo "✓ Nginx configuration is valid"
+            else
+              echo "⚠ Nginx configuration test failed — disabling sites with missing SSL certs..."
+              # Disable any enabled sites whose SSL certs are missing
+              for conf in /etc/nginx/sites-enabled/*.conf; do
+                confname=$(basename "$conf")
+                domain="${confname%.conf}"
+                if grep -q 'ssl_certificate' "$conf" && [[ ! -d "/etc/letsencrypt/live/$domain" ]]; then
+                  echo "  Disabling $domain (missing SSL certificate)"
+                  sudo rm -f "/etc/nginx/sites-enabled/$confname"
+                fi
+              done
               
-              # Start Nginx fresh
-              if sudo systemctl start nginx; then
-                echo "✓ Nginx started successfully"
-              else
-                echo "⚠ Nginx start failed"
-                sudo systemctl status nginx || true
+              # Re-test after disabling problematic sites
+              if ! sudo nginx -t >/dev/null 2>&1; then
+                echo "⚠ Nginx configuration still invalid after removing sites with missing certs"
+                sudo nginx -t || true
                 exit 1
               fi
+              echo "✓ Nginx configuration is now valid (some sites disabled due to missing SSL certs)"
+            fi
+
+            # Start Nginx fresh
+            if sudo systemctl start nginx; then
+              echo "✓ Nginx started successfully"
             else
-              echo "⚠ Nginx configuration test failed"
-              sudo nginx -t || true
+              echo "⚠ Nginx start failed"
+              sudo systemctl status nginx || true
               exit 1
             fi
             

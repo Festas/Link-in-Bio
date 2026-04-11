@@ -49,21 +49,6 @@ from app.services import APP_DOMAIN
 from app.rate_limit import limiter_standard
 from app.config import BASE_DIR, UPLOAD_DIR, templates, configure_template_globals
 from app.auth_unified import require_auth
-
-
-def _fetch_active_items(page_id):
-    """Fetch active, non-expired items for a given page (or all pages if page_id is None)."""
-    with get_db_connection() as conn:
-        if page_id:
-            rows = conn.execute(
-                "SELECT * FROM items WHERE page_id = ? AND is_active = 1 AND (publish_on IS NULL OR publish_on <= datetime('now', 'localtime')) AND (expires_on IS NULL OR expires_on >= datetime('now', 'localtime')) ORDER BY display_order ASC",
-                (page_id,),
-            ).fetchall()
-        else:
-            rows = conn.execute(
-                "SELECT * FROM items WHERE is_active = 1 AND (publish_on IS NULL OR publish_on <= datetime('now', 'localtime')) AND (expires_on IS NULL OR expires_on >= datetime('now', 'localtime')) ORDER BY display_order ASC"
-            ).fetchall()
-        return [dict(r) for r in rows]
 from app.middleware import add_security_headers, add_request_id
 from app.subdomain_middleware import SubdomainMiddleware, subdomain_middleware
 from app.exceptions import custom_http_exception_handler, general_exception_handler
@@ -79,6 +64,27 @@ def get_admin_subdomain_url() -> str:
     if APP_DOMAIN == "127.0.0.1":
         return "http://admin.localhost:8000"
     return f"https://admin.{APP_DOMAIN}"
+
+
+def _fetch_active_items(page_id):
+    """Fetch active, non-expired items for a given page (or all pages if page_id is None)."""
+    with get_db_connection() as conn:
+        if page_id:
+            rows = conn.execute(
+                "SELECT * FROM items WHERE page_id = ? AND is_active = 1"
+                " AND (publish_on IS NULL OR publish_on <= datetime('now', 'localtime'))"
+                " AND (expires_on IS NULL OR expires_on >= datetime('now', 'localtime'))"
+                " ORDER BY display_order ASC",
+                (page_id,),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM items WHERE is_active = 1"
+                " AND (publish_on IS NULL OR publish_on <= datetime('now', 'localtime'))"
+                " AND (expires_on IS NULL OR expires_on >= datetime('now', 'localtime'))"
+                " ORDER BY display_order ASC"
+            ).fetchall()
+        return [dict(r) for r in rows]
 
 
 @asynccontextmanager

@@ -13,12 +13,12 @@
 
         <!-- Social Icons -->
         {% set socials = [] %}
-        {% if settings.get('youtube_url') or settings.get('social_youtube') %}{% set _ = socials.append({'url': settings.get('youtube_url') or settings.get('social_youtube'), 'icon': 'youtube', 'label': 'YouTube'}) %}{% endif %}
-        {% if settings.get('instagram_url') or settings.get('social_instagram') %}{% set _ = socials.append({'url': settings.get('instagram_url') or settings.get('social_instagram'), 'icon': 'instagram', 'label': 'Instagram'}) %}{% endif %}
-        {% if settings.get('tiktok_url') or settings.get('social_tiktok') %}{% set _ = socials.append({'url': settings.get('tiktok_url') or settings.get('social_tiktok'), 'icon': 'tiktok', 'label': 'TikTok'}) %}{% endif %}
-        {% if settings.get('twitch_url') or settings.get('social_twitch') %}{% set _ = socials.append({'url': settings.get('twitch_url') or settings.get('social_twitch'), 'icon': 'twitch', 'label': 'Twitch'}) %}{% endif %}
-        {% if settings.get('x_url') or settings.get('social_x') %}{% set _ = socials.append({'url': settings.get('x_url') or settings.get('social_x'), 'icon': 'x', 'label': 'X'}) %}{% endif %}
-        {% if settings.get('discord_url') or settings.get('social_discord') %}{% set _ = socials.append({'url': settings.get('discord_url') or settings.get('social_discord'), 'icon': 'discord', 'label': 'Discord'}) %}{% endif %}
+        {% if settings.get('social_youtube') %}{% set _ = socials.append({'url': settings.get('social_youtube'), 'icon': 'youtube', 'label': 'YouTube'}) %}{% endif %}
+        {% if settings.get('social_instagram') %}{% set _ = socials.append({'url': settings.get('social_instagram'), 'icon': 'instagram', 'label': 'Instagram'}) %}{% endif %}
+        {% if settings.get('social_tiktok') %}{% set _ = socials.append({'url': settings.get('social_tiktok'), 'icon': 'tiktok', 'label': 'TikTok'}) %}{% endif %}
+        {% if settings.get('social_twitch') %}{% set _ = socials.append({'url': settings.get('social_twitch'), 'icon': 'twitch', 'label': 'Twitch'}) %}{% endif %}
+        {% if settings.get('social_x') %}{% set _ = socials.append({'url': settings.get('social_x'), 'icon': 'x', 'label': 'X'}) %}{% endif %}
+        {% if settings.get('social_discord') %}{% set _ = socials.append({'url': settings.get('social_discord'), 'icon': 'discord', 'label': 'Discord'}) %}{% endif %}
         {% if socials %}
         <div class="socials">
             {% for s in socials %}

@@ -6,13 +6,13 @@ import {
 } from 'lucide-react';
 
 const SOCIAL_FIELDS = [
-  { key: 'youtube_url', label: 'YouTube', icon: Play, placeholder: 'https://youtube.com/@...' },
-  { key: 'instagram_url', label: 'Instagram', icon: Camera, placeholder: 'https://instagram.com/...' },
-  { key: 'tiktok_url', label: 'TikTok', icon: Music2, placeholder: 'https://tiktok.com/@...' },
-  { key: 'twitch_url', label: 'Twitch', icon: Gamepad2, placeholder: 'https://twitch.tv/...' },
-  { key: 'x_url', label: 'X / Twitter', icon: AtSign, placeholder: 'https://x.com/...' },
-  { key: 'discord_url', label: 'Discord', icon: MessageCircle, placeholder: 'https://discord.gg/...' },
-  { key: 'email', label: 'Email', icon: AtSign, placeholder: 'you@example.com' },
+  { key: 'social_youtube', label: 'YouTube', icon: Play, placeholder: 'https://youtube.com/@...' },
+  { key: 'social_instagram', label: 'Instagram', icon: Camera, placeholder: 'https://instagram.com/...' },
+  { key: 'social_tiktok', label: 'TikTok', icon: Music2, placeholder: 'https://tiktok.com/@...' },
+  { key: 'social_twitch', label: 'Twitch', icon: Gamepad2, placeholder: 'https://twitch.tv/...' },
+  { key: 'social_x', label: 'X / Twitter', icon: AtSign, placeholder: 'https://x.com/...' },
+  { key: 'social_discord', label: 'Discord', icon: MessageCircle, placeholder: 'https://discord.gg/...' },
+  { key: 'social_email', label: 'Email', icon: AtSign, placeholder: 'you@example.com' },
 ];
 
 export default function SettingsPanel() {

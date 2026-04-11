@@ -42,6 +42,7 @@ class ItemCreate(BaseModel):
     email: Optional[EmailStr] = None
     grid_columns: Optional[int] = 2
     page_id: Optional[int] = None
+    image_url: Optional[str] = None
 
 
 class ItemUpdate(BaseModel):

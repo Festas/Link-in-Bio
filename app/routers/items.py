@@ -235,6 +235,62 @@ async def create_map_embed(req: ItemCreate, user=Depends(require_auth)):
     return Item(**item_dict)
 
 
+@router.post("/embeds", response_model=Item)
+async def create_embed(req: ItemCreate, user=Depends(require_auth)):
+    """Create an embed item (YouTube, Spotify, TikTok)."""
+    if not req.url:
+        raise HTTPException(400, "URL fehlt")
+    item_dict = create_item_in_db(build_item_data("embed", req.title or "Embed", req.url, page_id=req.page_id))
+    cache.invalidate("items")
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title or "Embed", "type": "embed"})
+    return Item(**item_dict)
+
+
+@router.post("/rich_texts", response_model=Item)
+async def create_rich_text(req: ItemCreate, user=Depends(require_auth)):
+    """Create a rich text block."""
+    item_dict = create_item_in_db(build_item_data("rich_text", req.title or "", req.text or req.url or "", page_id=req.page_id))
+    cache.invalidate("items")
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title or "", "type": "rich_text"})
+    return Item(**item_dict)
+
+
+@router.post("/spacers", response_model=Item)
+async def create_spacer(req: ItemCreate, user=Depends(require_auth)):
+    """Create a spacer block."""
+    item_dict = create_item_in_db(build_item_data("spacer", req.title or "md", page_id=req.page_id))
+    cache.invalidate("items")
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title or "md", "type": "spacer"})
+    return Item(**item_dict)
+
+
+@router.post("/image_carousels", response_model=Item)
+async def create_image_carousel(req: ItemCreate, user=Depends(require_auth)):
+    """Create an image carousel block."""
+    item_dict = create_item_in_db(build_item_data("image_carousel", req.title or "Gallery", req.url or "", page_id=req.page_id))
+    cache.invalidate("items")
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title or "Gallery", "type": "image_carousel"})
+    return Item(**item_dict)
+
+
+@router.post("/button_groups", response_model=Item)
+async def create_button_group(req: ItemCreate, user=Depends(require_auth)):
+    """Create a button group block."""
+    item_dict = create_item_in_db(build_item_data("button_group", req.title or "Buttons", req.url or "", page_id=req.page_id))
+    cache.invalidate("items")
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title or "Buttons", "type": "button_group"})
+    return Item(**item_dict)
+
+
+@router.post("/banners", response_model=Item)
+async def create_banner(req: ItemCreate, user=Depends(require_auth)):
+    """Create a banner block."""
+    item_dict = create_item_in_db(build_item_data("banner", req.title or "Announcement", req.text or req.url or "", req.image_url, page_id=req.page_id))
+    cache.invalidate("items")
+    log_action(ACTION_CREATE, RESOURCE_ITEM, str(item_dict["id"]), user, {"title": req.title or "Announcement", "type": "banner"})
+    return Item(**item_dict)
+
+
 # --- Item Management ---
 
 

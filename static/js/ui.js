@@ -402,6 +402,107 @@ const ItemRenderers = {
         const titleHTML = item.title && item.title !== 'Location' ? `<p class="item-title font-semibold p-4 pb-2">${escapeHTML(item.title)}</p>` : '';
         div.innerHTML = `${titleHTML}${embedHTML}`;
         return div;
+    },
+    embed: (item) => {
+        const div = document.createElement('div');
+        div.className = 'item-embed glass-card overflow-hidden';
+        const url = item.url || '';
+        let embedHTML = '';
+        if (urlHostMatchesAny(url, ['youtube.com', 'www.youtube.com', 'youtu.be'])) {
+            let videoId = '';
+            if (urlHostMatchesAny(url, ['youtu.be'])) {
+                videoId = url.split('youtu.be/')[1]?.split(/[?&#]/)[0] || '';
+            } else {
+                const match = url.match(/[?&]v=([^&#]+)/);
+                videoId = match ? match[1] : '';
+            }
+            if (videoId) {
+                embedHTML = `<div class="aspect-video"><iframe src="https://www.youtube.com/embed/${escapeHTML(videoId)}" width="100%" height="100%" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
+            }
+        } else if (urlHostMatchesAny(url, ['vimeo.com', 'www.vimeo.com'])) {
+            const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+            const vimeoId = vimeoMatch ? vimeoMatch[1] : '';
+            if (vimeoId) {
+                embedHTML = `<div class="aspect-video"><iframe src="https://player.vimeo.com/video/${escapeHTML(vimeoId)}" width="100%" height="100%" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
+            }
+        } else if (urlHostMatchesAny(url, ['spotify.com', 'open.spotify.com'])) {
+            const embedUrl = url.replace('open.spotify.com/', 'open.spotify.com/embed/');
+            embedHTML = `<div class="px-4 pb-4"><iframe src="${escapeHTML(embedUrl)}" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" style="border-radius: 12px;"></iframe></div>`;
+        } else if (urlHostMatchesAny(url, ['soundcloud.com'])) {
+            embedHTML = `<div class="px-4 pb-4"><iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23ff5500&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false" loading="lazy"></iframe></div>`;
+        } else if (urlHostMatchesAny(url, ['tiktok.com', 'www.tiktok.com'])) {
+            embedHTML = `<div class="p-4 text-center"><a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-3 rounded-lg transition-all" style="background: var(--color-item-bg-hover);"><i data-lucide="play" class="w-5 h-5"></i><span class="font-semibold">TikTok ansehen</span><i data-lucide="external-link" class="w-4 h-4 opacity-60"></i></a></div>`;
+        } else {
+            embedHTML = `<div class="p-4 text-center"><a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-3 rounded-lg transition-all" style="background: var(--color-item-bg-hover);"><i data-lucide="link" class="w-5 h-5"></i><span class="font-semibold">Öffnen</span><i data-lucide="external-link" class="w-4 h-4 opacity-60"></i></a></div>`;
+        }
+        const titleHTML = item.title && item.title !== 'Embed' ? `<p class="item-title font-semibold p-4 pb-2">${escapeHTML(item.title)}</p>` : '';
+        div.innerHTML = `${titleHTML}${embedHTML}`;
+        return div;
+    },
+    rich_text: (item) => {
+        const div = document.createElement('div');
+        div.className = 'item-rich-text glass-card p-5';
+        const titleHTML = item.title ? `<h3 class="item-title text-lg font-bold mb-3">${escapeHTML(item.title)}</h3>` : '';
+        const raw = item.url || '';
+        let content = escapeHTML(raw);
+        content = content.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        content = content.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, href) => `<a href="${sanitizeURL(href)}" target="_blank" rel="noopener noreferrer" class="underline hover:opacity-75">${text}</a>`);
+        content = content.replace(/\n/g, '<br>');
+        div.innerHTML = `${titleHTML}<div class="rich-text-content text-sm leading-relaxed" style="color: var(--color-text-muted);">${content}</div>`;
+        return div;
+    },
+    spacer: (item) => {
+        const div = document.createElement('div');
+        div.className = 'item-spacer';
+        const sizeMap = { sm: '16px', md: '32px', lg: '48px', xl: '64px' };
+        const height = sizeMap[item.title] || sizeMap['md'];
+        div.style.height = height;
+        return div;
+    },
+    image_carousel: (item) => {
+        const div = document.createElement('div');
+        div.className = 'item-image-carousel glass-card overflow-hidden';
+        const images = (item.url || '').split('\n').filter(u => u.trim());
+        const swiperId = `carousel-${item.id}`;
+        let slidesHTML = '';
+        images.forEach((imgUrl, idx) => {
+            slidesHTML += `<div class="swiper-slide"><img src="${escapeHTML(imgUrl.trim())}" alt="Slide ${idx + 1}" class="w-full h-64 object-cover" loading="lazy" onerror="this.style.display='none';"></div>`;
+        });
+        const titleHTML = item.title && item.title !== 'Gallery' ? `<p class="item-title font-semibold p-4 pb-2">${escapeHTML(item.title)}</p>` : '';
+        div.innerHTML = `${titleHTML}<div class="swiper swiper-slider-group" id="${swiperId}"><div class="swiper-wrapper">${slidesHTML}</div><div class="swiper-button-prev slider-nav-btn"></div><div class="swiper-button-next slider-nav-btn"></div><div class="swiper-pagination"></div></div>`;
+        return div;
+    },
+    button_group: (item) => {
+        const div = document.createElement('div');
+        div.className = 'item-button-group glass-card p-4';
+        const titleHTML = item.title && item.title !== 'Buttons' ? `<p class="item-title font-semibold mb-3">${escapeHTML(item.title)}</p>` : '';
+        let buttonsHTML = '';
+        try {
+            const buttons = JSON.parse(item.url || '[]');
+            buttonsHTML = '<div class="flex flex-wrap gap-2 justify-center">';
+            buttons.forEach(btn => {
+                buttonsHTML += `<a href="${sanitizeURL(btn.url || '#')}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:scale-105" style="background: var(--color-item-bg); color: var(--color-item-text);">${escapeHTML(btn.label || 'Button')}</a>`;
+            });
+            buttonsHTML += '</div>';
+        } catch {
+            buttonsHTML = '<p class="text-sm opacity-50 text-center">Keine Buttons konfiguriert</p>';
+        }
+        div.innerHTML = `${titleHTML}${buttonsHTML}`;
+        return div;
+    },
+    banner: (item) => {
+        const div = document.createElement('div');
+        div.className = 'item-banner glass-card overflow-hidden relative';
+        div.style.minHeight = '120px';
+        if (item.image_url) {
+            div.style.backgroundImage = `url('${escapeHTML(item.image_url)}')`;
+            div.style.backgroundSize = 'cover';
+            div.style.backgroundPosition = 'center';
+        }
+        const text = item.url || '';
+        div.innerHTML = `<div class="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent"></div><div class="relative z-10 p-6 flex flex-col justify-center min-h-[120px]"><h3 class="text-xl font-bold text-white mb-1">${escapeHTML(item.title || '')}</h3>${text ? `<p class="text-sm text-white/80">${escapeHTML(text)}</p>` : ''}</div>`;
+        return div;
     }
 };
 
@@ -695,6 +796,38 @@ function showShareModal(settings) {
         modal.querySelector('.glass-card').appendChild(nativeBtn);
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
+}
+
+// Dark mode toggle for visitors
+export function createDarkModeToggle() {
+    const PREF_KEY = 'linkbio_visitor_theme';
+    const saved = localStorage.getItem(PREF_KEY);
+    if (saved) {
+        document.body.classList.add(saved);
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('visitor-dark');
+    }
+
+    const btn = document.createElement('button');
+    btn.id = 'dark-mode-toggle';
+    btn.className = 'dark-mode-toggle';
+    btn.setAttribute('aria-label', 'Toggle dark/light mode');
+    const isDark = document.body.classList.contains('visitor-dark') || (!document.body.classList.contains('visitor-light') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    btn.innerHTML = isDark ? '☀️' : '🌙';
+    btn.addEventListener('click', () => {
+        const isCurrentlyDark = document.body.classList.contains('visitor-dark');
+        document.body.classList.remove('visitor-dark', 'visitor-light');
+        if (isCurrentlyDark) {
+            document.body.classList.add('visitor-light');
+            localStorage.setItem(PREF_KEY, 'visitor-light');
+            btn.innerHTML = '🌙';
+        } else {
+            document.body.classList.add('visitor-dark');
+            localStorage.setItem(PREF_KEY, 'visitor-dark');
+            btn.innerHTML = '☀️';
+        }
+    });
+    document.body.appendChild(btn);
 }
 
 // Render footer with branding

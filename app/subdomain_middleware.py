@@ -73,6 +73,7 @@ def is_admin_subdomain(host: str) -> bool:
 # When accessing admin subdomain, these paths map to internal routes
 ADMIN_PATH_MAPPINGS = {
     "/": "/__admin__/dashboard",
+    "/editor": "/__admin__/editor",
     "/login": "/__admin__/login",
     "/analytics": "/__admin__/analytics",
     "/mediakit": "/__admin__/mediakit",

@@ -47,6 +47,7 @@ from app.endpoints_enhanced import router as api_router_enhanced
 from app.services import APP_DOMAIN
 from app.rate_limit import limiter_standard
 from app.config import BASE_DIR, UPLOAD_DIR, templates, configure_template_globals
+from app.auth_unified import require_auth
 from app.middleware import add_security_headers, add_request_id
 from app.subdomain_middleware import SubdomainMiddleware, subdomain_middleware
 from app.exceptions import custom_http_exception_handler, general_exception_handler
@@ -219,6 +220,16 @@ async def get_sitemap():
 async def redirect_admin_to_subdomain():
     """Redirect /admin to the admin subdomain."""
     return RedirectResponse(url=get_admin_subdomain_url(), status_code=301)
+
+
+@app.get("/editor", response_class=HTMLResponse)
+async def get_editor_page(request: Request, user=Depends(require_auth)):
+    """Serve the new React-based visual editor (alternative to admin subdomain)."""
+    spa_index = BASE_DIR / "static" / "admin" / "index.html"
+    if spa_index.exists():
+        return FileResponse(spa_index, media_type="text/html")
+    # Fallback to legacy admin
+    return templates.TemplateResponse(request=request, name="admin.html")
 
 
 @app.get("/analytics", response_class=HTMLResponse)
@@ -402,6 +413,7 @@ async def get_page_html(request: Request, page_slug: str):
     # Skip special routes (including new admin routes)
     if page_slug in [
         "admin",
+        "editor",
         "analytics",
         "login",
         "privacy",

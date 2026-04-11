@@ -38,7 +38,7 @@
         {% elif item.get('item_type') == 'divider' %}
         <hr class="divider">
         {% elif item.get('item_type') == 'link' %}
-        <a href="{{ item.get('url', '#') }}" target="_blank" rel="noopener noreferrer" class="link-btn" data-id="{{ item.get('id') }}" onclick="tc({{ item.get('id') }})">
+        <a href="{{ item.get('url', '#') }}" target="_blank" rel="noopener noreferrer" class="link-btn" data-id="{{ item.get('id') }}">
             {% if item.get('image_url') %}
             <img class="link-thumb" src="{{ item.get('image_url') }}" alt="">
             {% endif %}
@@ -68,7 +68,7 @@
             </div>
         </div>
         {% elif item.get('item_type') == 'product' %}
-        <a href="{{ item.get('url') or '#' }}" target="_blank" rel="noopener noreferrer" class="link-btn product-btn" data-id="{{ item.get('id') }}" onclick="tc({{ item.get('id') }})">
+        <a href="{{ item.get('url') or '#' }}" target="_blank" rel="noopener noreferrer" class="link-btn product-btn" data-id="{{ item.get('id') }}">
             {% if item.get('image_url') %}
             <img class="link-thumb" src="{{ item.get('image_url') }}" alt="">
             {% endif %}
@@ -118,7 +118,7 @@
         {% else %}
         <!-- Fallback: render as link -->
         {% if item.get('url') %}
-        <a href="{{ item.get('url') }}" target="_blank" rel="noopener noreferrer" class="link-btn" data-id="{{ item.get('id') }}" onclick="tc({{ item.get('id') }})">
+        <a href="{{ item.get('url') }}" target="_blank" rel="noopener noreferrer" class="link-btn" data-id="{{ item.get('id') }}">
             {% if item.get('image_url') %}
             <img class="link-thumb" src="{{ item.get('image_url') }}" alt="">
             {% endif %}

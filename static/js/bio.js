@@ -1,9 +1,15 @@
 // bio.js - Minimal JS for link-in-bio public page
 (function() {
-  // Click tracking
-  window.tc = function(id) {
-    fetch('/api/click/' + id, { method: 'POST' }).catch(function(){});
-  };
+  // Click tracking via event delegation
+  document.addEventListener('click', function(e) {
+    var link = e.target.closest('.link-btn[data-id]');
+    if (link) {
+      var id = link.getAttribute('data-id');
+      if (id) {
+        fetch('/api/click/' + encodeURIComponent(id), { method: 'POST' }).catch(function(){});
+      }
+    }
+  });
 
   // Pageview tracking
   fetch('/api/pageview', { method: 'POST' }).catch(function(){});

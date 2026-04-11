@@ -40,13 +40,13 @@
     {% if custom_html_head %}{{ custom_html_head | safe }}{% endif %}
 </head>
 <body style="
-    --bg-color: {{ settings.get('custom_bg_color') or '#0f0f11' }};
-    --text-color: {{ settings.get('custom_text_color') or '#fafafa' }};
-    --btn-bg: {{ settings.get('custom_button_color') or '#1e1e22' }};
-    --btn-text: {{ settings.get('custom_button_text_color') or '#fafafa' }};
-    --font: {{ settings.get('font_family') or 'Inter' }}, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    {% if settings.get('bg_image_url') %}--bg-image: url('{{ settings.get('bg_image_url') }}');{% endif %}
-" data-btn-style="{{ settings.get('button_style') or 'rounded' }}" data-pattern="{{ settings.get('bg_pattern') or 'none' }}">
+    --bg-color: {{ settings.get('custom_bg_color') or '#0f0f11' | e }};
+    --text-color: {{ settings.get('custom_text_color') or '#fafafa' | e }};
+    --btn-bg: {{ settings.get('custom_button_color') or '#1e1e22' | e }};
+    --btn-text: {{ settings.get('custom_button_text_color') or '#fafafa' | e }};
+    --font: {{ settings.get('font_family') or 'Inter' | e }}, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    {% if settings.get('bg_image_url') %}--bg-image: url('{{ settings.get('bg_image_url') | e }}');{% endif %}
+" data-btn-style="{{ settings.get('button_style') or 'rounded' | e }}" data-pattern="{{ settings.get('bg_pattern') or 'none' | e }}">
     {% block content %}{% endblock %}
     <script src="/static/js/bio.js?v={{ version }}" defer></script>
     {% if custom_html_body %}{{ custom_html_body | safe }}{% endif %}

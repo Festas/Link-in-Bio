@@ -111,3 +111,6 @@ mediakit/Instagram/
 
 # Alembic (only migrations folder needed)
 alembic/versions/__pycache__/
+
+# Admin UI build artifacts (node_modules excluded, source needed for build)
+admin-ui/node_modules/

@@ -154,7 +154,7 @@ const useEditorStore = create((set, get) => ({
   pushHistory: () => {
     const { blocks, history, historyIndex } = get();
     const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(JSON.parse(JSON.stringify(blocks)));
+    newHistory.push(structuredClone(blocks));
     if (newHistory.length > MAX_HISTORY) newHistory.shift();
     set({ history: newHistory, historyIndex: newHistory.length - 1 });
   },
@@ -163,7 +163,7 @@ const useEditorStore = create((set, get) => ({
     const { history, historyIndex } = get();
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
-      set({ blocks: JSON.parse(JSON.stringify(history[newIndex])), historyIndex: newIndex });
+      set({ blocks: structuredClone(history[newIndex]), historyIndex: newIndex });
     }
   },
 
@@ -171,7 +171,7 @@ const useEditorStore = create((set, get) => ({
     const { history, historyIndex } = get();
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
-      set({ blocks: JSON.parse(JSON.stringify(history[newIndex])), historyIndex: newIndex });
+      set({ blocks: structuredClone(history[newIndex]), historyIndex: newIndex });
     }
   },
 

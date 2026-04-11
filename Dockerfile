@@ -44,12 +44,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install the Chromium browser binaries only; system dependencies are installed above.
 RUN playwright install chromium
 
-# 3. Build the React admin SPA
-COPY admin-ui/ ./admin-ui/
-RUN cd admin-ui && npm ci && npm run build && rm -rf node_modules
-
-# 4. Code kopieren
+# 3. Code kopieren (admin-ui/node_modules excluded via .dockerignore)
 COPY . .
+
+# 4. Build the React admin SPA
+RUN cd admin-ui && npm ci && npm run build && rm -rf node_modules
 
 # 5. Vendor laden
 RUN python download_vendor.py

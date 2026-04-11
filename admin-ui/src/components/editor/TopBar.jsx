@@ -89,7 +89,7 @@ export default function TopBar() {
 
       {/* Logout */}
       <button
-        onClick={() => { logout(); window.location.href = '/login'; }}
+        onClick={async () => { await logout().catch(() => {}); window.location.href = '/login'; }}
         className="p-2 rounded-lg text-[var(--editor-text-muted)] hover:text-red-400 hover:bg-red-400/10 transition-colors"
         title="Logout"
       >

@@ -14,9 +14,10 @@ All routes require authentication except /login and /status.
 """
 
 import os
+from pathlib import Path
 from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse, JSONResponse
-from app.config import templates
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from app.config import templates, BASE_DIR
 from app.auth_unified import require_auth
 from app.subdomain_middleware import ADMIN_PATH_MAPPINGS
 
@@ -24,6 +25,9 @@ router = APIRouter(prefix="/__admin__")
 
 # Get main domain for public page links
 APP_DOMAIN = os.getenv("APP_DOMAIN", "127.0.0.1")
+
+# Path to the built React admin SPA
+ADMIN_SPA_DIR = BASE_DIR / "static" / "admin"
 
 
 def get_main_domain_url() -> str:
@@ -33,9 +37,22 @@ def get_main_domain_url() -> str:
     return f"https://{APP_DOMAIN}"
 
 
+@router.get("/editor", response_class=HTMLResponse)
+async def admin_subdomain_editor(request: Request, user=Depends(require_auth)):
+    """New React-based visual editor — the modern admin experience."""
+    spa_index = ADMIN_SPA_DIR / "index.html"
+    if spa_index.exists():
+        return FileResponse(spa_index, media_type="text/html")
+    # Fallback to legacy admin if SPA not built
+    return templates.TemplateResponse(request=request, name="admin.html")
+
+
 @router.get("/dashboard", response_class=HTMLResponse)
 async def admin_subdomain_dashboard(request: Request, user=Depends(require_auth)):
-    """Main admin dashboard - accessed via admin subdomain root."""
+    """Main admin dashboard - redirects to new editor if available, falls back to legacy."""
+    spa_index = ADMIN_SPA_DIR / "index.html"
+    if spa_index.exists():
+        return FileResponse(spa_index, media_type="text/html")
     return templates.TemplateResponse(request=request, name="admin.html")
 
 

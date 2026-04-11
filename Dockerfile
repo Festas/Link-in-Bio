@@ -10,6 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # System-Pakete aktualisieren und WICHTIGE Bibliotheken installieren
 # curl, libffi-dev und libcurl4 sind wichtig für curl_cffi
+# Node.js is needed to build the React admin SPA
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     libffi-dev \
@@ -31,6 +32,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfontconfig1 \
     libpangocairo-1.0-0 \
     libgtk-3-0 \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # 1. Requirements installieren
@@ -41,16 +44,20 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install the Chromium browser binaries only; system dependencies are installed above.
 RUN playwright install chromium
 
-# 3. Code kopieren
+# 3. Build the React admin SPA
+COPY admin-ui/ ./admin-ui/
+RUN cd admin-ui && npm ci && npm run build && rm -rf node_modules
+
+# 4. Code kopieren
 COPY . .
 
-# 4. Vendor laden
+# 5. Vendor laden
 RUN python download_vendor.py
 
-# 5. Make entrypoint script executable
+# 6. Make entrypoint script executable
 RUN chmod +x entrypoint.sh
 
-# 6. Create directories (will be overridden by volumes at startup)
+# 7. Create directories (will be overridden by volumes at startup)
 RUN mkdir -p /app/data /app/static/uploads
 
 EXPOSE 8000

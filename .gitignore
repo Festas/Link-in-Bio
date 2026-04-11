@@ -124,3 +124,9 @@ test_mediakit_feature.py
 # Media Kit generated files
 mediakit/generated/
 mediakit/Instagram/
+
+# Admin UI (React SPA) - node_modules should not be committed
+admin-ui/node_modules/
+
+# Built admin SPA assets (regenerated from admin-ui/ source)
+static/admin/

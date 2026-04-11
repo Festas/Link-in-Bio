@@ -221,6 +221,19 @@ async def redirect_admin_to_subdomain():
     return RedirectResponse(url=get_admin_subdomain_url(), status_code=301)
 
 
+@app.get("/editor", response_class=HTMLResponse)
+async def get_editor_page(request: Request):
+    """Serve the new React-based visual editor (alternative to admin subdomain)."""
+    from app.auth_unified import require_auth
+    from app.config import BASE_DIR
+
+    spa_index = BASE_DIR / "static" / "admin" / "index.html"
+    if spa_index.exists():
+        return FileResponse(spa_index, media_type="text/html")
+    # Fallback to legacy admin
+    return templates.TemplateResponse(request=request, name="admin.html")
+
+
 @app.get("/analytics", response_class=HTMLResponse)
 async def get_analytics_page(request: Request):
     return templates.TemplateResponse(request=request, name="analytics.html")
@@ -402,6 +415,7 @@ async def get_page_html(request: Request, page_slug: str):
     # Skip special routes (including new admin routes)
     if page_slug in [
         "admin",
+        "editor",
         "analytics",
         "login",
         "privacy",

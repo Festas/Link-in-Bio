@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 
 from fastapi import Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import templates
@@ -25,6 +25,18 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
     """Handle HTTP exceptions with JSON for API and HTML for web pages."""
     if request.url.path.startswith("/api/"):
         return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+
+    # For 401 errors on non-API pages, redirect to login instead of showing error
+    if exc.status_code == 401:
+        is_admin = getattr(request.state, "is_admin_subdomain", False) or request.scope.get(
+            "is_admin_subdomain", False
+        )
+        if is_admin:
+            # On admin subdomain, redirect to /login (which maps to /__admin__/login)
+            return RedirectResponse(url="/login", status_code=302)
+        else:
+            # On main domain, redirect to /login
+            return RedirectResponse(url="/login", status_code=302)
 
     # Use custom error template if available
     template_name = _get_error_template(exc.status_code)

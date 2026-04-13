@@ -63,6 +63,20 @@ class TestAdminSubdomainRoutes:
         assert response.status_code == 200
         assert "Login" in response.text
 
+    def test_admin_subdomain_dashboard_unauthenticated_redirects(self, client: TestClient):
+        """Dashboard should redirect to login when not authenticated on admin subdomain."""
+        no_redirect_client = TestClient(client.app, follow_redirects=False)
+        response = no_redirect_client.get("/", headers={"Host": "admin.festas-builds.com"})
+        assert response.status_code == 302
+        assert response.headers.get("location") == "/login"
+
+    def test_admin_subdomain_editor_unauthenticated_redirects(self, client: TestClient):
+        """Editor should redirect to login when not authenticated on admin subdomain."""
+        no_redirect_client = TestClient(client.app, follow_redirects=False)
+        response = no_redirect_client.get("/editor", headers={"Host": "admin.festas-builds.com"})
+        assert response.status_code == 302
+        assert response.headers.get("location") == "/login"
+
     def test_admin_subdomain_dashboard_authenticated(self, client: TestClient, auth_headers):
         """Dashboard should be accessible when authenticated on admin subdomain."""
         response = client.get("/", headers={**auth_headers, "Host": "admin.festas-builds.com"})
@@ -146,6 +160,13 @@ class TestMainDomainRoutes:
         response = client_no_redirect.get("/admin")
         assert response.status_code == 301
         assert "admin." in response.headers.get("location", "")
+
+    def test_main_domain_editor_unauthenticated_redirects(self, client: TestClient):
+        """Editor on main domain should redirect to login when not authenticated."""
+        client_no_redirect = TestClient(client.app, follow_redirects=False)
+        response = client_no_redirect.get("/editor")
+        assert response.status_code == 302
+        assert response.headers.get("location") == "/login"
 
     def test_main_domain_login(self, client: TestClient):
         """Login page should work on main domain."""

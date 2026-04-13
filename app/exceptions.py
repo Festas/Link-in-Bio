@@ -1,7 +1,6 @@
 import uuid
 import logging
 from datetime import datetime
-from urllib.parse import quote
 
 from fastapi import Request
 from fastapi.responses import JSONResponse, RedirectResponse

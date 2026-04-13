@@ -1,5 +1,7 @@
 import { getCsrfToken } from './utils.js';
 
+const LOGIN_ICON_SVG = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>';
+
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('login-form');
     if (form) {
@@ -81,6 +83,6 @@ async function handleLogin(e) {
         }
         
         button.disabled = false;
-        button.innerHTML = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Anmelden';
+        button.innerHTML = `${LOGIN_ICON_SVG} Anmelden`;
     }
 }

@@ -1,43 +1,3 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-*.egg-info/
-dist/
-build/
-*.egg
-
-# Database
-*.db
-*.db-journal
-*.db-wal
-*.db-shm
-data/*.db
-backups/
-
-# Environment
-.env
-.env.local
-.env.*.local
-.env.social
-venv/
-env/
-ENV/
-env.bak/
-venv.bak/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.project
-.pydevproject
-.settings/
-
 # OS
 .DS_Store
 .DS_Store?
@@ -47,86 +7,21 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# Test coverage
-.coverage
-.coverage.*
-htmlcov/
-.pytest_cache/
-.tox/
-.nox/
-coverage.xml
-*.cover
-.hypothesis/
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
 
 # Logs
 *.log
 logs/
-*.log.*
-
-# Static files (uploads should not be committed)
-static/uploads/*
-!static/uploads/.gitkeep
-
-# Vendor files (can be downloaded)
-static/vendor/*
-!static/vendor/.gitkeep
-
-# Data directory (databases)
-data/*
-!data/.gitkeep
 
 # Temporary files
 *.tmp
 *.temp
 tmp/
 temp/
-
-# Documentation builds
-docs/_build/
-site/
-
-# MyPy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# Celery
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# Pyre type checker
-.pyre/
-
-# profiling data
-.prof
-
-test_mediakit_feature.py
-
-# Keep documentation organized
-!docs/
-!docs/archive/
-
-# Media Kit generated files
-mediakit/generated/
-mediakit/Instagram/
-
-# Admin UI (React SPA) - node_modules should not be committed
-admin-ui/node_modules/
-
-# Built admin SPA assets (regenerated from admin-ui/ source)
-static/admin/

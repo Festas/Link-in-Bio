@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://festas-builds.com/sitemap.xml

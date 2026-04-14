@@ -20,6 +20,24 @@
 </head>
 <body>
 
+  <!-- ─── NAV ──────────────────────────────────────────────────────────── -->
+  <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a href="#home" class="nav-brand">festas</a>
+      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="#home" class="nav-link">Home</a></li>
+        <li><a href="#explore" class="nav-link">Explore</a></li>
+        <li><a href="#projects" class="nav-link">Projects</a></li>
+        <li><a href="#contact" class="nav-link">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
   <!-- ─── HERO ─────────────────────────────────────────────────────────── -->
   <section class="hero" id="home">
     <div class="hero-content">
@@ -102,6 +120,43 @@
     </div>
   </section>
 
+  <!-- ─── EXPLORE ────────────────────────────────────────────────────────── -->
+  <section class="explore" id="explore">
+    <div class="container">
+      <h2 class="section-title">Explore</h2>
+      <div class="explore-grid">
+
+        <a href="https://bio.festas-builds.com" class="explore-card" target="_blank" rel="noopener noreferrer">
+          <div class="explore-card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+          </div>
+          <h3 class="explore-card-title">Link in Bio</h3>
+          <p class="explore-card-desc">All my latest links, collabs, and content in one place. Quick access to everything I'm working on.</p>
+          <span class="explore-card-cta">bio.festas-builds.com →</span>
+        </a>
+
+        <a href="https://mediakit.festas-builds.com" class="explore-card" target="_blank" rel="noopener noreferrer">
+          <div class="explore-card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <h3 class="explore-card-title">Media Kit</h3>
+          <p class="explore-card-desc">For brand partnerships and collaboration opportunities. Stats, audience insights, and past work — all in one place.</p>
+          <span class="explore-card-cta">mediakit.festas-builds.com →</span>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
   <!-- ─── PROJECTS ─────────────────────────────────────────────────────── -->
   <section class="projects" id="projects">
     <div class="container">
@@ -150,11 +205,57 @@
     </div>
   </section>
 
+  <!-- ─── CONTACT ────────────────────────────────────────────────────────── -->
+  <section class="contact" id="contact">
+    <div class="container">
+      <h2 class="section-title">Get in Touch</h2>
+      <p class="contact-intro">Have a project in mind, want to collaborate, or just say hi? Fill out the form below and I'll get back to you.</p>
+      <form class="contact-form" id="contact-form" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contact-name" class="form-label">Name</label>
+            <input type="text" id="contact-name" class="form-input" placeholder="Your name" required autocomplete="name" />
+          </div>
+          <div class="form-group">
+            <label for="contact-email" class="form-label">Email</label>
+            <input type="email" id="contact-email" class="form-input" placeholder="you@example.com" required autocomplete="email" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="contact-type" class="form-label">Inquiry Type</label>
+          <select id="contact-type" class="form-input form-select" required>
+            <option value="" disabled selected>Select an option…</option>
+            <option value="Brand Collaboration / Sponsorship">🤝 Brand Collaboration / Sponsorship</option>
+            <option value="Creator Collaboration">🎬 Creator Collaboration</option>
+            <option value="Press Inquiry">📰 Press Inquiry</option>
+            <option value="Business / General Inquiry">💼 Business / General Inquiry</option>
+            <option value="Other">💬 Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="contact-message" class="form-label">Message</label>
+          <textarea id="contact-message" class="form-input form-textarea" placeholder="Tell me about your idea…" rows="5" required></textarea>
+        </div>
+        <button type="submit" class="form-submit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+          Send Message
+        </button>
+      </form>
+      <p class="contact-fallback">
+        Or email me directly at <a href="mailto:eric@festas-builds.com">eric@festas-builds.com</a>
+      </p>
+    </div>
+  </section>
+
   <!-- ─── FOOTER ────────────────────────────────────────────────────────── -->
   <footer class="footer">
     <div class="container">
       <p class="footer-copy">© 2026 festas_builds · Hamburg, Germany</p>
       <nav class="footer-links">
+        <a href="#contact">Contact</a>
         <a href="/impressum.html">Impressum</a>
         <a href="/datenschutz.html">Datenschutz</a>
       </nav>

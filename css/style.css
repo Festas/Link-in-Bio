@@ -115,6 +115,13 @@ img, svg { display: block; }
   margin-bottom: 1rem;
 }
 
+.hero-subtitle {
+  font-size: clamp(0.875rem, 2vw, 1rem);
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
 .hero-tagline {
   font-size: clamp(0.875rem, 2vw, 1rem);
   font-family: var(--font-mono);

@@ -42,7 +42,7 @@ jobs:
             fi
           done
           # Stamp the deploy hash into the service worker cache name
-          sed -i "s|__DEPLOY_HASH__|${HASH}|g" sw.js
+          sed -i "s|CACHE_NAME = 'festas-__DEPLOY_HASH__'|CACHE_NAME = 'festas-${HASH}'|g" sw.js
 
       - name: Copy static site files to server
         uses: appleboy/scp-action@v1.0.0

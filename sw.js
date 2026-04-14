@@ -50,7 +50,7 @@ self.addEventListener('fetch', function (event) {
       var clone = response.clone();
       caches.open(CACHE_NAME).then(function (cache) {
         cache.put(request, clone);
-      });
+      }).catch(function () {});
       return response;
     }).catch(function () {
       return caches.match(request);

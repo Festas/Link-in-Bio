@@ -32,13 +32,17 @@ jobs:
           # Create hashed copies of CSS and JS (originals stay untouched in repo)
           cp css/style.css "css/style.${HASH}.css"
           cp js/main.js "js/main.${HASH}.js"
+          cp js/i18n.js "js/i18n.${HASH}.js"
           # Replace asset references in all HTML pages
           for f in index.html impressum.html datenschutz.html; do
             if [[ -f "$f" ]]; then
               sed -i "s|/css/style\.css|/css/style.${HASH}.css|g" "$f"
               sed -i "s|/js/main\.js|/js/main.${HASH}.js|g" "$f"
+              sed -i "s|/js/i18n\.js|/js/i18n.${HASH}.js|g" "$f"
             fi
           done
+          # Stamp the deploy hash into the service worker cache name
+          sed -i "s|__DEPLOY_HASH__|${HASH}|g" sw.js
 
       - name: Copy static site files to server
         uses: appleboy/scp-action@v1.0.0
@@ -46,7 +50,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "index.html,datenschutz.html,impressum.html,css/,js/,assets/"
+          source: "index.html,datenschutz.html,impressum.html,css/,js/,assets/,sw.js,robots.txt,sitemap.xml"
           target: "/tmp/landing-page-deploy/site"
 
       - name: Deploy on server

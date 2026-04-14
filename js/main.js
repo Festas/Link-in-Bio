@@ -54,6 +54,32 @@
     });
   }
 
+  /* ─── Explore cards: staggered entrance animation ──────────────────── */
+  function initExploreCards() {
+    const cards = document.querySelectorAll('.explore-card');
+    if (!cards.length) return;
+
+    const observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    cards.forEach(function (card, i) {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(30px)';
+      card.style.transition = 'opacity 0.6s cubic-bezier(0.4,0,0.2,1) ' + (i * 0.15) + 's, transform 0.6s cubic-bezier(0.4,0,0.2,1) ' + (i * 0.15) + 's, border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease';
+      observer.observe(card);
+    });
+  }
+
   /* ─── Tech badges: staggered entrance animation ─────────────────────── */
   function initTechBadges() {
     const badges = document.querySelectorAll('.tech-badge');
@@ -211,14 +237,108 @@
     window.addEventListener('scroll', hide, { passive: true });
   }
 
+  /* ─── Sticky navigation ────────────────────────────────────────────── */
+  function initNav() {
+    const nav = document.getElementById('site-nav');
+    const hero = document.querySelector('.hero');
+    const toggle = document.querySelector('.nav-toggle');
+    const links = document.querySelector('.nav-links');
+    const navLinks = document.querySelectorAll('.nav-link');
+    if (!nav || !hero) return;
+
+    // Show/hide nav based on scroll past hero
+    const heroObserver = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            nav.classList.remove('visible');
+          } else {
+            nav.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0, rootMargin: '-56px 0px 0px 0px' }
+    );
+    heroObserver.observe(hero);
+
+    // Highlight active section
+    const sections = document.querySelectorAll('section[id]');
+    const scrollObserver = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            const id = entry.target.getAttribute('id');
+            navLinks.forEach(function (link) {
+              if (link.getAttribute('href') === '#' + id) {
+                link.classList.add('active');
+              } else {
+                link.classList.remove('active');
+              }
+            });
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+    sections.forEach(function (section) {
+      scrollObserver.observe(section);
+    });
+
+    // Mobile toggle
+    if (toggle && links) {
+      toggle.addEventListener('click', function () {
+        const expanded = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', String(!expanded));
+        links.classList.toggle('open');
+      });
+
+      // Close menu on link click
+      navLinks.forEach(function (link) {
+        link.addEventListener('click', function () {
+          toggle.setAttribute('aria-expanded', 'false');
+          links.classList.remove('open');
+        });
+      });
+    }
+  }
+
+  /* ─── Contact form (mailto) ────────────────────────────────────────── */
+  function initContactForm() {
+    const form = document.getElementById('contact-form');
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const name = (document.getElementById('contact-name').value || '').trim();
+      const email = (document.getElementById('contact-email').value || '').trim();
+      const type = (document.getElementById('contact-type').value || '').trim();
+      const message = (document.getElementById('contact-message').value || '').trim();
+
+      // Basic validation
+      if (!name || !email || !type || !message) return;
+
+      const subject = type + ' — ' + name;
+      const body = 'Hi Eric,\n\n' + message + '\n\n— ' + name + '\n' + email;
+      const mailto = 'mailto:eric@festas-builds.com'
+        + '?subject=' + encodeURIComponent(subject)
+        + '&body=' + encodeURIComponent(body);
+
+      window.location.href = mailto;
+    });
+  }
+
   /* ─── Init ──────────────────────────────────────────────────────────── */
   function init() {
     initFadeIn();
     initProjectCards();
+    initExploreCards();
     initTechBadges();
     initStatItems();
     initStatCounters();
     initScrollHint();
+    initNav();
+    initContactForm();
   }
 
   if (document.readyState === 'loading') {

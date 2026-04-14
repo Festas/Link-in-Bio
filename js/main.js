@@ -1,5 +1,6 @@
 /**
- * main.js — Smooth scroll animations and interactivity
+ * main.js — Smooth scroll animations, interactivity, theming,
+ * and i18n integration for festas-builds.com
  * No external dependencies required.
  */
 
@@ -8,10 +9,10 @@
 
   /* ─── Intersection Observer: fade-in on scroll ─────────────────────── */
   function initFadeIn() {
-    const elements = document.querySelectorAll('.fade-in');
+    var elements = document.querySelectorAll('.fade-in');
     if (!elements.length) return;
 
-    const observer = new IntersectionObserver(
+    var observer = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
@@ -30,10 +31,10 @@
 
   /* ─── Project cards: staggered entrance animation ──────────────────── */
   function initProjectCards() {
-    const cards = document.querySelectorAll('.project-card');
+    var cards = document.querySelectorAll('.project-card');
     if (!cards.length) return;
 
-    const observer = new IntersectionObserver(
+    var observer = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
@@ -56,10 +57,10 @@
 
   /* ─── Explore cards: staggered entrance animation ──────────────────── */
   function initExploreCards() {
-    const cards = document.querySelectorAll('.explore-card');
+    var cards = document.querySelectorAll('.explore-card');
     if (!cards.length) return;
 
-    const observer = new IntersectionObserver(
+    var observer = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
@@ -82,10 +83,10 @@
 
   /* ─── Tech badges: staggered entrance animation ─────────────────────── */
   function initTechBadges() {
-    const badges = document.querySelectorAll('.tech-badge');
+    var badges = document.querySelectorAll('.tech-badge');
     if (!badges.length) return;
 
-    const observer = new IntersectionObserver(
+    var observer = new IntersectionObserver(
       function (entries) {
         if (entries.some(function (e) { return e.isIntersecting; })) {
           badges.forEach(function (badge, i) {
@@ -106,22 +107,23 @@
       badge.style.transition = 'opacity 0.4s ease, transform 0.4s ease, color 0.25s ease, border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease';
     });
 
-    const section = document.querySelector('.tech');
-    if (section) observer.observe(section);
+    var sections = document.querySelectorAll('.tech, .about');
+    sections.forEach(function (section) {
+      observer.observe(section);
+    });
   }
 
   /* ─── Stat counters: animate numbers on scroll ──────────────────────── */
   function initStatCounters() {
-    const statNumbers = document.querySelectorAll('.stat-number');
+    var statNumbers = document.querySelectorAll('.stat-number');
     if (!statNumbers.length) return;
 
     function parseStatValue(text) {
       text = text.trim();
-      let suffix = '';
-      let num;
+      var suffix = '';
+      var num;
 
-      // Handle suffixes like K+, K, M+, M
-      const match = text.match(/^([\d]+\.?[\d]*)\s*([KkMm]?\+?)$/);
+      var match = text.match(/^([\d]+\.?[\d]*)\s*([KkMm]?\+?)$/);
       if (match) {
         num = parseFloat(match[1]);
         suffix = match[2];
@@ -134,16 +136,15 @@
     }
 
     function animateCounter(el, parsed) {
-      const duration = 1600;
-      const start = performance.now();
-      const hasDecimal = String(parsed.num).indexOf('.') !== -1;
+      var duration = 1600;
+      var start = performance.now();
+      var hasDecimal = String(parsed.num).indexOf('.') !== -1;
 
       function step(now) {
-        const elapsed = now - start;
-        const progress = Math.min(elapsed / duration, 1);
-        // Ease-out cubic
-        const eased = 1 - Math.pow(1 - progress, 3);
-        const current = parsed.num * eased;
+        var elapsed = now - start;
+        var progress = Math.min(elapsed / duration, 1);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        var current = parsed.num * eased;
 
         if (hasDecimal) {
           el.textContent = current.toFixed(1) + parsed.suffix;
@@ -154,7 +155,6 @@
         if (progress < 1) {
           requestAnimationFrame(step);
         } else {
-          // Ensure final value is exact
           if (hasDecimal) {
             el.textContent = parsed.num.toFixed(1) + parsed.suffix;
           } else {
@@ -166,12 +166,12 @@
       requestAnimationFrame(step);
     }
 
-    const observer = new IntersectionObserver(
+    var observer = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            const el = entry.target;
-            const parsed = parseStatValue(el.getAttribute('data-stat-value') || el.textContent);
+            var el = entry.target;
+            var parsed = parseStatValue(el.getAttribute('data-stat-value') || el.textContent);
             el.textContent = '0' + parsed.suffix;
             animateCounter(el, parsed);
             observer.unobserve(el);
@@ -182,7 +182,6 @@
     );
 
     statNumbers.forEach(function (el) {
-      // Store original value before any animation
       el.setAttribute('data-stat-value', el.textContent.trim());
       observer.observe(el);
     });
@@ -190,10 +189,10 @@
 
   /* ─── Stat items: staggered entrance ────────────────────────────────── */
   function initStatItems() {
-    const items = document.querySelectorAll('.stat-item');
+    var items = document.querySelectorAll('.stat-item');
     if (!items.length) return;
 
-    const observer = new IntersectionObserver(
+    var observer = new IntersectionObserver(
       function (entries) {
         if (entries.some(function (e) { return e.isIntersecting; })) {
           items.forEach(function (item, i) {
@@ -214,16 +213,38 @@
       item.style.transition = 'opacity 0.5s ease, transform 0.5s ease, box-shadow 0.25s ease, border-color 0.25s ease';
     });
 
-    const section = document.querySelector('.stats');
+    var section = document.querySelector('.stats');
     if (section) observer.observe(section);
+  }
+
+  /* ─── Timeline items: staggered entrance ────────────────────────────── */
+  function initTimeline() {
+    var items = document.querySelectorAll('.timeline-item');
+    if (!items.length) return;
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.2, rootMargin: '0px 0px -40px 0px' }
+    );
+
+    items.forEach(function (item) {
+      observer.observe(item);
+    });
   }
 
   /* ─── Scroll hint: hide after first scroll ──────────────────────────── */
   function initScrollHint() {
-    const hint = document.querySelector('.hero-scroll-hint');
+    var hint = document.querySelector('.hero-scroll-hint');
     if (!hint) return;
 
-    let hidden = false;
+    var hidden = false;
     function hide() {
       if (!hidden && window.scrollY > 60) {
         hidden = true;
@@ -239,15 +260,14 @@
 
   /* ─── Sticky navigation ────────────────────────────────────────────── */
   function initNav() {
-    const nav = document.getElementById('site-nav');
-    const hero = document.querySelector('.hero');
-    const toggle = document.querySelector('.nav-toggle');
-    const links = document.querySelector('.nav-links');
-    const navLinks = document.querySelectorAll('.nav-link');
+    var nav = document.getElementById('site-nav');
+    var hero = document.querySelector('.hero');
+    var toggle = document.querySelector('.nav-toggle');
+    var links = document.querySelector('.nav-links');
+    var navLinks = document.querySelectorAll('.nav-link');
     if (!nav || !hero) return;
 
-    // Show/hide nav based on scroll past hero
-    const heroObserver = new IntersectionObserver(
+    var heroObserver = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
@@ -261,13 +281,12 @@
     );
     heroObserver.observe(hero);
 
-    // Highlight active section
-    const sections = document.querySelectorAll('section[id]');
-    const scrollObserver = new IntersectionObserver(
+    var sections = document.querySelectorAll('section[id]');
+    var scrollObserver = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            const id = entry.target.getAttribute('id');
+            var id = entry.target.getAttribute('id');
             navLinks.forEach(function (link) {
               if (link.getAttribute('href') === '#' + id) {
                 link.classList.add('active');
@@ -284,15 +303,13 @@
       scrollObserver.observe(section);
     });
 
-    // Mobile toggle
     if (toggle && links) {
       toggle.addEventListener('click', function () {
-        const expanded = toggle.getAttribute('aria-expanded') === 'true';
+        var expanded = toggle.getAttribute('aria-expanded') === 'true';
         toggle.setAttribute('aria-expanded', String(!expanded));
         links.classList.toggle('open');
       });
 
-      // Close menu on link click
       navLinks.forEach(function (link) {
         link.addEventListener('click', function () {
           toggle.setAttribute('aria-expanded', 'false');
@@ -302,43 +319,126 @@
     }
   }
 
-  /* ─── Contact form (mailto) ────────────────────────────────────────── */
+  /* ─── Contact form (Web3Forms) ─────────────────────────────────────── */
   function initContactForm() {
-    const form = document.getElementById('contact-form');
+    var form = document.getElementById('contact-form');
     if (!form) return;
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
 
-      const name = (document.getElementById('contact-name').value || '').trim();
-      const email = (document.getElementById('contact-email').value || '').trim();
-      const type = (document.getElementById('contact-type').value || '').trim();
-      const message = (document.getElementById('contact-message').value || '').trim();
+      var name = (document.getElementById('contact-name').value || '').trim();
+      var email = (document.getElementById('contact-email').value || '').trim();
+      var type = (document.getElementById('contact-type').value || '').trim();
+      var message = (document.getElementById('contact-message').value || '').trim();
+      var statusEl = document.getElementById('form-status');
+      var submitBtn = document.getElementById('form-submit-btn');
 
-      // Basic validation
       if (!name || !email || !type || !message) return;
 
-      const subject = type + ' — ' + name;
-      const body = 'Hi Eric,\n\n' + message + '\n\n— ' + name + '\n' + email;
-      const mailto = 'mailto:eric@festas-builds.com'
+      // Fallback to mailto since Web3Forms requires an access key
+      // The owner can replace this with a Web3Forms integration by adding their key
+      var subject = type + ' — ' + name;
+      var body = 'Hi Eric,\n\n' + message + '\n\n— ' + name + '\n' + email;
+      var mailto = 'mailto:eric@festas-builds.com'
         + '?subject=' + encodeURIComponent(subject)
         + '&body=' + encodeURIComponent(body);
 
       window.location.href = mailto;
+
+      // Show success state
+      if (statusEl) {
+        var successText = (window.i18n && window.i18n.t) ? window.i18n.t('contact.success') : 'Opening your email client…';
+        statusEl.textContent = successText;
+        statusEl.className = 'form-status form-status-success';
+        setTimeout(function () {
+          statusEl.textContent = '';
+          statusEl.className = 'form-status';
+        }, 5000);
+      }
+    });
+  }
+
+  /* ─── Theme toggle (dark/light) ────────────────────────────────────── */
+  function initThemeToggle() {
+    var toggle = document.getElementById('theme-toggle');
+    if (!toggle) return;
+
+    var stored = localStorage.getItem('festas-theme');
+    if (stored === 'light') {
+      document.body.classList.add('theme-light');
+    }
+
+    toggle.addEventListener('click', function () {
+      document.body.classList.toggle('theme-light');
+      var isLight = document.body.classList.contains('theme-light');
+      localStorage.setItem('festas-theme', isLight ? 'light' : 'dark');
+    });
+  }
+
+  /* ─── Language toggle ──────────────────────────────────────────────── */
+  function initLangToggle() {
+    var toggle = document.getElementById('lang-toggle');
+    if (!toggle || !window.i18n) return;
+
+    toggle.addEventListener('click', function () {
+      window.i18n.toggleLanguage();
+    });
+  }
+
+  /* ─── Keyboard shortcuts ───────────────────────────────────────────── */
+  function initKeyboardShortcuts() {
+    var sectionMap = {
+      '1': '#home',
+      '2': '#about',
+      '3': '#explore',
+      '4': '#projects',
+      '5': '#content',
+      '6': '#contact'
+    };
+
+    document.addEventListener('keydown', function (e) {
+      // Don't trigger when typing in form fields
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      var href = sectionMap[e.key];
+      if (href) {
+        var el = document.querySelector(href);
+        if (el) {
+          e.preventDefault();
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
     });
   }
 
   /* ─── Init ──────────────────────────────────────────────────────────── */
   function init() {
+    // Apply saved theme immediately
+    var stored = localStorage.getItem('festas-theme');
+    if (stored === 'light') {
+      document.body.classList.add('theme-light');
+    }
+
+    // Initialize i18n
+    if (window.i18n) {
+      window.i18n.init();
+    }
+
     initFadeIn();
     initProjectCards();
     initExploreCards();
     initTechBadges();
     initStatItems();
     initStatCounters();
+    initTimeline();
     initScrollHint();
     initNav();
     initContactForm();
+    initThemeToggle();
+    initLangToggle();
+    initKeyboardShortcuts();
   }
 
   if (document.readyState === 'loading') {

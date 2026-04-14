@@ -8,10 +8,10 @@
   --border-hover: rgba(255,255,255,0.15);
   --text-primary: #e8eaf0;
   --text-muted:   #7e8494;
-  --accent:       #6c63ff;
-  --accent-glow:  rgba(108,99,255,0.25);
-  --tag-bg:       rgba(108,99,255,0.12);
-  --tag-color:    #a09eff;
+  --accent:       #d4a030;
+  --accent-glow:  rgba(212,160,48,0.25);
+  --tag-bg:       rgba(212,160,48,0.12);
+  --tag-color:    #e8c060;
   --radius:       12px;
   --radius-sm:    8px;
   --transition:   0.2s ease;
@@ -96,7 +96,7 @@ img, svg { display: block; }
   text-align: center;
   padding: 4rem 1.5rem 6rem;
   position: relative;
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(108,99,255,0.12) 0%, transparent 70%);
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212,160,48,0.12) 0%, transparent 70%);
 }
 
 .hero-content {
@@ -258,7 +258,7 @@ img, svg { display: block; }
   color: var(--tag-color);
   padding: 0.2rem 0.6rem;
   border-radius: 4px;
-  border: 1px solid rgba(108,99,255,0.2);
+  border: 1px solid rgba(212,160,48,0.2);
 }
 
 .project-link-label {
@@ -325,11 +325,119 @@ img, svg { display: block; }
   color: var(--text-muted);
 }
 
-.footer-hetzner {
-  font-size: 0.75rem;
+.footer-links {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.footer-links a {
+  font-size: 0.8rem;
   font-family: var(--font-mono);
   color: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.6;
+  transition: opacity var(--transition), color var(--transition);
+}
+
+.footer-links a:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+/* ─── Hero Profile Photo ──────────────────────────────────────────────── */
+.hero-photo {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--accent);
+  box-shadow: 0 0 30px var(--accent-glow);
+  margin-bottom: 1.5rem;
+}
+
+/* ─── Stats Section ───────────────────────────────────────────────────── */
+.stats {
+  padding: 4rem 0;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  text-align: center;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.stat-number {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ─── Legal Pages (Impressum, etc.) ─────────────────────────────────── */
+.legal-page {
+  padding: 4rem 0;
+  min-height: 100vh;
+}
+
+.legal-page h1 {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 800;
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+}
+
+.legal-page h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  color: var(--accent);
+}
+
+.legal-page h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.legal-page p {
+  color: var(--text-muted);
+  line-height: 1.8;
+  margin-bottom: 1rem;
+}
+
+.back-link {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--accent);
+  margin-bottom: 2rem;
+  transition: opacity var(--transition);
+}
+
+.back-link:hover {
+  opacity: 0.7;
 }
 
 /* ─── Responsive ──────────────────────────────────────────────────────── */
@@ -349,6 +457,16 @@ img, svg { display: block; }
   .projects,
   .tech {
     padding: 4rem 0;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  .hero-photo {
+    width: 110px;
+    height: 110px;
   }
 }
 

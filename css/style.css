@@ -118,6 +118,7 @@ img, svg { display: block; }
               radial-gradient(circle at 70% 60%, rgba(212,160,48,0.04) 0%, transparent 30%);
   animation: heroShimmer 20s ease-in-out infinite alternate;
   pointer-events: none;
+  will-change: transform;
 }
 
 @keyframes heroShimmer {

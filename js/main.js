@@ -8,10 +8,10 @@
 
   /* ─── Intersection Observer: fade-in on scroll ─────────────────────── */
   function initFadeIn() {
-    var elements = document.querySelectorAll('.fade-in');
+    const elements = document.querySelectorAll('.fade-in');
     if (!elements.length) return;
 
-    var observer = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
@@ -30,10 +30,10 @@
 
   /* ─── Project cards: staggered entrance animation ──────────────────── */
   function initProjectCards() {
-    var cards = document.querySelectorAll('.project-card');
+    const cards = document.querySelectorAll('.project-card');
     if (!cards.length) return;
 
-    var observer = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
@@ -56,10 +56,10 @@
 
   /* ─── Tech badges: staggered entrance animation ─────────────────────── */
   function initTechBadges() {
-    var badges = document.querySelectorAll('.tech-badge');
+    const badges = document.querySelectorAll('.tech-badge');
     if (!badges.length) return;
 
-    var observer = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       function (entries) {
         if (entries.some(function (e) { return e.isIntersecting; })) {
           badges.forEach(function (badge, i) {
@@ -80,22 +80,22 @@
       badge.style.transition = 'opacity 0.4s ease, transform 0.4s ease, color 0.25s ease, border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease';
     });
 
-    var section = document.querySelector('.tech');
+    const section = document.querySelector('.tech');
     if (section) observer.observe(section);
   }
 
   /* ─── Stat counters: animate numbers on scroll ──────────────────────── */
   function initStatCounters() {
-    var statNumbers = document.querySelectorAll('.stat-number');
+    const statNumbers = document.querySelectorAll('.stat-number');
     if (!statNumbers.length) return;
 
     function parseStatValue(text) {
       text = text.trim();
-      var suffix = '';
-      var num;
+      let suffix = '';
+      let num;
 
       // Handle suffixes like K+, K, M+, M
-      var match = text.match(/^([\d.]+)\s*([KkMm]?\+?)$/);
+      const match = text.match(/^([\d]+\.?[\d]*)\s*([KkMm]?\+?)$/);
       if (match) {
         num = parseFloat(match[1]);
         suffix = match[2];
@@ -108,16 +108,16 @@
     }
 
     function animateCounter(el, parsed) {
-      var duration = 1600;
-      var start = performance.now();
-      var hasDecimal = String(parsed.num).indexOf('.') !== -1;
+      const duration = 1600;
+      const start = performance.now();
+      const hasDecimal = String(parsed.num).indexOf('.') !== -1;
 
       function step(now) {
-        var elapsed = now - start;
-        var progress = Math.min(elapsed / duration, 1);
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
         // Ease-out cubic
-        var eased = 1 - Math.pow(1 - progress, 3);
-        var current = parsed.num * eased;
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = parsed.num * eased;
 
         if (hasDecimal) {
           el.textContent = current.toFixed(1) + parsed.suffix;
@@ -140,12 +140,12 @@
       requestAnimationFrame(step);
     }
 
-    var observer = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            var el = entry.target;
-            var parsed = parseStatValue(el.getAttribute('data-stat-value') || el.textContent);
+            const el = entry.target;
+            const parsed = parseStatValue(el.getAttribute('data-stat-value') || el.textContent);
             el.textContent = '0' + parsed.suffix;
             animateCounter(el, parsed);
             observer.unobserve(el);
@@ -164,10 +164,10 @@
 
   /* ─── Stat items: staggered entrance ────────────────────────────────── */
   function initStatItems() {
-    var items = document.querySelectorAll('.stat-item');
+    const items = document.querySelectorAll('.stat-item');
     if (!items.length) return;
 
-    var observer = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       function (entries) {
         if (entries.some(function (e) { return e.isIntersecting; })) {
           items.forEach(function (item, i) {
@@ -188,16 +188,16 @@
       item.style.transition = 'opacity 0.5s ease, transform 0.5s ease, box-shadow 0.25s ease, border-color 0.25s ease';
     });
 
-    var section = document.querySelector('.stats');
+    const section = document.querySelector('.stats');
     if (section) observer.observe(section);
   }
 
   /* ─── Scroll hint: hide after first scroll ──────────────────────────── */
   function initScrollHint() {
-    var hint = document.querySelector('.hero-scroll-hint');
+    const hint = document.querySelector('.hero-scroll-hint');
     if (!hint) return;
 
-    var hidden = false;
+    let hidden = false;
     function hide() {
       if (!hidden && window.scrollY > 60) {
         hidden = true;

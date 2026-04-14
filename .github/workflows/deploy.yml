@@ -26,6 +26,20 @@ jobs:
           target: "/tmp/landing-page-deploy"
           strip_components: 0
 
+      - name: Generate cache-busted assets
+        run: |
+          HASH=$(echo "${{ github.sha }}" | cut -c1-8)
+          # Create hashed copies of CSS and JS (originals stay untouched in repo)
+          cp css/style.css "css/style.${HASH}.css"
+          cp js/main.js "js/main.${HASH}.js"
+          # Replace asset references in all HTML pages
+          for f in index.html impressum.html datenschutz.html; do
+            if [[ -f "$f" ]]; then
+              sed -i "s|/css/style\.css|/css/style.${HASH}.css|g" "$f"
+              sed -i "s|/js/main\.js|/js/main.${HASH}.js|g" "$f"
+            fi
+          done
+
       - name: Copy static site files to server
         uses: appleboy/scp-action@v1.0.0
         with:

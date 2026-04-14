@@ -187,11 +187,26 @@ Pterodactyl panel has stricter headers with `X-Frame-Options: DENY` and `Referre
 
 ## Caching Strategy
 
-- **Static assets** (images, fonts, etc.): `max-age=31536000, immutable` (1 year)
-- **Next.js static builds** (`/_next/static/`): `max-age=31536000, immutable`
-- **Console assets** (CSS/JS): `max-age=0, must-revalidate` (revalidation-based)
-- **Console HTML**: `no-cache, no-store, must-revalidate` (never cached)
-- **BlueMap tiles**: `max-age=3600` (1 hour)
+All sites use a tiered caching approach to ensure users always see the latest content after deployments:
+
+### HTML Pages — Always Revalidate
+All HTML responses use `no-cache, must-revalidate` so browsers always check for updates. This ensures new CSS/JS references are picked up immediately after a deploy.
+
+### CSS/JS with Content Hash — Immutable (1 year)
+- **Landing page**: Deploy pipeline renames `style.css` → `style.<git-hash>.css` (and same for JS). These are cached with `max-age=31536000, immutable`.
+- **Next.js apps** (`/_next/static/`): Next.js generates hashed filenames automatically. Cached with `immutable`.
+- **Cosmic Survivor** (`/assets/`): Vite generates hashed filenames. Cached with `immutable`.
+
+### CSS/JS without Hash — Revalidation-based
+Unhashed CSS/JS files use `max-age=0, must-revalidate` with ETag validation. The browser checks on every request but uses a 304 Not Modified response if unchanged (no re-download needed).
+
+### Static Media (images, fonts, audio) — Long Cache (1 year)
+Binary assets like images, fonts, and audio use `max-age=31536000, immutable`. These rarely change and benefit from aggressive caching.
+
+### Special Cases
+- **Service Worker** (`sw.js`): `no-cache, no-store, must-revalidate` — critical for PWA update propagation
+- **Console HTML/assets**: Revalidation-based caching for the Minecraft console
+- **BlueMap tiles**: `max-age=3600` (1 hour) — map data updates periodically
 
 ## Migration Notes
 

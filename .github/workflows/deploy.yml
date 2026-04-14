@@ -32,7 +32,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "index.html,css/,js/,assets/"
+          source: "index.html,datenschutz.html,impressum.html,css/,js/,assets/"
           target: "/tmp/landing-page-deploy/site"
 
       - name: Deploy on server

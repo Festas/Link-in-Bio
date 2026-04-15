@@ -113,7 +113,86 @@
     });
   }
 
-  /* ─── Stat counters: animate numbers on scroll ──────────────────────── */
+  /* ─── Auto-updating age calculator ───────────────────────────────────── */
+  function calcAge(birthYear, birthMonth, birthDay) {
+    var today = new Date();
+    var age = today.getFullYear() - birthYear;
+    var m = today.getMonth() + 1 - birthMonth;
+    if (m < 0 || (m === 0 && today.getDate() < birthDay)) {
+      age--;
+    }
+    return Math.max(0, age);
+  }
+
+  function initAges() {
+    // Eric: June 5, 1997
+    var ageEl = document.getElementById('age-display');
+    if (ageEl) ageEl.textContent = calcAge(1997, 6, 5);
+
+    // Daughter: October 19, 2023
+    var daughterEl = document.getElementById('daughter-age');
+    if (daughterEl) daughterEl.textContent = calcAge(2023, 10, 19);
+
+    // Baby: June 13, 2025
+    var babyEl = document.getElementById('baby-age');
+    if (babyEl) babyEl.textContent = calcAge(2025, 6, 13);
+  }
+
+  /* ─── Gallery items: staggered entrance animation ─────────────────── */
+  function initGalleryItems() {
+    var items = document.querySelectorAll('.gallery-item');
+    if (!items.length) return;
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    items.forEach(function (item, i) {
+      item.style.opacity = '0';
+      item.style.transform = 'translateY(30px)';
+      item.style.transition = 'opacity 0.6s cubic-bezier(0.4,0,0.2,1) ' + (i * 0.1) + 's, transform 0.6s cubic-bezier(0.4,0,0.2,1) ' + (i * 0.1) + 's, border-color 0.25s ease, box-shadow 0.25s ease';
+      observer.observe(item);
+    });
+  }
+
+  /* ─── Fact cards: staggered entrance animation ────────────────────── */
+  function initFactCards() {
+    var cards = document.querySelectorAll('.fact-card');
+    if (!cards.length) return;
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        if (entries.some(function (e) { return e.isIntersecting; })) {
+          cards.forEach(function (card, i) {
+            setTimeout(function () {
+              card.style.opacity = '1';
+              card.style.transform = 'translateY(0)';
+            }, i * 80);
+          });
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    cards.forEach(function (card) {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(15px)';
+      card.style.transition = 'opacity 0.4s ease, transform 0.4s ease, border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease';
+    });
+
+    var section = document.querySelector('.quick-facts');
+    if (section) observer.observe(section);
+  }
   function initStatCounters() {
     var statNumbers = document.querySelectorAll('.stat-number');
     if (!statNumbers.length) return;
@@ -391,9 +470,9 @@
     var sectionMap = {
       '1': '#home',
       '2': '#about',
-      '3': '#explore',
-      '4': '#projects',
-      '5': '#content',
+      '3': '#gallery',
+      '4': '#explore',
+      '5': '#projects',
       '6': '#contact'
     };
 
@@ -439,6 +518,9 @@
     initThemeToggle();
     initLangToggle();
     initKeyboardShortcuts();
+    initAges();
+    initGalleryItems();
+    initFactCards();
   }
 
   if (document.readyState === 'loading') {

@@ -12,29 +12,45 @@
       // Nav
       'nav.home': 'Home',
       'nav.about': 'Über mich',
+      'nav.gallery': 'Einblicke',
       'nav.explore': 'Entdecken',
       'nav.projects': 'Projekte',
-      'nav.content': 'Content',
       'nav.contact': 'Kontakt',
 
       // Hero
-      'hero.tagline': 'Software Engineer · Tech Creator · Builder',
-      'hero.bio': 'Hey, ich bin Eric — Software Engineer und Tech Content Creator aus Hamburg. Ich entwickle Webanwendungen, Self-Hosted-Infrastruktur und Games — und teile meine Leidenschaft für Tech, PC-Builds und Gaming-Setups auf Instagram und TikTok.',
+      'hero.tagline': 'Tech & Gaming Creator · Nuclear Engineer',
+      'hero.bio': 'Hey, ich bin Eric — Tech & Gaming Content Creator und Ingenieur in einem Kernkraftwerk aus Hamburg. Ich teile meine Leidenschaft für Tech, PC-Builds und Gaming-Setups auf Instagram und TikTok — und arbeite nebenbei mit radioaktiven Abfällen. Ja, wirklich.',
 
       // Stats
       'stats.total': 'Gesamt-Follower',
       'stats.instagram': 'Instagram',
       'stats.tiktok': 'TikTok',
       'stats.threads': 'Threads',
-      'stats.youtube': 'YouTube',
       'stats.updated': 'Stand: April 2026',
 
       // About
       'about.title': 'Über mich',
-      'about.text': 'Ich bin Eric Schönke — Software Engineer und Content Creator aus Hamburg. Tagsüber entwickle ich Webanwendungen und manage Self-Hosted-Infrastruktur. In meiner Freizeit teile ich meine Leidenschaft für Tech, Custom PC Builds und RGB-Setups mit über 185K Followern auf Social Media.',
-      'about.text2': 'Ich liebe es, an der Schnittstelle von Engineering und Kreativität zu arbeiten — ob es darum geht, einen Minecraft MMO-Server zu bauen, ein Browser-Game zu entwickeln oder das perfekte Setup zu gestalten.',
+      'about.text': 'Ich bin Eric — tagsüber sorge ich dafür, dass radioaktive Abfälle in einem Kernkraftwerk sicher verarbeitet werden. Abends tauche ich in die Welt von Tech und Gaming ein und teile meine Leidenschaft mit über 185K Followern.',
+      'about.text2': 'Ja, ich arbeite buchstäblich mit radioaktivem Material — und dann gehe ich nach Hause und baue Custom PCs mit RGB-Beleuchtung. Das ist so ziemlich der krasseste Kontrast, den man sich vorstellen kann.',
       'about.engineering': 'Engineering',
       'about.creative': 'Kreativ',
+      'about.fact.job': 'Kernkraftwerk-Ingenieur',
+      'about.fact.creator': 'Tech & Gaming Creator',
+      'about.fact.age': 'Jahre alt',
+      'about.fact.married': 'Verheiratet',
+      'about.fact.kids': 'Stolzer Vater von zwei Kindern',
+      'about.fact.location': 'Hamburg, Deutschland',
+      'about.family.title': 'Familie',
+      'about.family.daughter': 'Tochter',
+      'about.family.baby': 'Baby',
+      'about.family.years': 'Jahre',
+
+      // Gallery
+      'gallery.title': 'Einblicke',
+      'gallery.pc': 'Custom PC Build',
+      'gallery.setup': 'Gaming Setup',
+      'gallery.gaming': 'Gaming',
+      'gallery.work': 'Day Job ☢️',
 
       // Explore
       'explore.title': 'Entdecken',
@@ -50,17 +66,13 @@
       'projects.cosmic.name': 'Cosmic Survivor',
       'projects.cosmic.desc': 'Browserbasiertes Weltraum-Survivalspiel. Sofort spielbar, kein Download nötig.',
 
-      // Content
-      'content.title': 'Neuester Content',
-      'content.latest': 'Neuestes Video',
-      'content.more': 'Mehr auf YouTube →',
-
       // Milestones
       'milestones.title': 'Meilensteine',
       'milestone.1': '100K Follower auf Instagram erreicht',
-      'milestone.2': 'YouTube-Kanal gestartet',
+      'milestone.baby': 'Zweites Kind geboren 👶',
       'milestone.3': 'Minecraft RPG Server gelauncht',
       'milestone.4': 'Cosmic Survivor veröffentlicht',
+      'milestone.daughter': 'Erste Tochter geboren 👧',
       'milestone.5': 'Erste Markenkooperation',
       'milestone.6': 'Content-Reise gestartet',
 
@@ -94,29 +106,45 @@
       // Nav
       'nav.home': 'Home',
       'nav.about': 'About',
+      'nav.gallery': 'Gallery',
       'nav.explore': 'Explore',
       'nav.projects': 'Projects',
-      'nav.content': 'Content',
       'nav.contact': 'Contact',
 
       // Hero
-      'hero.tagline': 'Software Engineer · Tech Creator · Builder',
-      'hero.bio': "Hey, I'm Eric — a software engineer and tech content creator from Hamburg, Germany. I build web applications, self-hosted infrastructure, and games — and share my passion for tech, PC builds, and gaming setups on Instagram and TikTok.",
+      'hero.tagline': 'Tech & Gaming Creator · Nuclear Engineer',
+      'hero.bio': "Hey, I'm Eric — a tech & gaming content creator and nuclear power plant engineer from Hamburg, Germany. I share my passion for tech, PC builds, and gaming setups on Instagram and TikTok — and I work with radioactive waste on the side. Yes, really.",
 
       // Stats
       'stats.total': 'Total Followers',
       'stats.instagram': 'Instagram',
       'stats.tiktok': 'TikTok',
       'stats.threads': 'Threads',
-      'stats.youtube': 'YouTube',
       'stats.updated': 'Last updated: April 2026',
 
       // About
       'about.title': 'About Me',
-      'about.text': "I'm Eric Schönke — a software engineer and content creator based in Hamburg, Germany. By day, I build web applications and manage self-hosted infrastructure. By night, I share my passion for tech, custom PC builds, and RGB setups with 185K+ followers across social media.",
-      'about.text2': "I love working at the intersection of engineering and creativity — whether that's building a Minecraft MMO server, developing a browser game, or crafting the perfect setup.",
+      'about.text': "I'm Eric — by day, I make sure radioactive waste at a nuclear power plant is safely processed. By night, I dive into the world of tech and gaming, sharing my passion with 185K+ followers.",
+      'about.text2': "Yes, I literally work with radioactive material — and then I go home and build custom PCs with RGB lighting. It's probably the wildest contrast you can imagine.",
       'about.engineering': 'Engineering',
       'about.creative': 'Creative',
+      'about.fact.job': 'Nuclear Power Plant Engineer',
+      'about.fact.creator': 'Tech & Gaming Creator',
+      'about.fact.age': 'years old',
+      'about.fact.married': 'Married',
+      'about.fact.kids': 'Proud father of two',
+      'about.fact.location': 'Hamburg, Germany',
+      'about.family.title': 'Family',
+      'about.family.daughter': 'Daughter',
+      'about.family.baby': 'Baby',
+      'about.family.years': 'years',
+
+      // Gallery
+      'gallery.title': 'Gallery',
+      'gallery.pc': 'Custom PC Build',
+      'gallery.setup': 'Gaming Setup',
+      'gallery.gaming': 'Gaming',
+      'gallery.work': 'Day Job ☢️',
 
       // Explore
       'explore.title': 'Explore',
@@ -132,17 +160,13 @@
       'projects.cosmic.name': 'Cosmic Survivor',
       'projects.cosmic.desc': 'Browser-based space survival game. Play instantly, no download.',
 
-      // Content
-      'content.title': 'Latest Content',
-      'content.latest': 'Latest Video',
-      'content.more': 'More on YouTube →',
-
       // Milestones
       'milestones.title': 'Milestones',
       'milestone.1': 'Reached 100K followers on Instagram',
-      'milestone.2': 'Launched YouTube channel',
+      'milestone.baby': 'Second child born 👶',
       'milestone.3': 'Launched Minecraft RPG server',
       'milestone.4': 'Released Cosmic Survivor',
+      'milestone.daughter': 'First daughter born 👧',
       'milestone.5': 'First brand collaboration',
       'milestone.6': 'Started content creation journey',
 

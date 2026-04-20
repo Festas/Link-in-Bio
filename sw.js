@@ -8,7 +8,12 @@ var CACHE_NAME = 'festas-__DEPLOY_HASH__';
 var ASSETS = [
   '/',
   '/index.html',
-  '/assets/favicon.svg'
+  '/assets/favicon.svg',
+  '/assets/profile-placeholder.svg',
+  '/css/style.css',
+  '/js/main.js',
+  '/js/i18n.js',
+  '/manifest.json'
 ];
 
 self.addEventListener('install', function (event) {

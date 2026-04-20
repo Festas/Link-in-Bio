@@ -3,22 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Eric Schönke — Tech & Gaming Creator und Ingenieur aus Hamburg. 185K+ Follower. PC Builds, Gaming Setups, Nuclear Engineering." />
+  <meta name="description" id="meta-description" content="Eric Schönke — Tech & Gaming Creator und Ingenieur aus Hamburg. 185K+ Follower. PC Builds, Gaming Setups, Nuclear Engineering." />
+  <meta name="keywords" content="festas_builds, Tech Creator, Gaming Creator, PC Builds, Nuclear Engineer, Hamburg, Instagram Creator, TikTok Creator, Gaming Setup, Content Creator, Eric Schönke" />
+  <meta name="robots" content="index, follow" />
   <meta name="author" content="Eric Schönke" />
+
+  <!-- Open Graph -->
   <meta property="og:title" content="festas_builds — Tech & Gaming Creator · Engineer" />
   <meta property="og:description" content="Tech & Gaming Creator und Ingenieur aus Hamburg. 185K+ Follower." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://festas-builds.com" />
   <meta property="og:image" content="https://festas-builds.com/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="de_DE" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta property="og:site_name" content="festas_builds" />
+
+  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="festas_builds — Tech & Gaming Creator · Engineer" />
   <meta name="twitter:description" content="Tech & Gaming Creator und Ingenieur aus Hamburg. 185K+ Follower." />
   <meta name="twitter:image" content="https://festas-builds.com/assets/og-image.png" />
+
+  <!-- Canonical & hreflang -->
   <link rel="canonical" href="https://festas-builds.com/" />
+  <link rel="alternate" hreflang="de" href="https://festas-builds.com/" />
+  <link rel="alternate" hreflang="en" href="https://festas-builds.com/" />
+  <link rel="alternate" hreflang="x-default" href="https://festas-builds.com/" />
+
   <title>festas_builds — Tech & Gaming Creator · Engineer</title>
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0a0c10" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" href="/assets/profile.jpg" as="image" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" />
   <link rel="stylesheet" href="/css/style.css" />
 
@@ -26,23 +46,41 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "Person",
-    "name": "Eric Schönke",
-    "alternateName": "festas_builds",
-    "url": "https://festas-builds.com",
-    "image": "https://festas-builds.com/assets/profile.jpg",
-    "jobTitle": "Tech & Gaming Creator · Nuclear Engineer",
-    "description": "Tech and Gaming Content Creator and Nuclear Power Plant Engineer from Hamburg, Germany. 185K+ followers.",
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "Hamburg",
-      "addressCountry": "DE"
+    "@type": "ProfilePage",
+    "mainEntity": {
+      "@type": "Person",
+      "name": "Eric Schönke",
+      "alternateName": "festas_builds",
+      "url": "https://festas-builds.com",
+      "image": "https://festas-builds.com/assets/profile.jpg",
+      "jobTitle": "Tech & Gaming Creator · Nuclear Engineer",
+      "description": "Tech and Gaming Content Creator and Nuclear Power Plant Engineer from Hamburg, Germany. 185K+ followers.",
+      "knowsAbout": ["PC Building", "Gaming Setups", "Nuclear Engineering", "Content Creation", "Video Editing", "RGB Lighting"],
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Hamburg",
+        "addressCountry": "DE"
+      },
+      "sameAs": [
+        "https://www.instagram.com/festas_builds/",
+        "https://www.tiktok.com/@festas_builds",
+        "https://www.threads.net/@festas_builds"
+      ]
     },
-    "sameAs": [
-      "https://www.instagram.com/festas_builds/",
-      "https://www.tiktok.com/@festas_builds",
-      "https://www.threads.net/@festas_builds"
-    ]
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://festas-builds.com/"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "festas_builds",
+    "url": "https://festas-builds.com",
+    "description": "Personal website of Eric Schönke — Tech & Gaming Creator and Nuclear Engineer from Hamburg, Germany.",
+    "inLanguage": ["de", "en"]
   }
   </script>
 </head>
@@ -87,7 +125,7 @@
   <!-- ─── HERO ─────────────────────────────────────────────────────────── -->
   <section class="hero" id="home">
     <div class="hero-content">
-      <img src="/assets/profile.jpg" alt="Eric — festas_builds" class="hero-photo fade-in" onerror="this.style.display='none'" />
+      <img src="/assets/profile.jpg" alt="Eric Schönke — festas_builds, Tech & Gaming Creator" class="hero-photo fade-in" width="150" height="150" onerror="this.src='/assets/profile-placeholder.svg';this.onerror=null;" />
       <h1 class="hero-name fade-in">Festas</h1>
       <p class="hero-subtitle fade-in">Eric Schönke</p>
       <p class="hero-tagline fade-in delay-1" data-i18n="hero.tagline">Tech & Gaming Creator · Nuclear Engineer</p>
@@ -153,6 +191,30 @@
     </div>
   </section>
 
+  <!-- ─── SOCIAL PROOF ──────────────────────────────────────────────────── -->
+  <section class="social-proof" id="social-proof">
+    <div class="container">
+      <p class="social-proof-label" data-i18n="socialproof.label">Bekannt aus Kooperationen mit</p>
+      <div class="social-proof-grid">
+        <div class="social-proof-item" aria-label="Brand Partner">
+          <span class="social-proof-name">NZXT</span>
+        </div>
+        <div class="social-proof-item" aria-label="Brand Partner">
+          <span class="social-proof-name">Corsair</span>
+        </div>
+        <div class="social-proof-item" aria-label="Brand Partner">
+          <span class="social-proof-name">Elgato</span>
+        </div>
+        <div class="social-proof-item" aria-label="Brand Partner">
+          <span class="social-proof-name">ASUS ROG</span>
+        </div>
+        <div class="social-proof-item" aria-label="Brand Partner">
+          <span class="social-proof-name">Razer</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ─── ABOUT ─────────────────────────────────────────────────────────── -->
   <section class="about" id="about">
     <div class="container">
@@ -163,34 +225,34 @@
           <p data-i18n="about.text2">Ja, ich arbeite buchstäblich mit radioaktivem Material — und dann gehe ich nach Hause und baue Custom PCs mit RGB-Beleuchtung. Das ist so ziemlich der krasseste Kontrast, den man sich vorstellen kann.</p>
         </div>
         <div class="about-photo-card">
-          <img src="https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=600&h=400&fit=crop" alt="Gaming Setup" class="about-photo" loading="lazy" />
+          <img src="https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=600&h=400&fit=crop" alt="Gaming Setup" class="about-photo" loading="lazy" width="600" height="400" />
         </div>
       </div>
 
       <!-- Quick Facts -->
       <div class="quick-facts">
-        <div class="fact-card">
-          <span class="fact-icon">☢️</span>
+         <div class="fact-card" role="img" aria-label="Nuclear Power Plant Engineer">
+          <span class="fact-icon" aria-hidden="true">☢️</span>
           <span class="fact-label" data-i18n="about.fact.job">Kernkraftwerk-Ingenieur</span>
         </div>
-        <div class="fact-card">
-          <span class="fact-icon">🎮</span>
+        <div class="fact-card" role="img" aria-label="Tech & Gaming Creator">
+          <span class="fact-icon" aria-hidden="true">🎮</span>
           <span class="fact-label" data-i18n="about.fact.creator">Tech & Gaming Creator</span>
         </div>
-        <div class="fact-card">
-          <span class="fact-icon">🎂</span>
+        <div class="fact-card" role="img" aria-label="Age">
+          <span class="fact-icon" aria-hidden="true">🎂</span>
           <span class="fact-label"><span id="age-display">28</span> <span data-i18n="about.fact.age">Jahre alt</span></span>
         </div>
-        <div class="fact-card">
-          <span class="fact-icon">💍</span>
+        <div class="fact-card" role="img" aria-label="Married">
+          <span class="fact-icon" aria-hidden="true">💍</span>
           <span class="fact-label" data-i18n="about.fact.married">Verheiratet</span>
         </div>
-        <div class="fact-card">
-          <span class="fact-icon">👨‍👩‍👧‍👶</span>
+        <div class="fact-card" role="img" aria-label="Proud father of two">
+          <span class="fact-icon" aria-hidden="true">👨‍👩‍👧‍👶</span>
           <span class="fact-label" data-i18n="about.fact.kids">Stolzer Vater von zwei Kindern</span>
         </div>
-        <div class="fact-card">
-          <span class="fact-icon">📍</span>
+        <div class="fact-card" role="img" aria-label="Hamburg, Germany">
+          <span class="fact-icon" aria-hidden="true">📍</span>
           <span class="fact-label" data-i18n="about.fact.location">Hamburg, Deutschland</span>
         </div>
       </div>
@@ -199,8 +261,8 @@
       <div class="family-section">
         <h3 class="skills-heading" data-i18n="about.family.title">Familie</h3>
         <div class="family-grid">
-          <div class="family-card">
-            <img src="https://images.unsplash.com/photo-1596870230751-ebdfce98ec42?w=400&h=300&fit=crop" alt="Family" class="family-photo" loading="lazy" />
+          <div class="family-card" aria-label="Daughter">
+            <img src="https://images.unsplash.com/photo-1596870230751-ebdfce98ec42?w=400&h=300&fit=crop" alt="Daughter" class="family-photo" loading="lazy" width="400" height="300" />
             <div class="family-info">
               <span class="family-icon">👧</span>
               <div>
@@ -209,8 +271,8 @@
               </div>
             </div>
           </div>
-          <div class="family-card">
-            <img src="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=400&h=300&fit=crop" alt="Baby" class="family-photo" loading="lazy" />
+          <div class="family-card" aria-label="Baby">
+            <img src="https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=400&h=300&fit=crop" alt="Baby" class="family-photo" loading="lazy" width="400" height="300" />
             <div class="family-info">
               <span class="family-icon">👶</span>
               <div>
@@ -253,22 +315,40 @@
     <div class="container">
       <h2 class="section-title" data-i18n="gallery.title">Einblicke</h2>
       <div class="gallery-grid">
-        <div class="gallery-item">
-          <img src="https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600&h=400&fit=crop" alt="Custom PC Build" loading="lazy" />
+        <div class="gallery-item" role="button" tabindex="0" aria-label="Custom PC Build — click to enlarge">
+          <img src="https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=600&h=400&fit=crop" alt="Custom PC Build" loading="lazy" width="600" height="400" />
           <span class="gallery-label" data-i18n="gallery.pc">Custom PC Build</span>
         </div>
-        <div class="gallery-item">
-          <img src="https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?w=600&h=400&fit=crop" alt="RGB Gaming Setup" loading="lazy" />
+        <div class="gallery-item" role="button" tabindex="0" aria-label="Gaming Setup — click to enlarge">
+          <img src="https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?w=600&h=400&fit=crop" alt="RGB Gaming Setup" loading="lazy" width="600" height="400" />
           <span class="gallery-label" data-i18n="gallery.setup">Gaming Setup</span>
         </div>
-        <div class="gallery-item">
-          <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=400&fit=crop" alt="Gaming" loading="lazy" />
+        <div class="gallery-item" role="button" tabindex="0" aria-label="Gaming — click to enlarge">
+          <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=400&fit=crop" alt="Gaming" loading="lazy" width="600" height="400" />
           <span class="gallery-label" data-i18n="gallery.gaming">Gaming</span>
         </div>
-        <div class="gallery-item">
-          <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&h=400&fit=crop" alt="Nuclear Power Plant" loading="lazy" />
+        <div class="gallery-item" role="button" tabindex="0" aria-label="Nuclear Power Plant — click to enlarge">
+          <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&h=400&fit=crop" alt="Nuclear Power Plant" loading="lazy" width="600" height="400" />
           <span class="gallery-label" data-i18n="gallery.work">Day Job ☢️</span>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FEATURED CONTENT ──────────────────────────────────────────────── -->
+  <section class="content" id="content">
+    <div class="container">
+      <h2 class="section-title" data-i18n="content.title">Featured Content</h2>
+      <div class="content-grid">
+        <div class="content-featured">
+          <div class="video-embed">
+            <iframe src="https://www.instagram.com/festas_builds/embed" title="festas_builds Instagram" loading="lazy" width="600" height="338" allowtransparency="true" allow="encrypted-media"></iframe>
+          </div>
+          <p class="content-featured-label" data-i18n="content.featured.label">Neueste Inhalte von Instagram</p>
+        </div>
+        <a href="https://www.instagram.com/festas_builds/" class="content-more-link" target="_blank" rel="noopener noreferrer">
+          <span data-i18n="content.more">Mehr auf Instagram</span> →
+        </a>
       </div>
     </div>
   </section>
@@ -447,6 +527,25 @@
     </div>
   </section>
 
+  <!-- ─── NEWSLETTER ────────────────────────────────────────────────────── -->
+  <section class="newsletter" id="newsletter">
+    <div class="container">
+      <div class="newsletter-inner">
+        <div class="newsletter-text">
+          <h2 class="newsletter-title" data-i18n="newsletter.title">Bleib auf dem Laufenden</h2>
+          <p class="newsletter-desc" data-i18n="newsletter.desc">Erhalte Updates zu neuen Builds, Gaming-Content und Projekten direkt in dein Postfach.</p>
+        </div>
+        <form class="newsletter-form" id="newsletter-form" novalidate>
+          <input type="email" class="form-input newsletter-input" data-i18n-placeholder="newsletter.placeholder" placeholder="deine@email.de" required autocomplete="email" aria-label="E-Mail für Newsletter" />
+          <button type="submit" class="form-submit newsletter-btn">
+            <span data-i18n="newsletter.submit">Abonnieren</span>
+          </button>
+        </form>
+        <p class="newsletter-note" data-i18n="newsletter.note">Kein Spam. Jederzeit abbestellbar.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- ─── FOOTER ────────────────────────────────────────────────────────── -->
   <footer class="footer">
     <div class="container">
@@ -458,6 +557,19 @@
       </nav>
     </div>
   </footer>
+
+  <!-- Back to Top -->
+  <button class="back-to-top" id="back-to-top" aria-label="Back to top" title="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polyline points="18 15 12 9 6 15"/>
+    </svg>
+  </button>
+
+  <!-- Gallery Lightbox -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image preview" hidden>
+    <button class="lightbox-close" aria-label="Close lightbox">&times;</button>
+    <img class="lightbox-img" id="lightbox-img" src="" alt="" />
+  </div>
 
   <script src="/js/i18n.js"></script>
   <script src="/js/main.js"></script>

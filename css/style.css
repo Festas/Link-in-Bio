@@ -1194,89 +1194,6 @@ img, svg { display: block; }
   box-shadow: 0 4px 16px var(--accent-glow);
 }
 
-/* ─── Milestones Section ─────────────────────────────────────────────── */
-.milestones {
-  padding: 6rem 0;
-  background: var(--bg-surface);
-  position: relative;
-}
-
-.milestones::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
-}
-
-.timeline {
-  position: relative;
-  padding-left: 2rem;
-  max-width: 600px;
-}
-
-.timeline::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0.5rem;
-  width: 2px;
-  background: linear-gradient(180deg, var(--accent), rgba(212,160,48,0.1));
-  border-radius: 1px;
-}
-
-.timeline-item {
-  position: relative;
-  padding-bottom: 2rem;
-  opacity: 0;
-  transform: translateX(-20px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-
-.timeline-item.visible {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.timeline-item:last-child {
-  padding-bottom: 0;
-}
-
-.timeline-marker {
-  position: absolute;
-  left: -1.65rem;
-  top: 0.35rem;
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 50%;
-  background: var(--accent);
-  border: 2px solid var(--bg-surface);
-  box-shadow: 0 0 10px var(--accent-glow);
-}
-
-.timeline-content {
-  padding-left: 0.5rem;
-}
-
-.timeline-year {
-  font-size: 0.75rem;
-  font-family: var(--font-mono);
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  display: block;
-  margin-bottom: 0.25rem;
-}
-
-.timeline-text {
-  font-size: 0.95rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-
 /* ─── Nav Actions (theme + lang toggles) ─────────────────────────────── */
 .nav-actions {
   display: flex;
@@ -1407,10 +1324,6 @@ img, svg { display: block; }
   background-clip: text;
 }
 
-.theme-light .timeline-marker {
-  border-color: var(--bg-surface);
-}
-
 .theme-light .nav-links.open {
   background: rgba(248,249,252,0.98);
 }
@@ -1519,6 +1432,21 @@ img, svg { display: block; }
   color: var(--text-muted);
   opacity: 0.5;
   margin-top: 0.75rem;
+}
+
+.newsletter-status {
+  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  min-height: 1.5rem;
+  margin-top: 0.75rem;
+}
+
+.newsletter-status-success {
+  color: #4ade80;
+}
+
+.newsletter-status-error {
+  color: #f87171;
 }
 
 /* ─── Back to Top Button ─────────────────────────────────────────────── */
@@ -1735,7 +1663,6 @@ img, svg { display: block; }
   .contact,
   .about,
   .content,
-  .milestones,
   .gallery {
     padding: 4rem 0;
   }
@@ -1865,7 +1792,6 @@ img, svg { display: block; }
   .form-submit,
   .form-input,
   .site-nav,
-  .timeline-item,
   .theme-toggle,
   .lang-toggle,
   .gallery-item,
@@ -1876,10 +1802,5 @@ img, svg { display: block; }
   .social-proof-item,
   .lightbox {
     transition: none;
-  }
-
-  .timeline-item {
-    opacity: 1;
-    transform: none;
   }
 }

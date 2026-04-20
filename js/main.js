@@ -297,6 +297,7 @@
   }
 
   /* ─── Timeline items: staggered entrance ────────────────────────────── */
+  // (Milestones section removed — initTimeline kept as no-op guard)
   function initTimeline() {
     var items = document.querySelectorAll('.timeline-item');
     if (!items.length) return;
@@ -581,33 +582,60 @@
   }
 
   /* ─── Newsletter form ──────────────────────────────────────────────── */
+  // Newsletter endpoint — update this URL once the external newsletter
+  // service (separate repo) is deployed.
+  var NEWSLETTER_API = 'https://newsletter.festas-builds.com/api/subscribe';
+
   function initNewsletter() {
     var form = document.getElementById('newsletter-form');
     if (!form) return;
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      var input = form.querySelector('input[type="email"]');
-      var email = (input && input.value || '').trim();
+      var input  = document.getElementById('newsletter-email');
+      var email  = (input && input.value || '').trim();
+      var status = document.getElementById('newsletter-status');
+      var btn    = form.querySelector('.newsletter-btn');
+      var btnSpan = btn ? btn.querySelector('span') : null;
+
       if (!email) return;
 
-      // Placeholder: open mailto since there's no backend yet
-      var subject = 'Newsletter Subscription';
-      var body = 'Hi Eric, I would like to subscribe to your newsletter.\n\nEmail: ' + email;
-      window.location.href = 'mailto:eric@festas-builds.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+      // Disable while in-flight
+      if (btn) btn.disabled = true;
 
-      // Show success feedback
-      var btn = form.querySelector('.newsletter-btn');
-      var btnSpan = btn ? btn.querySelector('span') : null;
-      if (btnSpan) {
-        var successText = (window.i18n && window.i18n.t) ? window.i18n.t('newsletter.success') : 'Thanks! 🎉';
-        btnSpan.textContent = successText;
+      fetch(NEWSLETTER_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      })
+      .then(function (res) {
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
+      })
+      .then(function () {
+        var successText = (window.i18n && window.i18n.t) ? window.i18n.t('newsletter.success') : 'Danke für dein Abo! 🎉';
+        if (status) {
+          status.textContent = successText;
+          status.className = 'newsletter-status newsletter-status-success';
+        }
+        input.value = '';
+      })
+      .catch(function () {
+        var errorText = (window.i18n && window.i18n.t) ? window.i18n.t('newsletter.error') : 'Etwas ist schiefgelaufen. Bitte versuche es erneut.';
+        if (status) {
+          status.textContent = errorText;
+          status.className = 'newsletter-status newsletter-status-error';
+        }
+      })
+      .finally(function () {
+        if (btn) btn.disabled = false;
         setTimeout(function () {
-          var submitText = (window.i18n && window.i18n.t) ? window.i18n.t('newsletter.submit') : 'Subscribe';
-          btnSpan.textContent = submitText;
-        }, 3000);
-      }
-      input.value = '';
+          if (status) {
+            status.textContent = '';
+            status.className = 'newsletter-status';
+          }
+        }, 4000);
+      });
     });
   }
 

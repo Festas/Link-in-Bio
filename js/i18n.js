@@ -74,15 +74,14 @@
       'projects.cosmic.name': 'Cosmic Survivor',
       'projects.cosmic.desc': 'Browserbasiertes Weltraum-Survivalspiel. Sofort spielbar, kein Download nötig.',
 
-      // Milestones
-      'milestones.title': 'Meilensteine',
-      'milestone.1': '100K Follower auf Instagram erreicht',
-      'milestone.baby': 'Zweites Kind geboren 👶',
-      'milestone.3': 'Minecraft RPG Server gelauncht',
-      'milestone.4': 'Cosmic Survivor veröffentlicht',
-      'milestone.daughter': 'Erste Tochter geboren 👧',
-      'milestone.5': 'Erste Markenkooperation',
-      'milestone.6': 'Content-Reise gestartet',
+      // Newsletter
+      'newsletter.title': 'Bleib auf dem Laufenden',
+      'newsletter.desc': 'Erhalte Updates zu neuen Builds, Gaming-Content und Projekten direkt in dein Postfach.',
+      'newsletter.placeholder': 'deine@email.de',
+      'newsletter.submit': 'Abonnieren',
+      'newsletter.note': 'Kein Spam. Jederzeit abbestellbar.',
+      'newsletter.success': 'Danke für dein Abo! 🎉',
+      'newsletter.error': 'Etwas ist schiefgelaufen. Bitte versuche es erneut.',
 
       // Contact
       'contact.title': 'Kontakt',
@@ -104,14 +103,6 @@
       'contact.fallback': 'Oder schreib mir direkt an',
       'contact.success': 'Nachricht gesendet! Ich melde mich bald.',
       'contact.error': 'Etwas ist schiefgelaufen. Bitte versuche es erneut.',
-
-      // Newsletter
-      'newsletter.title': 'Bleib auf dem Laufenden',
-      'newsletter.desc': 'Erhalte Updates zu neuen Builds, Gaming-Content und Projekten direkt in dein Postfach.',
-      'newsletter.placeholder': 'deine@email.de',
-      'newsletter.submit': 'Abonnieren',
-      'newsletter.note': 'Kein Spam. Jederzeit abbestellbar.',
-      'newsletter.success': 'Danke für dein Abo! 🎉',
 
       // Meta (for JS-driven meta desc)
       'meta.description': 'Eric Schönke — Tech & Gaming Creator und Ingenieur aus Hamburg. 185K+ Follower. PC Builds, Gaming Setups, Nuclear Engineering.',
@@ -187,16 +178,6 @@
       'projects.cosmic.name': 'Cosmic Survivor',
       'projects.cosmic.desc': 'Browser-based space survival game. Play instantly, no download.',
 
-      // Milestones
-      'milestones.title': 'Milestones',
-      'milestone.1': 'Reached 100K followers on Instagram',
-      'milestone.baby': 'Second child born 👶',
-      'milestone.3': 'Launched Minecraft RPG server',
-      'milestone.4': 'Released Cosmic Survivor',
-      'milestone.daughter': 'First daughter born 👧',
-      'milestone.5': 'First brand collaboration',
-      'milestone.6': 'Started content creation journey',
-
       // Contact
       'contact.title': 'Get in Touch',
       'contact.intro': "Have a project in mind, want to collaborate, or just say hi? Fill out the form below and I'll get back to you.",
@@ -225,6 +206,7 @@
       'newsletter.submit': 'Subscribe',
       'newsletter.note': 'No spam. Unsubscribe anytime.',
       'newsletter.success': 'Thanks for subscribing! 🎉',
+      'newsletter.error': 'Something went wrong. Please try again.',
 
       // Meta
       'meta.description': 'Eric Schönke — Tech & Gaming Creator and Engineer from Hamburg. 185K+ followers. PC Builds, Gaming Setups, Nuclear Engineering.',

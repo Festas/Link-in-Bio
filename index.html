@@ -423,64 +423,6 @@
     </div>
   </section>
 
-  <!-- ─── MILESTONES ───────────────────────────────────────────────────── -->
-  <section class="milestones" id="milestones">
-    <div class="container">
-      <h2 class="section-title" data-i18n="milestones.title">Meilensteine</h2>
-      <div class="timeline">
-        <div class="timeline-item">
-          <div class="timeline-marker"></div>
-          <div class="timeline-content">
-            <span class="timeline-year">2025</span>
-            <p class="timeline-text" data-i18n="milestone.1">100K Follower auf Instagram erreicht</p>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="timeline-marker"></div>
-          <div class="timeline-content">
-            <span class="timeline-year">2025</span>
-            <p class="timeline-text" data-i18n="milestone.baby">Zweites Kind geboren 👶</p>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="timeline-marker"></div>
-          <div class="timeline-content">
-            <span class="timeline-year">2024</span>
-            <p class="timeline-text" data-i18n="milestone.3">Minecraft RPG Server gelauncht</p>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="timeline-marker"></div>
-          <div class="timeline-content">
-            <span class="timeline-year">2024</span>
-            <p class="timeline-text" data-i18n="milestone.4">Cosmic Survivor veröffentlicht</p>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="timeline-marker"></div>
-          <div class="timeline-content">
-            <span class="timeline-year">2023</span>
-            <p class="timeline-text" data-i18n="milestone.daughter">Erste Tochter geboren 👧</p>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="timeline-marker"></div>
-          <div class="timeline-content">
-            <span class="timeline-year">2023</span>
-            <p class="timeline-text" data-i18n="milestone.5">Erste Markenkooperation</p>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="timeline-marker"></div>
-          <div class="timeline-content">
-            <span class="timeline-year">2022</span>
-            <p class="timeline-text" data-i18n="milestone.6">Content-Reise gestartet</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- ─── CONTACT ────────────────────────────────────────────────────────── -->
   <section class="contact" id="contact">
     <div class="container">
@@ -528,6 +470,7 @@
   </section>
 
   <!-- ─── NEWSLETTER ────────────────────────────────────────────────────── -->
+  <!-- Embed target: will be powered by an external newsletter service -->
   <section class="newsletter" id="newsletter">
     <div class="container">
       <div class="newsletter-inner">
@@ -536,11 +479,12 @@
           <p class="newsletter-desc" data-i18n="newsletter.desc">Erhalte Updates zu neuen Builds, Gaming-Content und Projekten direkt in dein Postfach.</p>
         </div>
         <form class="newsletter-form" id="newsletter-form" novalidate>
-          <input type="email" class="form-input newsletter-input" data-i18n-placeholder="newsletter.placeholder" placeholder="deine@email.de" required autocomplete="email" aria-label="E-Mail für Newsletter" />
+          <input type="email" class="form-input newsletter-input" id="newsletter-email" data-i18n-placeholder="newsletter.placeholder" placeholder="deine@email.de" required autocomplete="email" aria-label="E-Mail für Newsletter" />
           <button type="submit" class="form-submit newsletter-btn">
             <span data-i18n="newsletter.submit">Abonnieren</span>
           </button>
         </form>
+        <p class="newsletter-status" id="newsletter-status" role="status" aria-live="polite"></p>
         <p class="newsletter-note" data-i18n="newsletter.note">Kein Spam. Jederzeit abbestellbar.</p>
       </div>
     </div>

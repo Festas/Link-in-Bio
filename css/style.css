@@ -126,6 +126,7 @@ img, svg { display: block; }
   100% { transform: translate(-3%, -3%) rotate(2deg); }
 }
 
+/* Subtle film grain noise texture via inline SVG feTurbulence filter */
 .hero::after {
   content: '';
   position: absolute;
@@ -1375,6 +1376,10 @@ img, svg { display: block; }
 }
 
 .theme-light .site-nav {
+  background: rgba(248,249,252,0.9);
+}
+
+.theme-light .legal-nav {
   background: rgba(248,249,252,0.9);
 }
 

@@ -540,8 +540,11 @@
       function openLightbox() {
         var img = item.querySelector('img');
         if (!img) return;
-        // Use a higher resolution version
-        var src = img.src.replace(/w=600/, 'w=1200').replace(/h=400/, 'h=800');
+        // Use a higher resolution version if URL contains dimension params
+        var src = img.src;
+        if (src.indexOf('w=') !== -1) {
+          src = src.replace(/w=\d+/, 'w=1200').replace(/h=\d+/, 'h=800');
+        }
         lightboxImg.src = src;
         lightboxImg.alt = img.alt;
         lightbox.hidden = false;
@@ -595,12 +598,13 @@
 
       // Show success feedback
       var btn = form.querySelector('.newsletter-btn');
-      if (btn) {
+      var btnSpan = btn ? btn.querySelector('span') : null;
+      if (btnSpan) {
         var successText = (window.i18n && window.i18n.t) ? window.i18n.t('newsletter.success') : 'Thanks! 🎉';
-        btn.querySelector('span').textContent = successText;
+        btnSpan.textContent = successText;
         setTimeout(function () {
           var submitText = (window.i18n && window.i18n.t) ? window.i18n.t('newsletter.submit') : 'Subscribe';
-          btn.querySelector('span').textContent = submitText;
+          btnSpan.textContent = submitText;
         }, 3000);
       }
       input.value = '';

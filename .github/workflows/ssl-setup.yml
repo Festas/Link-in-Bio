@@ -1,0 +1,49 @@
+name: SSL One-Time Setup
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ssl-setup:
+    name: Setup unified SSL certificate and auto-reload
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Run SSL setup on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            sudo apt-get update
+            sudo apt-get install -y certbot python3-certbot-nginx
+
+            sudo certbot --nginx --cert-name festas-builds.com \
+              -d festas-builds.com \
+              -d admin.festas-builds.com \
+              -d panel.festas-builds.com \
+              -d mc.festas-builds.com \
+              -d mc-map.festas-builds.com \
+              -d mc-stats.festas-builds.com \
+              -d cs.festas-builds.com \
+              -d rigpilot.festas-builds.com \
+              -d immocalc.festas-builds.com \
+              -d fire.festas-builds.com \
+              --non-interactive --agree-tos --register-unsafely-without-email --keep-until-expiring
+
+            sudo mkdir -p /etc/letsencrypt/renewal-hooks/deploy
+            cat <<'EOF' | sudo tee /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+            #!/bin/bash
+            nginx -t && systemctl reload nginx
+            EOF
+            sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+
+            sudo systemctl enable --now certbot.timer
+            sudo certbot renew --dry-run
+            sudo systemctl reload nginx

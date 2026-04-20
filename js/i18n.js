@@ -28,6 +28,9 @@
       'stats.threads': 'Threads',
       'stats.updated': 'Stand: April 2026',
 
+      // Social Proof
+      'socialproof.label': 'Bekannt aus Kooperationen mit',
+
       // About
       'about.title': 'Über mich',
       'about.text': 'Ich bin Eric — tagsüber sorge ich dafür, dass radioaktive Abfälle in einem Kernkraftwerk sicher verarbeitet werden. Abends tauche ich in die Welt von Tech und Gaming ein und teile meine Leidenschaft mit über 185K Followern.',
@@ -51,6 +54,11 @@
       'gallery.setup': 'Gaming Setup',
       'gallery.gaming': 'Gaming',
       'gallery.work': 'Day Job ☢️',
+
+      // Content
+      'content.title': 'Featured Content',
+      'content.featured.label': 'Neueste Inhalte von Instagram',
+      'content.more': 'Mehr auf Instagram',
 
       // Explore
       'explore.title': 'Entdecken',
@@ -97,6 +105,17 @@
       'contact.success': 'Nachricht gesendet! Ich melde mich bald.',
       'contact.error': 'Etwas ist schiefgelaufen. Bitte versuche es erneut.',
 
+      // Newsletter
+      'newsletter.title': 'Bleib auf dem Laufenden',
+      'newsletter.desc': 'Erhalte Updates zu neuen Builds, Gaming-Content und Projekten direkt in dein Postfach.',
+      'newsletter.placeholder': 'deine@email.de',
+      'newsletter.submit': 'Abonnieren',
+      'newsletter.note': 'Kein Spam. Jederzeit abbestellbar.',
+      'newsletter.success': 'Danke für dein Abo! 🎉',
+
+      // Meta (for JS-driven meta desc)
+      'meta.description': 'Eric Schönke — Tech & Gaming Creator und Ingenieur aus Hamburg. 185K+ Follower. PC Builds, Gaming Setups, Nuclear Engineering.',
+
       // Footer
       'footer.copy': '© 2026 festas_builds · Hamburg, Deutschland',
       'footer.contact': 'Kontakt',
@@ -122,6 +141,9 @@
       'stats.threads': 'Threads',
       'stats.updated': 'Last updated: April 2026',
 
+      // Social Proof
+      'socialproof.label': 'Featured collaborations with',
+
       // About
       'about.title': 'About Me',
       'about.text': "I'm Eric — by day, I make sure radioactive waste at a nuclear power plant is safely processed. By night, I dive into the world of tech and gaming, sharing my passion with 185K+ followers.",
@@ -145,6 +167,11 @@
       'gallery.setup': 'Gaming Setup',
       'gallery.gaming': 'Gaming',
       'gallery.work': 'Day Job ☢️',
+
+      // Content
+      'content.title': 'Featured Content',
+      'content.featured.label': 'Latest content from Instagram',
+      'content.more': 'More on Instagram',
 
       // Explore
       'explore.title': 'Explore',
@@ -191,6 +218,17 @@
       'contact.success': 'Message sent! I\'ll get back to you soon.',
       'contact.error': 'Something went wrong. Please try again.',
 
+      // Newsletter
+      'newsletter.title': 'Stay in the Loop',
+      'newsletter.desc': 'Get updates on new builds, gaming content, and projects delivered to your inbox.',
+      'newsletter.placeholder': 'your@email.com',
+      'newsletter.submit': 'Subscribe',
+      'newsletter.note': 'No spam. Unsubscribe anytime.',
+      'newsletter.success': 'Thanks for subscribing! 🎉',
+
+      // Meta
+      'meta.description': 'Eric Schönke — Tech & Gaming Creator and Engineer from Hamburg. 185K+ followers. PC Builds, Gaming Setups, Nuclear Engineering.',
+
       // Footer
       'footer.copy': '© 2026 festas_builds · Hamburg, Germany',
       'footer.contact': 'Contact',
@@ -232,6 +270,12 @@
 
     // Update html lang attribute
     document.documentElement.lang = currentLang;
+
+    // Update meta description based on language
+    var metaDesc = document.getElementById('meta-description');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', t('meta.description'));
+    }
 
     // Update toggle button text
     var toggleBtn = document.getElementById('lang-toggle');

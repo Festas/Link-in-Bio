@@ -1,0 +1,29 @@
+{
+  "name": "festas_builds — Tech & Gaming Creator",
+  "short_name": "festas_builds",
+  "description": "Eric Schönke — Tech & Gaming Creator und Nuclear Engineer aus Hamburg.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0c10",
+  "theme_color": "#d4a030",
+  "icons": [
+    {
+      "src": "/assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "lang": "de",
+  "dir": "ltr",
+  "categories": ["entertainment", "social"]
+}

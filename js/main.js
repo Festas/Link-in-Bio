@@ -446,6 +446,8 @@
     var stored = localStorage.getItem('festas-theme');
     if (stored === 'light') {
       document.body.classList.add('theme-light');
+    } else if (!stored && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      document.body.classList.add('theme-light');
     }
 
     toggle.addEventListener('click', function () {
@@ -453,6 +455,19 @@
       var isLight = document.body.classList.contains('theme-light');
       localStorage.setItem('festas-theme', isLight ? 'light' : 'dark');
     });
+
+    // Listen for system theme changes
+    if (window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', function (e) {
+        if (!localStorage.getItem('festas-theme')) {
+          if (e.matches) {
+            document.body.classList.add('theme-light');
+          } else {
+            document.body.classList.remove('theme-light');
+          }
+        }
+      });
+    }
   }
 
   /* ─── Language toggle ──────────────────────────────────────────────── */
@@ -492,11 +507,143 @@
     });
   }
 
+  /* ─── Back to Top button ───────────────────────────────────────────── */
+  function initBackToTop() {
+    var btn = document.getElementById('back-to-top');
+    if (!btn) return;
+
+    function toggleBtn() {
+      if (window.scrollY > 400) {
+        btn.classList.add('visible');
+      } else {
+        btn.classList.remove('visible');
+      }
+    }
+
+    window.addEventListener('scroll', toggleBtn, { passive: true });
+    toggleBtn();
+
+    btn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  /* ─── Gallery Lightbox ─────────────────────────────────────────────── */
+  function initLightbox() {
+    var lightbox = document.getElementById('lightbox');
+    var lightboxImg = document.getElementById('lightbox-img');
+    var closeBtn = lightbox ? lightbox.querySelector('.lightbox-close') : null;
+    if (!lightbox || !lightboxImg) return;
+
+    var galleryItems = document.querySelectorAll('.gallery-item');
+    galleryItems.forEach(function (item) {
+      function openLightbox() {
+        var img = item.querySelector('img');
+        if (!img) return;
+        // Use a higher resolution version
+        var src = img.src.replace(/w=600/, 'w=1200').replace(/h=400/, 'h=800');
+        lightboxImg.src = src;
+        lightboxImg.alt = img.alt;
+        lightbox.hidden = false;
+        lightbox.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+      item.addEventListener('click', openLightbox);
+      item.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openLightbox();
+        }
+      });
+    });
+
+    function closeLightbox() {
+      lightbox.classList.remove('active');
+      document.body.style.overflow = '';
+      setTimeout(function () {
+        lightbox.hidden = true;
+        lightboxImg.src = '';
+      }, 300);
+    }
+
+    if (closeBtn) closeBtn.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', function (e) {
+      if (e.target === lightbox) closeLightbox();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && lightbox.classList.contains('active')) {
+        closeLightbox();
+      }
+    });
+  }
+
+  /* ─── Newsletter form ──────────────────────────────────────────────── */
+  function initNewsletter() {
+    var form = document.getElementById('newsletter-form');
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var input = form.querySelector('input[type="email"]');
+      var email = (input && input.value || '').trim();
+      if (!email) return;
+
+      // Placeholder: open mailto since there's no backend yet
+      var subject = 'Newsletter Subscription';
+      var body = 'Hi Eric, I would like to subscribe to your newsletter.\n\nEmail: ' + email;
+      window.location.href = 'mailto:eric@festas-builds.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+
+      // Show success feedback
+      var btn = form.querySelector('.newsletter-btn');
+      if (btn) {
+        var successText = (window.i18n && window.i18n.t) ? window.i18n.t('newsletter.success') : 'Thanks! 🎉';
+        btn.querySelector('span').textContent = successText;
+        setTimeout(function () {
+          var submitText = (window.i18n && window.i18n.t) ? window.i18n.t('newsletter.submit') : 'Subscribe';
+          btn.querySelector('span').textContent = submitText;
+        }, 3000);
+      }
+      input.value = '';
+    });
+  }
+
+  /* ─── Social Proof entrance animation ──────────────────────────────── */
+  function initSocialProofAnim() {
+    var items = document.querySelectorAll('.social-proof-item');
+    if (!items.length) return;
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        if (entries.some(function (e) { return e.isIntersecting; })) {
+          items.forEach(function (item, i) {
+            setTimeout(function () {
+              item.style.opacity = '1';
+              item.style.transform = 'translateY(0)';
+            }, i * 100);
+          });
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    items.forEach(function (item) {
+      item.style.opacity = '0';
+      item.style.transform = 'translateY(15px)';
+      item.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    });
+
+    var section = document.querySelector('.social-proof');
+    if (section) observer.observe(section);
+  }
+
   /* ─── Init ──────────────────────────────────────────────────────────── */
   function init() {
-    // Apply saved theme immediately
+    // Apply saved theme immediately, or respect system preference
     var stored = localStorage.getItem('festas-theme');
     if (stored === 'light') {
+      document.body.classList.add('theme-light');
+    } else if (!stored && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
       document.body.classList.add('theme-light');
     }
 
@@ -521,6 +668,10 @@
     initAges();
     initGalleryItems();
     initFactCards();
+    initBackToTop();
+    initLightbox();
+    initNewsletter();
+    initSocialProofAnim();
   }
 
   if (document.readyState === 'loading') {

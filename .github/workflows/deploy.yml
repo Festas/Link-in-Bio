@@ -62,7 +62,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: DOMAIN
-          script_stop: true
+          script_stop: false
           script: |
             set -euo pipefail
             trap 'rc=$?; echo "✗ ERROR (exit=$rc) at line ${LINENO}: ${BASH_COMMAND}" >&2; echo "  BASH_SOURCE=${BASH_SOURCE[*]:-}" >&2; echo "  FUNCNAME=${FUNCNAME[*]:-}" >&2; echo "  BASH_LINENO=${BASH_LINENO[*]:-}" >&2; exit "$rc"' ERR

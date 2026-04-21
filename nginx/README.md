@@ -54,6 +54,12 @@ sudo systemctl reload nginx
 
 ## SSL Certificate Setup with Certbot
 
+> The GitHub workflow `.github/workflows/ssl-setup.yml` now uses `certbot certonly --webroot`.
+> It issues/renews certificates only and does **not** auto-inject TLS directives into every vhost.
+> Each HTTPS server block must reference:
+> - `ssl_certificate /etc/letsencrypt/live/festas-builds.com/fullchain.pem;`
+> - `ssl_certificate_key /etc/letsencrypt/live/festas-builds.com/privkey.pem;`
+
 ### Initial Setup
 
 ```bash

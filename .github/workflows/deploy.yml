@@ -65,19 +65,21 @@ jobs:
           script_stop: true
           script: |
             set -euo pipefail
+            trap 'rc=$?; echo "✗ ERROR (exit=$rc) at line ${LINENO}: ${BASH_COMMAND}" >&2; echo "  BASH_SOURCE=${BASH_SOURCE[*]:-}" >&2; echo "  FUNCNAME=${FUNCNAME[*]:-}" >&2; echo "  BASH_LINENO=${BASH_LINENO[*]:-}" >&2; exit "$rc"' ERR
 
             echo "=========================================="
             echo "Deploying landing page for ${DOMAIN:-festas-builds.com}"
             echo "=========================================="
 
-            # ── 1. Install static site files ──────────────────────────
+            # -- 1. Install static site files --
             echo "[1/3] Installing static site files..."
             sudo mkdir -p /srv/landing-page
             sudo rsync -a --delete /tmp/landing-page-deploy/site/ /srv/landing-page/
             sudo chown -R www-data:www-data /srv/landing-page
             echo "✓ Static files deployed to /srv/landing-page"
 
-            # ── 2. Deploy Nginx configs ────────────────────────────────
+            # -- 2. Deploy Nginx configs --
+            set -x
             echo "[2/3] Deploying Nginx configurations..."
 
             echo "  → Removing default nginx configs..."
@@ -134,8 +136,9 @@ jobs:
 
             rm -rf /tmp/landing-page-deploy
 
-            # ── 3. Test and reload Nginx ───────────────────────────────
+            # -- 3. Test and reload Nginx --
             echo "[3/3] Reloading Nginx..."
+            set +x
 
             if sudo nginx -t 2>&1; then
               if sudo systemctl reload nginx; then

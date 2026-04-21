@@ -79,11 +79,11 @@ log "Preparing ACME webroot with stable ownership/permissions..."
 sudo install -d -o www-data -g www-data -m 0755 "${ACME_WEBROOT}"
 sudo install -d -o root -g root -m 0755 /etc/nginx/snippets
 
-cat >"${LOCAL_TMP_SNIPPET}" <<'EOF'
+cat >"${LOCAL_TMP_SNIPPET}" <<EOF
 location /.well-known/acme-challenge/ {
-  root /var/www/certbot;
+  root ${ACME_WEBROOT};
   default_type "text/plain";
-  try_files $uri =404;
+  try_files \$uri =404;
 }
 EOF
 
@@ -102,7 +102,7 @@ fi
 log "Removing stale ACME enabled/available config entries before rewrite..."
 sudo rm -f "${ACME_SITE_LINK}" "${ACME_SITE_FILE}" "${ACME_SITE_TMP}"
 
-cat >"${LOCAL_TMP_CONFIG}" <<'EOF'
+cat >"${LOCAL_TMP_CONFIG}" <<EOF
 server {
   listen 80 default_server;
   listen [::]:80 default_server;
@@ -112,9 +112,9 @@ server {
   # /etc/nginx/snippets/acme-challenge.conf. This avoids failed HTTP-01
   # challenges if a vhost include is temporarily missing.
   location /.well-known/acme-challenge/ {
-    root /var/www/certbot;
+    root ${ACME_WEBROOT};
     default_type "text/plain";
-    try_files $uri =404;
+    try_files \$uri =404;
   }
 
   location / {

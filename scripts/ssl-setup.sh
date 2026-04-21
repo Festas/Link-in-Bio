@@ -170,7 +170,7 @@ sudo certbot certonly --webroot -w "${ACME_WEBROOT}" --cert-name festas-builds.c
 log "Installing certbot deploy hook for safe Nginx reload..."
 sudo mkdir -p /etc/letsencrypt/renewal-hooks/deploy
 cat <<'EOF' | sudo tee /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh >/dev/null
-#!/bin/bash
+#!/usr/bin/env bash
 nginx -t && systemctl reload nginx
 EOF
 sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh

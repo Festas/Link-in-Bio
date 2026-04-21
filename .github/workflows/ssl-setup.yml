@@ -14,6 +14,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Copy SSL setup script to server
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "scripts/ssl-setup.sh"
+          target: "/tmp/link-in-bio-ssl-setup"
+          strip_components: 1
+
       - name: Run SSL setup on server
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -21,4 +31,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
-          script_path: scripts/ssl-setup.sh
+          script: |
+            set -euo pipefail
+            chmod +x /tmp/link-in-bio-ssl-setup/ssl-setup.sh
+            /tmp/link-in-bio-ssl-setup/ssl-setup.sh

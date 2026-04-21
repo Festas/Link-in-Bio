@@ -108,6 +108,9 @@ server {
   listen [::]:80 default_server;
   server_name _;
 
+  # Keep ACME handling here as a fallback even though vhosts include
+  # /etc/nginx/snippets/acme-challenge.conf. This avoids failed HTTP-01
+  # challenges if a vhost include is temporarily missing.
   location /.well-known/acme-challenge/ {
     root /var/www/certbot;
     default_type "text/plain";

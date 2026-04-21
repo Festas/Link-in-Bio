@@ -103,12 +103,13 @@ jobs:
                 fi
 
                 missing=0
-                for p in $cert_paths; do
+                while IFS= read -r p; do
+                  [[ -n "$p" ]] || continue
                   if ! sudo test -f "$p"; then
                     echo "  ⚠ $domain references missing cert: $p"
                     missing=1
                   fi
-                done
+                done <<< "$cert_paths"
 
                 if [[ "$missing" -eq 1 ]]; then
                   echo "  ⚠ Skipping $domain — SSL certificate file not found"
@@ -146,12 +147,13 @@ jobs:
                 fi
 
                 missing=0
-                for p in $cert_paths; do
+                while IFS= read -r p; do
+                  [[ -n "$p" ]] || continue
                   if ! sudo test -f "$p"; then
                     echo "  ⚠ $domain references missing cert: $p"
                     missing=1
                   fi
-                done
+                done <<< "$cert_paths"
 
                 if [[ "$missing" -eq 1 ]]; then
                   echo "  Disabling $domain (missing SSL cert file)"

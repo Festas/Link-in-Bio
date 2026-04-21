@@ -24,6 +24,7 @@ jobs:
             fail() { echo "[ssl-setup][ERROR] $*" >&2; exit 1; }
             first_line_trimmed() { awk 'NF{line=$0; gsub(/^[[:space:]]+|[[:space:]]+$/, "", line); print line; exit}' "$1"; }
             first_line_trimmed_sudo() { sudo awk 'NF{line=$0; gsub(/^[[:space:]]+|[[:space:]]+$/, "", line); print line; exit}' "$1"; }
+            umask 077
 
             log "Installing certbot package..."
             sudo apt-get update
@@ -39,7 +40,7 @@ jobs:
             LOCAL_TMP_CONFIG="$(mktemp)"
             cleanup() {
               rm -f "${LOCAL_TMP_CONFIG}" || true
-              rm -rf "${BACKUP_DIR}" || true
+              sudo rm -rf "${BACKUP_DIR}" || true
               sudo rm -f "${ACME_SITE_TMP}" || true
             }
             trap cleanup EXIT
@@ -109,11 +110,15 @@ jobs:
               if [ -f "${BACKUP_FILE}" ]; then
                 sudo mv -f "${BACKUP_FILE}" "${ACME_SITE_FILE}"
               fi
-              if [ -L "${BACKUP_LINK}" ] || [ -e "${BACKUP_LINK}" ]; then
+              if [ -e "${BACKUP_LINK}" ] || [ -L "${BACKUP_LINK}" ]; then
                 sudo mv -f "${BACKUP_LINK}" "${ACME_SITE_LINK}"
               fi
               echo "[ssl-setup] Re-testing Nginx after rollback attempt..." >&2
-              sudo nginx -t || true
+              if sudo nginx -t; then
+                echo "[ssl-setup] Rollback restored a valid Nginx config." >&2
+              else
+                echo "[ssl-setup][ERROR] Nginx config is still invalid after rollback." >&2
+              fi
               exit 1
             fi
 

@@ -57,6 +57,7 @@ sudo apt-get update
 sudo apt-get install -y certbot
 
 ACME_WEBROOT="/var/www/certbot"
+ACME_SNIPPET_FILE="/etc/nginx/snippets/acme-challenge.conf"
 ACME_SITE_FILE="/etc/nginx/sites-available/certbot-acme-challenge.conf"
 ACME_SITE_LINK="/etc/nginx/sites-enabled/certbot-acme-challenge.conf"
 ACME_SITE_TMP="${ACME_SITE_FILE}.tmp"
@@ -64,9 +65,11 @@ BACKUP_DIR="$(mktemp -d)"
 BACKUP_FILE="${BACKUP_DIR}/certbot-acme-challenge.conf.bak"
 BACKUP_LINK="${BACKUP_DIR}/certbot-acme-challenge.conf.link.bak"
 LOCAL_TMP_CONFIG="$(mktemp)"
+LOCAL_TMP_SNIPPET="$(mktemp)"
 
 cleanup() {
   rm -f "${LOCAL_TMP_CONFIG}" || true
+  rm -f "${LOCAL_TMP_SNIPPET}" || true
   sudo rm -rf "${BACKUP_DIR}" || true
   sudo rm -f "${ACME_SITE_TMP}" || true
 }
@@ -74,6 +77,19 @@ trap cleanup EXIT
 
 log "Preparing ACME webroot with stable ownership/permissions..."
 sudo install -d -o www-data -g www-data -m 0755 "${ACME_WEBROOT}"
+sudo install -d -o root -g root -m 0755 /etc/nginx/snippets
+
+cat >"${LOCAL_TMP_SNIPPET}" <<'EOF'
+location /.well-known/acme-challenge/ {
+  root __ACME_WEBROOT__;
+  default_type "text/plain";
+  try_files $uri =404;
+}
+EOF
+sed -i "s|__ACME_WEBROOT__|${ACME_WEBROOT}|g" "${LOCAL_TMP_SNIPPET}"
+
+log "Installing ACME snippet..."
+sudo install -o root -g root -m 0644 "${LOCAL_TMP_SNIPPET}" "${ACME_SNIPPET_FILE}"
 
 log "Backing up any existing ACME site artifacts for rollback..."
 if sudo test -f "${ACME_SITE_FILE}"; then
@@ -89,12 +105,15 @@ sudo rm -f "${ACME_SITE_LINK}" "${ACME_SITE_FILE}" "${ACME_SITE_TMP}"
 
 cat >"${LOCAL_TMP_CONFIG}" <<'EOF'
 server {
-  listen 80;
-  listen [::]:80;
-  server_name festas-builds.com admin.festas-builds.com panel.festas-builds.com mc.festas-builds.com mc-map.festas-builds.com mc-stats.festas-builds.com cs.festas-builds.com rigpilot.festas-builds.com immocalc.festas-builds.com fire.festas-builds.com;
+  listen 80 default_server;
+  listen [::]:80 default_server;
+  server_name _;
 
+  # Keep ACME handling here as a fallback even though vhosts include
+  # /etc/nginx/snippets/acme-challenge.conf. This avoids failed HTTP-01
+  # challenges if a vhost include is temporarily missing.
   location /.well-known/acme-challenge/ {
-    root /var/www/certbot;
+    root __ACME_WEBROOT__;
     default_type "text/plain";
     try_files $uri =404;
   }
@@ -104,6 +123,7 @@ server {
   }
 }
 EOF
+sed -i "s|__ACME_WEBROOT__|${ACME_WEBROOT}|g" "${LOCAL_TMP_CONFIG}"
 
 require_first_non_empty_line_is_server_block "${LOCAL_TMP_CONFIG}" "Generated ACME config"
 

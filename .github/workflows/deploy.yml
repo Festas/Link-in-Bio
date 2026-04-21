@@ -22,7 +22,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "nginx/sites-available/*.conf"
+          source: "nginx/sites-available/*.conf,nginx/snippets/*.conf"
           target: "/tmp/landing-page-deploy"
           strip_components: 0
 
@@ -86,6 +86,8 @@ jobs:
 
             if [[ -d "/tmp/landing-page-deploy/nginx/sites-available" ]]; then
               sudo cp /tmp/landing-page-deploy/nginx/sites-available/*.conf /etc/nginx/sites-available/
+              sudo install -d -o root -g root -m 0755 /etc/nginx/snippets
+              sudo install -o root -g root -m 0644 /tmp/landing-page-deploy/nginx/snippets/acme-challenge.conf /etc/nginx/snippets/acme-challenge.conf
 
               ENABLED_COUNT=0
               SKIPPED_COUNT=0
@@ -132,8 +134,14 @@ jobs:
             echo "[3/3] Reloading Nginx..."
 
             if sudo nginx -t 2>&1; then
-              sudo systemctl reload nginx
-              echo "✓ Nginx reloaded successfully"
+              if sudo systemctl reload nginx; then
+                echo "✓ Nginx reloaded successfully"
+              else
+                echo "✗ Nginx reload failed despite successful config test"
+                sudo systemctl status nginx --no-pager || true
+                sudo journalctl -u nginx --no-pager -n 50 || true
+                exit 1
+              fi
             else
               echo "⚠ Nginx config invalid — attempting to disable sites with missing SSL certs..."
               shopt -s nullglob
@@ -161,8 +169,14 @@ jobs:
                 fi
               done
               if sudo nginx -t 2>&1; then
-                sudo systemctl reload nginx
-                echo "✓ Nginx reloaded (some sites disabled due to missing SSL certs)"
+                if sudo systemctl reload nginx; then
+                  echo "✓ Nginx reloaded (some sites disabled due to missing SSL certs)"
+                else
+                  echo "✗ Nginx reload failed after fallback mitigation"
+                  sudo systemctl status nginx --no-pager || true
+                  sudo journalctl -u nginx --no-pager -n 50 || true
+                  exit 1
+                fi
               else
                 sudo nginx -t || true
                 exit 1
@@ -191,6 +205,9 @@ jobs:
             echo ""
             echo "=== Nginx Error Log ==="
             sudo tail -30 /var/log/nginx/error.log || true
+            echo ""
+            echo "=== Nginx Journal (latest 80) ==="
+            sudo journalctl -u nginx --no-pager -n 80 || true
             echo ""
             echo "=== Landing Page Dir ==="
             ls -la /srv/landing-page/ || true

@@ -46,6 +46,10 @@ jobs:
               }
             }
             EOF
+            # Remove stale non-symlink files so nginx doesn't parse garbage from previous writes.
+            if [ -e "${ACME_SITE_LINK}" ] && [ ! -L "${ACME_SITE_LINK}" ]; then
+              sudo rm -f "${ACME_SITE_LINK}"
+            fi
             sudo ln -sfn "${ACME_SITE_FILE}" "${ACME_SITE_LINK}"
             sudo nginx -t
             sudo systemctl reload nginx

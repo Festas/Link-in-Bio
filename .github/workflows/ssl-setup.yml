@@ -22,6 +22,8 @@ jobs:
             set -euo pipefail
             log() { echo "[ssl-setup] $*"; }
             fail() { echo "[ssl-setup][ERROR] $*" >&2; exit 1; }
+            first_line_trimmed() { awk 'NF{line=$0; gsub(/^[[:space:]]+|[[:space:]]+$/, "", line); print line; exit}' "$1"; }
+            first_line_trimmed_sudo() { sudo awk 'NF{line=$0; gsub(/^[[:space:]]+|[[:space:]]+$/, "", line); print line; exit}' "$1"; }
 
             log "Installing certbot package..."
             sudo apt-get update
@@ -35,6 +37,12 @@ jobs:
             BACKUP_FILE="${BACKUP_DIR}/certbot-acme-challenge.conf.bak"
             BACKUP_LINK="${BACKUP_DIR}/certbot-acme-challenge.conf.link.bak"
             LOCAL_TMP_CONFIG="$(mktemp)"
+            cleanup() {
+              rm -f "${LOCAL_TMP_CONFIG}" || true
+              rm -rf "${BACKUP_DIR}" || true
+              sudo rm -f "${ACME_SITE_TMP}" || true
+            }
+            trap cleanup EXIT
 
             log "Preparing ACME webroot with stable ownership/permissions..."
             sudo install -d -o www-data -g www-data -m 0755 "${ACME_WEBROOT}"
@@ -68,7 +76,7 @@ jobs:
               }
             }
             EOF
-            if [ "$(awk 'NF{print; exit}' "${LOCAL_TMP_CONFIG}")" != "server {" ]; then
+            if [ "$(first_line_trimmed "${LOCAL_TMP_CONFIG}")" != "server {" ]; then
               fail "Generated ACME config sanity check failed (first non-empty line is not 'server {')."
             fi
 
@@ -76,12 +84,12 @@ jobs:
             sudo install -o root -g root -m 0644 "${LOCAL_TMP_CONFIG}" "${ACME_SITE_TMP}"
             sudo mv -f "${ACME_SITE_TMP}" "${ACME_SITE_FILE}"
 
-            if [ "$(sudo awk 'NF{print; exit}' "${ACME_SITE_FILE}")" != "server {" ]; then
+            if [ "$(first_line_trimmed_sudo "${ACME_SITE_FILE}")" != "server {" ]; then
               fail "Written ACME config failed sanity check after install."
             fi
 
             log "Enabling ACME site using a fresh symlink..."
-            sudo ln -s "${ACME_SITE_FILE}" "${ACME_SITE_LINK}"
+            sudo ln -sfn "${ACME_SITE_FILE}" "${ACME_SITE_LINK}"
             if [ ! -L "${ACME_SITE_LINK}" ]; then
               fail "Enabled ACME site entry is not a symlink."
             fi
@@ -130,8 +138,6 @@ jobs:
             nginx -t && systemctl reload nginx
             EOF
             sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
-
-            rm -f "${LOCAL_TMP_CONFIG}"
 
             log "Enabling certbot timer and validating renew flow..."
             sudo systemctl enable --now certbot.timer

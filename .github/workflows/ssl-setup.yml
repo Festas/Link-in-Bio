@@ -22,9 +22,35 @@ jobs:
             set -euo pipefail
 
             sudo apt-get update
-            sudo apt-get install -y certbot python3-certbot-nginx
+            sudo apt-get install -y certbot
 
-            sudo certbot --nginx --cert-name festas-builds.com \
+            ACME_WEBROOT="/var/www/certbot"
+            ACME_SITE_FILE="/etc/nginx/sites-available/certbot-acme-challenge.conf"
+            ACME_SITE_LINK="/etc/nginx/sites-enabled/certbot-acme-challenge.conf"
+
+            sudo mkdir -p "${ACME_WEBROOT}"
+            cat <<'EOF' | sudo tee "${ACME_SITE_FILE}" >/dev/null
+            server {
+              listen 80;
+              listen [::]:80;
+              server_name festas-builds.com admin.festas-builds.com panel.festas-builds.com mc.festas-builds.com mc-map.festas-builds.com mc-stats.festas-builds.com cs.festas-builds.com rigpilot.festas-builds.com immocalc.festas-builds.com fire.festas-builds.com;
+
+              location /.well-known/acme-challenge/ {
+                root /var/www/certbot;
+                default_type "text/plain";
+                try_files $uri =404;
+              }
+
+              location / {
+                return 404;
+              }
+            }
+            EOF
+            sudo ln -sfn "${ACME_SITE_FILE}" "${ACME_SITE_LINK}"
+            sudo nginx -t
+            sudo systemctl reload nginx
+
+            sudo certbot certonly --webroot -w "${ACME_WEBROOT}" --cert-name festas-builds.com \
               -d festas-builds.com \
               -d admin.festas-builds.com \
               -d panel.festas-builds.com \

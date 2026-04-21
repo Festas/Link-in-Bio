@@ -80,15 +80,19 @@ jobs:
             # ── 2. Deploy Nginx configs ────────────────────────────────
             echo "[2/3] Deploying Nginx configurations..."
 
+            echo "  → Removing default nginx configs..."
             sudo rm -f /etc/nginx/sites-enabled/default
             sudo rm -f /etc/nginx/sites-available/default
             sudo rm -f /etc/nginx/conf.d/default.conf
 
             if [[ -d "/tmp/landing-page-deploy/nginx/sites-available" ]]; then
+              echo "  → Copying sites-available configs to /etc/nginx/sites-available/..."
               sudo cp /tmp/landing-page-deploy/nginx/sites-available/*.conf /etc/nginx/sites-available/
+              echo "  → Installing acme-challenge snippet..."
               sudo install -d -o root -g root -m 0755 /etc/nginx/snippets
               sudo install -o root -g root -m 0644 /tmp/landing-page-deploy/nginx/snippets/acme-challenge.conf /etc/nginx/snippets/acme-challenge.conf
 
+              echo "  → Enabling/skipping vhosts based on SSL cert presence..."
               ENABLED_COUNT=0
               SKIPPED_COUNT=0
               shopt -s nullglob

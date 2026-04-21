@@ -89,11 +89,30 @@ jobs:
 
               ENABLED_COUNT=0
               SKIPPED_COUNT=0
-              for conf in /etc/nginx/sites-available/*.festas-builds.com.conf; do
+              shopt -s nullglob
+              for conf in /etc/nginx/sites-available/festas-builds.com.conf /etc/nginx/sites-available/*.festas-builds.com.conf; do
+                [[ -e "$conf" ]] || continue
                 confname=$(basename "$conf")
                 domain="${confname%.conf}"
-                if grep -q 'ssl_certificate' "$conf" && [[ ! -d "/etc/letsencrypt/live/$domain" ]]; then
-                  echo "  ⚠ Skipping $domain — SSL certificate not found"
+
+                cert_paths=$(grep -E '^[[:space:]]*ssl_certificate[[:space:]]+' "$conf" | awk '{print $2}' | tr -d ';' | sort -u || true)
+                if [[ -z "$cert_paths" ]]; then
+                  sudo ln -sf "../sites-available/$confname" "/etc/nginx/sites-enabled/$confname"
+                  ENABLED_COUNT=$((ENABLED_COUNT + 1))
+                  continue
+                fi
+
+                missing=0
+                while IFS= read -r p; do
+                  [[ -n "$p" ]] || continue
+                  if ! sudo test -f "$p"; then
+                    echo "  ⚠ $domain references missing cert: $p"
+                    missing=1
+                  fi
+                done <<< "$cert_paths"
+
+                if [[ "$missing" -eq 1 ]]; then
+                  echo "  ⚠ Skipping $domain — SSL certificate file not found"
                   sudo rm -f "/etc/nginx/sites-enabled/$confname"
                   SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                 else
@@ -117,11 +136,27 @@ jobs:
               echo "✓ Nginx reloaded successfully"
             else
               echo "⚠ Nginx config invalid — attempting to disable sites with missing SSL certs..."
+              shopt -s nullglob
               for conf in /etc/nginx/sites-enabled/*.conf; do
                 confname=$(basename "$conf")
                 domain="${confname%.conf}"
-                if grep -q 'ssl_certificate' "$conf" && [[ ! -d "/etc/letsencrypt/live/$domain" ]]; then
-                  echo "  Disabling $domain (missing SSL cert)"
+
+                cert_paths=$(grep -E '^[[:space:]]*ssl_certificate[[:space:]]+' "$conf" | awk '{print $2}' | tr -d ';' | sort -u || true)
+                if [[ -z "$cert_paths" ]]; then
+                  continue
+                fi
+
+                missing=0
+                while IFS= read -r p; do
+                  [[ -n "$p" ]] || continue
+                  if ! sudo test -f "$p"; then
+                    echo "  ⚠ $domain references missing cert: $p"
+                    missing=1
+                  fi
+                done <<< "$cert_paths"
+
+                if [[ "$missing" -eq 1 ]]; then
+                  echo "  Disabling $domain (missing SSL cert file)"
                   sudo rm -f "/etc/nginx/sites-enabled/$confname"
                 fi
               done
@@ -159,4 +194,3 @@ jobs:
             echo ""
             echo "=== Landing Page Dir ==="
             ls -la /srv/landing-page/ || true
-

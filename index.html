@@ -101,6 +101,7 @@
         <li><a href="#gallery" class="nav-link" data-i18n="nav.gallery">Einblicke</a></li>
         <li><a href="#explore" class="nav-link" data-i18n="nav.explore">Entdecken</a></li>
         <li><a href="#projects" class="nav-link" data-i18n="nav.projects">Projekte</a></li>
+        <li><a href="#milestones" class="nav-link" data-i18n="nav.milestones">Journey</a></li>
         <li><a href="#contact" class="nav-link" data-i18n="nav.contact">Kontakt</a></li>
       </ul>
       <div class="nav-actions">
@@ -125,7 +126,7 @@
   <!-- ─── HERO ─────────────────────────────────────────────────────────── -->
   <section class="hero" id="home">
     <div class="hero-content">
-      <img src="/assets/profile.jpg" alt="Eric Schönke — festas_builds, Tech & Gaming Creator" class="hero-photo fade-in" width="150" height="150" onerror="this.src='/assets/profile-placeholder.svg';this.onerror=null;" />
+      <img src="/assets/profile.jpg" alt="Eric Schönke — festas_builds, Tech & Gaming Creator" class="hero-photo fade-in" width="150" height="150" fetchpriority="high" onerror="this.src='/assets/profile-placeholder.svg';this.onerror=null;" />
       <h1 class="hero-name fade-in">Festas</h1>
       <p class="hero-subtitle fade-in">Eric Schönke</p>
       <p class="hero-tagline fade-in delay-1" data-i18n="hero.tagline">Tech & Gaming Creator · Nuclear Engineer</p>
@@ -335,20 +336,72 @@
     </div>
   </section>
 
-  <!-- ─── FEATURED CONTENT ──────────────────────────────────────────────── -->
-  <section class="content" id="content">
+  <!-- ─── PLATFORMS ─────────────────────────────────────────────────────── -->
+  <section class="platforms" id="platforms">
     <div class="container">
-      <h2 class="section-title" data-i18n="content.title">Featured Content</h2>
-      <div class="content-grid">
-        <div class="content-featured">
-          <div class="video-embed">
-            <iframe src="https://www.instagram.com/festas_builds/embed" title="festas_builds Instagram" loading="lazy" width="600" height="338" allowtransparency="true" allow="encrypted-media"></iframe>
+      <h2 class="section-title" data-i18n="platforms.title">Plattformen</h2>
+      <div class="platforms-grid">
+
+        <!-- Instagram -->
+        <a href="https://www.instagram.com/festas_builds/" class="platform-card" target="_blank" rel="noopener noreferrer" aria-label="Instagram — 101K Follower">
+          <div class="platform-card-header">
+            <div class="platform-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+              </svg>
+            </div>
+            <span class="platform-name">Instagram</span>
           </div>
-          <p class="content-featured-label" data-i18n="content.featured.label">Neueste Inhalte von Instagram</p>
-        </div>
-        <a href="https://www.instagram.com/festas_builds/" class="content-more-link" target="_blank" rel="noopener noreferrer">
-          <span data-i18n="content.more">Mehr auf Instagram</span> →
+          <p class="platform-followers">101K</p>
+          <p class="platform-followers-label" data-i18n="platforms.followers">Follower</p>
+          <ul class="platform-tags" aria-label="Content types">
+            <li class="platform-tag">PC Builds</li>
+            <li class="platform-tag">Setups</li>
+            <li class="platform-tag">Reels</li>
+          </ul>
+          <span class="platform-cta" data-i18n="platforms.instagram.cta">Auf Instagram folgen →</span>
         </a>
+
+        <!-- TikTok -->
+        <a href="https://www.tiktok.com/@festas_builds" class="platform-card" target="_blank" rel="noopener noreferrer" aria-label="TikTok — 65K Follower">
+          <div class="platform-card-header">
+            <div class="platform-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/>
+              </svg>
+            </div>
+            <span class="platform-name">TikTok</span>
+          </div>
+          <p class="platform-followers">65K</p>
+          <p class="platform-followers-label" data-i18n="platforms.followers">Follower</p>
+          <ul class="platform-tags" aria-label="Content types">
+            <li class="platform-tag">Builds</li>
+            <li class="platform-tag">Gaming</li>
+            <li class="platform-tag">Tech</li>
+          </ul>
+          <span class="platform-cta" data-i18n="platforms.tiktok.cta">Auf TikTok folgen →</span>
+        </a>
+
+        <!-- Threads -->
+        <a href="https://www.threads.net/@festas_builds" class="platform-card" target="_blank" rel="noopener noreferrer" aria-label="Threads — 19K Follower">
+          <div class="platform-card-header">
+            <div class="platform-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.96-.065-1.17.408-2.22 1.332-2.96.806-.645 1.885-1.032 3.116-1.12.89-.064 1.71-.025 2.455.058-.075-.36-.22-.674-.434-.94-.449-.558-1.217-.862-2.22-.88h-.08c-.788 0-1.858.248-2.574 1.068l-1.476-1.326c1.01-1.157 2.396-1.764 4.05-1.764h.12c1.6.03 2.86.578 3.747 1.63.752.89 1.17 2.065 1.245 3.471.585.328 1.107.735 1.556 1.218 1.07 1.148 1.672 2.714 1.74 4.526.006.15.006.3 0 .45-.076 2.03-.835 3.788-2.262 5.233C18.078 23.206 15.608 23.98 12.186 24zm-.09-8.917c-.81 0-1.545.168-2.09.481-.548.315-.822.725-.798 1.19.026.5.318.896.848 1.15.573.273 1.327.39 2.095.346 1.058-.057 1.88-.445 2.449-1.154.384-.478.65-1.09.79-1.826-.71-.124-1.479-.196-2.294-.196l-1 .009z"/>
+              </svg>
+            </div>
+            <span class="platform-name">Threads</span>
+          </div>
+          <p class="platform-followers">19K</p>
+          <p class="platform-followers-label" data-i18n="platforms.followers">Follower</p>
+          <ul class="platform-tags" aria-label="Content types">
+            <li class="platform-tag">Thoughts</li>
+            <li class="platform-tag">Updates</li>
+            <li class="platform-tag">Daily</li>
+          </ul>
+          <span class="platform-cta" data-i18n="platforms.threads.cta">Auf Threads folgen →</span>
+        </a>
+
       </div>
     </div>
   </section>
@@ -466,6 +519,79 @@
       <p class="contact-fallback">
         <span data-i18n="contact.fallback">Oder schreib mir direkt an</span> <a href="mailto:eric@festas-builds.com">eric@festas-builds.com</a>
       </p>
+    </div>
+  </section>
+
+  <!-- ─── MILESTONES ────────────────────────────────────────────────────── -->
+  <section class="milestones" id="milestones">
+    <div class="container">
+      <h2 class="section-title" data-i18n="milestones.title">Creator Journey</h2>
+      <div class="timeline">
+
+        <div class="timeline-item">
+          <div class="timeline-dot" aria-hidden="true"></div>
+          <div class="timeline-content">
+            <span class="timeline-year" data-i18n="milestones.2021.year">2021</span>
+            <h3 class="timeline-title" data-i18n="milestones.2021.title">Content-Creation gestartet</h3>
+            <p class="timeline-desc" data-i18n="milestones.2021.desc">Erste Posts auf Instagram — PC Builds und Gaming-Setups, gebaut mit Leidenschaft.</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot" aria-hidden="true"></div>
+          <div class="timeline-content">
+            <span class="timeline-year" data-i18n="milestones.2022.year">2022</span>
+            <h3 class="timeline-title" data-i18n="milestones.2022.title">Erste Brand-Kooperation</h3>
+            <p class="timeline-desc" data-i18n="milestones.2022.desc">Erste offizielle Zusammenarbeit mit NZXT — der Beginn einer langen Liste von Partnerschaften.</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot" aria-hidden="true"></div>
+          <div class="timeline-content">
+            <span class="timeline-year" data-i18n="milestones.2023.year">2023</span>
+            <h3 class="timeline-title" data-i18n="milestones.2023.title">100K auf Instagram</h3>
+            <p class="timeline-desc" data-i18n="milestones.2023.desc">Die Community wächst: 100.000 Follower auf Instagram erreicht.</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot" aria-hidden="true"></div>
+          <div class="timeline-content">
+            <span class="timeline-year" data-i18n="milestones.2023b.year">Okt. 2023</span>
+            <h3 class="timeline-title" data-i18n="milestones.2023b.title">Tochter geboren</h3>
+            <p class="timeline-desc" data-i18n="milestones.2023b.desc">Das größte Projekt des Jahres — die Familie wächst.</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot" aria-hidden="true"></div>
+          <div class="timeline-content">
+            <span class="timeline-year" data-i18n="milestones.2024.year">2024</span>
+            <h3 class="timeline-title" data-i18n="milestones.2024.title">Top-Brand-Partnerschaften</h3>
+            <p class="timeline-desc" data-i18n="milestones.2024.desc">Kooperationen mit Corsair, Elgato, ASUS ROG und Razer — Creator auf Vollgas.</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot" aria-hidden="true"></div>
+          <div class="timeline-content">
+            <span class="timeline-year" data-i18n="milestones.2025.year">Jun. 2025</span>
+            <h3 class="timeline-title" data-i18n="milestones.2025.title">Zweites Kind geboren</h3>
+            <p class="timeline-desc" data-i18n="milestones.2025.desc">Familienzuwachs — und trotzdem weiter Builds, Content und Engineering.</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot" aria-hidden="true"></div>
+          <div class="timeline-content">
+            <span class="timeline-year" data-i18n="milestones.2026.year">2026</span>
+            <h3 class="timeline-title" data-i18n="milestones.2026.title">185K+ Community</h3>
+            <p class="timeline-desc" data-i18n="milestones.2026.desc">185.000+ Follower auf Instagram, TikTok und Threads. Die Reise geht weiter.</p>
+          </div>
+        </div>
+
+      </div>
     </div>
   </section>
 

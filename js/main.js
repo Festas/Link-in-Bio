@@ -81,6 +81,36 @@
     });
   }
 
+  /* ─── Platform cards: staggered entrance animation ─────────────────── */
+  function initPlatformCards() {
+    var cards = document.querySelectorAll('.platform-card');
+    if (!cards.length) return;
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        if (entries.some(function (e) { return e.isIntersecting; })) {
+          cards.forEach(function (card, i) {
+            setTimeout(function () {
+              card.style.opacity = '1';
+              card.style.transform = 'translateY(0)';
+            }, i * 100);
+          });
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    cards.forEach(function (card) {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(30px)';
+      card.style.transition = 'opacity 0.6s cubic-bezier(0.4,0,0.2,1), transform 0.6s cubic-bezier(0.4,0,0.2,1), border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease';
+    });
+
+    var section = document.querySelector('.platforms');
+    if (section) observer.observe(section);
+  }
+
   /* ─── Tech badges: staggered entrance animation ─────────────────────── */
   function initTechBadges() {
     var badges = document.querySelectorAll('.tech-badge');
@@ -489,7 +519,8 @@
       '3': '#gallery',
       '4': '#explore',
       '5': '#projects',
-      '6': '#contact'
+      '6': '#contact',
+      '7': '#milestones'
     };
 
     document.addEventListener('keydown', function (e) {
@@ -687,6 +718,7 @@
     initFadeIn();
     initProjectCards();
     initExploreCards();
+    initPlatformCards();
     initTechBadges();
     initStatItems();
     initStatCounters();

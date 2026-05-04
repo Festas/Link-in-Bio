@@ -15,6 +15,7 @@
       'nav.gallery': 'Einblicke',
       'nav.explore': 'Entdecken',
       'nav.projects': 'Projekte',
+      'nav.milestones': 'Journey',
       'nav.contact': 'Kontakt',
 
       // Hero
@@ -55,10 +56,12 @@
       'gallery.gaming': 'Gaming',
       'gallery.work': 'Day Job ☢️',
 
-      // Content
-      'content.title': 'Featured Content',
-      'content.featured.label': 'Neueste Inhalte von Instagram',
-      'content.more': 'Mehr auf Instagram',
+      // Platforms
+      'platforms.title': 'Plattformen',
+      'platforms.followers': 'Follower',
+      'platforms.instagram.cta': 'Auf Instagram folgen →',
+      'platforms.tiktok.cta': 'Auf TikTok folgen →',
+      'platforms.threads.cta': 'Auf Threads folgen →',
 
       // Explore
       'explore.title': 'Entdecken',
@@ -104,6 +107,30 @@
       'contact.success': 'Nachricht gesendet! Ich melde mich bald.',
       'contact.error': 'Etwas ist schiefgelaufen. Bitte versuche es erneut.',
 
+      // Milestones
+      'milestones.title': 'Creator Journey',
+      'milestones.2021.year': '2021',
+      'milestones.2021.title': 'Content-Creation gestartet',
+      'milestones.2021.desc': 'Erste Posts auf Instagram — PC Builds und Gaming-Setups, gebaut mit Leidenschaft.',
+      'milestones.2022.year': '2022',
+      'milestones.2022.title': 'Erste Brand-Kooperation',
+      'milestones.2022.desc': 'Erste offizielle Zusammenarbeit mit NZXT — der Beginn einer langen Liste von Partnerschaften.',
+      'milestones.2023.year': '2023',
+      'milestones.2023.title': '100K auf Instagram',
+      'milestones.2023.desc': 'Die Community wächst: 100.000 Follower auf Instagram erreicht.',
+      'milestones.2023b.year': 'Okt. 2023',
+      'milestones.2023b.title': 'Tochter geboren',
+      'milestones.2023b.desc': 'Das größte Projekt des Jahres — die Familie wächst.',
+      'milestones.2024.year': '2024',
+      'milestones.2024.title': 'Top-Brand-Partnerschaften',
+      'milestones.2024.desc': 'Kooperationen mit Corsair, Elgato, ASUS ROG und Razer — Creator auf Vollgas.',
+      'milestones.2025.year': 'Jun. 2025',
+      'milestones.2025.title': 'Zweites Kind geboren',
+      'milestones.2025.desc': 'Familienzuwachs — und trotzdem weiter Builds, Content und Engineering.',
+      'milestones.2026.year': '2026',
+      'milestones.2026.title': '185K+ Community',
+      'milestones.2026.desc': '185.000+ Follower auf Instagram, TikTok und Threads. Die Reise geht weiter.',
+
       // Meta (for JS-driven meta desc)
       'meta.description': 'Eric Schönke — Tech & Gaming Creator und Ingenieur aus Hamburg. 185K+ Follower. PC Builds, Gaming Setups, Nuclear Engineering.',
 
@@ -119,6 +146,7 @@
       'nav.gallery': 'Gallery',
       'nav.explore': 'Explore',
       'nav.projects': 'Projects',
+      'nav.milestones': 'Journey',
       'nav.contact': 'Contact',
 
       // Hero
@@ -159,10 +187,12 @@
       'gallery.gaming': 'Gaming',
       'gallery.work': 'Day Job ☢️',
 
-      // Content
-      'content.title': 'Featured Content',
-      'content.featured.label': 'Latest content from Instagram',
-      'content.more': 'More on Instagram',
+      // Platforms
+      'platforms.title': 'Platforms',
+      'platforms.followers': 'Followers',
+      'platforms.instagram.cta': 'Follow on Instagram →',
+      'platforms.tiktok.cta': 'Follow on TikTok →',
+      'platforms.threads.cta': 'Follow on Threads →',
 
       // Explore
       'explore.title': 'Explore',
@@ -177,6 +207,30 @@
       'projects.minecraft.desc': 'Custom MMO Minecraft server with quests, dungeons, custom items, and a live web console.',
       'projects.cosmic.name': 'Cosmic Survivor',
       'projects.cosmic.desc': 'Browser-based space survival game. Play instantly, no download.',
+
+      // Milestones
+      'milestones.title': 'Creator Journey',
+      'milestones.2021.year': '2021',
+      'milestones.2021.title': 'Started Content Creation',
+      'milestones.2021.desc': 'First posts on Instagram — PC builds and gaming setups, made with passion.',
+      'milestones.2022.year': '2022',
+      'milestones.2022.title': 'First Brand Deal',
+      'milestones.2022.desc': 'First official collab with NZXT — the start of a long list of brand partnerships.',
+      'milestones.2023.year': '2023',
+      'milestones.2023.title': '100K on Instagram',
+      'milestones.2023.desc': 'The community grows: reached 100,000 followers on Instagram.',
+      'milestones.2023b.year': 'Oct. 2023',
+      'milestones.2023b.title': 'Daughter Born',
+      'milestones.2023b.desc': 'The biggest project of the year — the family grows.',
+      'milestones.2024.year': '2024',
+      'milestones.2024.title': 'Top Brand Partnerships',
+      'milestones.2024.desc': 'Collaborations with Corsair, Elgato, ASUS ROG, and Razer — creator in full swing.',
+      'milestones.2025.year': 'Jun. 2025',
+      'milestones.2025.title': 'Second Child Born',
+      'milestones.2025.desc': 'Family grows again — still building, creating, and engineering.',
+      'milestones.2026.year': '2026',
+      'milestones.2026.title': '185K+ Community',
+      'milestones.2026.desc': '185,000+ followers on Instagram, TikTok, and Threads. The journey continues.',
 
       // Contact
       'contact.title': 'Get in Touch',

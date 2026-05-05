@@ -166,6 +166,49 @@ curl -I http://127.0.0.1:8000
 curl -I https://festas-builds.com
 ```
 
+### Host Nginx WebSocket Setup
+
+The Cosmic Survivor multiplayer server (`cs.festas-builds.com`) requires WebSocket upgrade headers to be forwarded by the host nginx. The `/ws` location block in `nginx/sites-available/cs.festas-builds.com.conf` must contain:
+
+```nginx
+location /ws {
+    proxy_pass http://127.0.0.1:8200;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 86400s;
+    proxy_send_timeout 86400s;
+}
+```
+
+The two critical lines are `proxy_http_version 1.1` (HTTP/1.1 is required for WebSocket) and the `Upgrade` / `Connection` headers. Without them the reverse proxy returns HTTP 200 for the health probe but the WebSocket handshake fails with close code 1006, breaking multiplayer.
+
+After updating the config file on disk, always reload nginx:
+
+```bash
+# Verify the /ws block is present
+grep -A 12 "location /ws" /etc/nginx/sites-available/cs.festas-builds.com.conf
+
+# Test syntax and reload
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Test the upgrade with curl:
+
+```bash
+curl -i -N --http1.1 \
+  -H "Connection: Upgrade" \
+  -H "Upgrade: websocket" \
+  -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
+  -H "Sec-WebSocket-Version: 13" \
+  https://cs.festas-builds.com/ws
+# Expected: 101 Switching Protocols
+```
+
 ### Common Issues
 
 1. **502 Bad Gateway**: The upstream service isn't running or the port mapping is incorrect
@@ -180,6 +223,10 @@ curl -I https://festas-builds.com
 3. **Port conflicts**: Another service is using port 80/443
    - Check what's using the port: `sudo netstat -tlnp | grep :80`
    - Stop conflicting services
+
+4. **WebSocket multiplayer broken (close code 1006)**: The `/ws` reverse proxy block is missing the WebSocket upgrade headers
+   - Verify the `/ws` block in `cs.festas-builds.com.conf` includes `proxy_http_version 1.1`, `proxy_set_header Upgrade $http_upgrade`, and `proxy_set_header Connection "upgrade"` (see **Host Nginx WebSocket Setup** above)
+   - Run `sudo nginx -t && sudo systemctl reload nginx` after any config change
 
 ## Security Headers
 

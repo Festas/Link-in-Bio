@@ -2289,6 +2289,130 @@ img, svg { display: block; }
   border-radius: 4px;
 }
 
+/* ─── Builds comparison table ─────────────────────────────────────────── */
+.builds-compare {
+  padding: 1rem 0 2rem;
+}
+
+.builds-compare-lead {
+  color: var(--text-muted);
+  max-width: 60ch;
+  margin: 0.5rem 0 1.5rem;
+}
+
+.builds-compare-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--glass);
+  -webkit-overflow-scrolling: touch;
+}
+
+.builds-compare-scroll:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.builds-compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+  font-size: 0.95rem;
+}
+
+.builds-compare-table th,
+.builds-compare-table td {
+  padding: 0.85rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--glass-border);
+  vertical-align: middle;
+}
+
+.builds-compare-table thead th {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.02);
+}
+
+.builds-compare-table tbody th {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.builds-compare-table tbody th a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(212,160,48,0.5);
+}
+
+.builds-compare-table tbody th a:hover,
+.builds-compare-table tbody th a:focus-visible {
+  color: var(--accent);
+}
+
+.builds-compare-table td {
+  color: var(--text-muted);
+}
+
+.builds-compare-table tbody tr:last-child th,
+.builds-compare-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.builds-compare-table tbody tr:hover th,
+.builds-compare-table tbody tr:hover td {
+  background: rgba(212,160,48,0.05);
+}
+
+@media (max-width: 560px) {
+  .builds-compare-table {
+    min-width: 0;
+  }
+  .builds-compare-scroll {
+    overflow-x: visible;
+  }
+  .builds-compare-table thead {
+    display: none;
+  }
+  .builds-compare-table tbody,
+  .builds-compare-table tr,
+  .builds-compare-table th,
+  .builds-compare-table td {
+    display: block;
+  }
+  .builds-compare-table tr {
+    border-bottom: 1px solid var(--glass-border);
+    padding: 0.5rem 0;
+  }
+  .builds-compare-table tbody tr:last-child {
+    border-bottom: none;
+  }
+  .builds-compare-table tbody th {
+    padding-bottom: 0.35rem;
+    border-bottom: none;
+    font-size: 1.05rem;
+  }
+  .builds-compare-table td {
+    border-bottom: none;
+    padding: 0.2rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .builds-compare-table td::before {
+    content: attr(data-label);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+}
+
 .builds-list {
   padding: 2rem 0 4rem;
 }

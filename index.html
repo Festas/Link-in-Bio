@@ -204,26 +204,6 @@
           Mein YouTube Kanal
         </a>
 
-        <!-- Affiliate / Setup -->
-        <div class="ql-accordion" id="setup-accordion">
-          <button class="ql-btn ql-accordion-trigger" aria-expanded="false" aria-controls="setup-content" onclick="toggleAccordion('setup-content')">
-            <svg class="ql-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line>
-            </svg>
-            Mein aktuelles PC-Setup
-            <svg class="ql-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          </button>
-          <div class="ql-accordion-content" id="setup-content">
-            <ul>
-              <li><a href="https://beacons.ai/festas_builds" target="_blank" rel="noopener">Gehäuse: Phanteks NV7 mit 10" Screen Mod</a></li>
-              <li><a href="https://beacons.ai/festas_builds" target="_blank" rel="noopener">RAM: Crucial Memory</a></li>
-              <li><a href="https://beacons.ai/festas_builds" target="_blank" rel="noopener">Netzteil: Super Flower</a></li>
-              <li><a href="https://beacons.ai/festas_builds" target="_blank" rel="noopener">Beleuchtung: Nanoleaf Shapes Ultra Black Edition</a></li>
-              <li><a href="https://beacons.ai/festas_builds" target="_blank" rel="noopener">Stuhl: Hbada E3 Bürostuhl</a></li>
-            </ul>
-          </div>
-        </div>
-
         <!-- Media Kit Scroll -->
         <a href="#stats" class="ql-btn ql-secondary" onclick="document.getElementById('stats').scrollIntoView({behavior: 'smooth'})">
           <svg class="ql-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -233,20 +213,6 @@
         </a>
       </div>
 
-      <script>
-        function toggleAccordion(id) {
-          const content = document.getElementById(id);
-          const trigger = content.previousElementSibling;
-          const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
-          
-          trigger.setAttribute('aria-expanded', !isExpanded);
-          if (!isExpanded) {
-            content.style.maxHeight = content.scrollHeight + "px";
-          } else {
-            content.style.maxHeight = null;
-          }
-        }
-      </script>
     </div>
     <div class="hero-scroll-hint" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -286,19 +252,19 @@
       <p class="social-proof-label" data-i18n="socialproof.label">Bekannt aus Kooperationen mit</p>
       <div class="social-proof-grid">
         <div class="social-proof-item" aria-label="Brand Partner">
-          <span class="social-proof-name">NZXT</span>
+          <span class="social-proof-name">Amazon</span>
         </div>
         <div class="social-proof-item" aria-label="Brand Partner">
-          <span class="social-proof-name">Corsair</span>
+          <span class="social-proof-name">Alternate</span>
         </div>
         <div class="social-proof-item" aria-label="Brand Partner">
-          <span class="social-proof-name">Elgato</span>
+          <span class="social-proof-name">Phanteks</span>
         </div>
         <div class="social-proof-item" aria-label="Brand Partner">
-          <span class="social-proof-name">ASUS ROG</span>
+          <span class="social-proof-name">Lian Li</span>
         </div>
         <div class="social-proof-item" aria-label="Brand Partner">
-          <span class="social-proof-name">Razer</span>
+          <span class="social-proof-name">Nanoleaf</span>
         </div>
       </div>
     </div>
@@ -517,8 +483,8 @@
             </div>
             <span class="platform-name">Twitch</span>
           </div>
-          <p class="platform-followers">Live</p>
-          <p class="platform-followers-label" data-i18n="platforms.followers">Di, Do, Sa ab 22 Uhr</p>
+          <p class="platform-followers">LIVE</p>
+          <p class="platform-followers-label" data-i18n="platforms.twitch.schedule">Di, Do, Sa ab 22 Uhr</p>
           <ul class="platform-tags" aria-label="Content types">
             <li class="platform-tag">Gaming</li>
             <li class="platform-tag">LoL</li>
@@ -538,7 +504,7 @@
             <span class="platform-name">YouTube</span>
           </div>
           <p class="platform-followers">VODs</p>
-          <p class="platform-followers-label" data-i18n="platforms.followers">Videos & Shorts</p>
+          <p class="platform-followers-label" data-i18n="platforms.youtube.content">Videos &amp; Shorts</p>
           <ul class="platform-tags" aria-label="Content types">
             <li class="platform-tag">Tech</li>
             <li class="platform-tag">Setups</li>
@@ -557,7 +523,7 @@
       <h2 class="section-title" data-i18n="explore.title">Entdecken</h2>
       <div class="explore-grid">
 
-        <a href="https://beacons.ai/festas_builds" class="explore-card" target="_blank" rel="noopener noreferrer">
+        <a href="https://bio.festas-builds.com" class="explore-card" target="_blank" rel="noopener noreferrer">
           <div class="explore-card-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
@@ -566,7 +532,7 @@
           </div>
           <h3 class="explore-card-title" data-i18n="explore.linkinbio.title">Link in Bio</h3>
           <p class="explore-card-desc" data-i18n="explore.linkinbio.desc">Alle meine aktuellen Links, Kooperationen und Inhalte an einem Ort. Schneller Zugriff auf alles, woran ich arbeite.</p>
-          <span class="explore-card-cta">beacons.ai/festas_builds →</span>
+          <span class="explore-card-cta">bio.festas-builds.com →</span>
         </a>
 
         <a href="https://mediakit.festas-builds.com" class="explore-card" target="_blank" rel="noopener noreferrer">
@@ -625,6 +591,8 @@
   <section class="contact" id="contact">
     <div class="container">
       <h2 class="section-title" data-i18n="contact.title">Kontakt</h2>
+      <!-- Kontaktformular temporär deaktiviert - später wieder aktivierbar (einfach den Kommentar entfernen) -->
+      <!--
       <p class="contact-intro" data-i18n="contact.intro">Hast du ein Projekt im Kopf, möchtest zusammenarbeiten oder einfach Hallo sagen? Füll das Formular aus und ich melde mich bei dir.</p>
       <form class="contact-form" id="contact-form" novalidate>
         <div class="form-row">
@@ -661,6 +629,7 @@
         </button>
         <div class="form-status" id="form-status" role="status" aria-live="polite"></div>
       </form>
+      -->
       <p class="contact-fallback">
         <span data-i18n="contact.fallback">Oder schreib mir direkt an</span> <a href="mailto:eric@festas-builds.com">eric@festas-builds.com</a>
       </p>
@@ -687,7 +656,7 @@
           <div class="timeline-content">
             <span class="timeline-year" data-i18n="milestones.2022.year">2022</span>
             <h3 class="timeline-title" data-i18n="milestones.2022.title">Erste Brand-Kooperation</h3>
-            <p class="timeline-desc" data-i18n="milestones.2022.desc">Erste offizielle Zusammenarbeit mit NZXT — der Beginn einer langen Liste von Partnerschaften.</p>
+            <p class="timeline-desc" data-i18n="milestones.2022.desc">Erste offizielle Zusammenarbeit mit Amazon und Alternate — der Beginn langer Partnerschaften.</p>
           </div>
         </div>
 
@@ -714,7 +683,16 @@
           <div class="timeline-content">
             <span class="timeline-year" data-i18n="milestones.2024.year">2024</span>
             <h3 class="timeline-title" data-i18n="milestones.2024.title">Top-Brand-Partnerschaften</h3>
-            <p class="timeline-desc" data-i18n="milestones.2024.desc">Kooperationen mit Corsair, Elgato, ASUS ROG und Razer — Creator auf Vollgas.</p>
+            <p class="timeline-desc" data-i18n="milestones.2024.desc">Kooperationen mit Phanteks, Lian Li und Nanoleaf — Setups auf einem neuen Level.</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot timeline-dot--live" aria-hidden="true"></div>
+          <div class="timeline-content">
+            <span class="timeline-year" data-i18n="milestones.2024b.year">Dez. 2024</span>
+            <h3 class="timeline-title" data-i18n="milestones.2024b.title">Twitch-Livestreaming gestartet</h3>
+            <p class="timeline-desc" data-i18n="milestones.2024b.desc">Di, Do, Sa ab 22 Uhr live — League of Legends, Minecraft und mehr. Twitch wird fester Teil der Creator-Reise.</p>
           </div>
         </div>
 
@@ -728,7 +706,7 @@
         </div>
 
         <div class="timeline-item">
-          <div class="timeline-dot" aria-hidden="true"></div>
+          <div class="timeline-dot timeline-dot--accent" aria-hidden="true"></div>
           <div class="timeline-content">
             <span class="timeline-year" data-i18n="milestones.2026.year">2026</span>
             <h3 class="timeline-title" data-i18n="milestones.2026.title">170K+ Community</h3>
@@ -740,8 +718,8 @@
     </div>
   </section>
 
-  <!-- ─── NEWSLETTER ────────────────────────────────────────────────────── -->
-  <!-- Embed target: will be powered by an external newsletter service -->
+  <!-- Newsletter temporär deaktiviert - später wieder aktivierbar (Kommentar einfach entfernen) -->
+  <!--
   <section class="newsletter" id="newsletter">
     <div class="container">
       <div class="newsletter-inner">
@@ -760,6 +738,7 @@
       </div>
     </div>
   </section>
+  -->
 
   <!-- ─── FOOTER ────────────────────────────────────────────────────────── -->
   <footer class="footer">

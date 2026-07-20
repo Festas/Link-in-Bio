@@ -1350,6 +1350,24 @@ img, svg { display: block; }
   box-shadow: 0 0 12px var(--accent-glow);
 }
 
+/* Special dot variants */
+.timeline-dot--live {
+  border-color: #9147ff;
+}
+.timeline-dot--live::after {
+  background: #9147ff;
+}
+.timeline-item:hover .timeline-dot--live {
+  background: rgba(145,71,255,0.10);
+  box-shadow: 0 0 12px rgba(145,71,255,0.4);
+}
+
+.timeline-dot--accent {
+  border-color: var(--accent);
+  background: rgba(212,160,48,0.12);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
 .timeline-content {
   padding: 1.25rem 1.5rem;
   background: var(--glass);
@@ -1360,9 +1378,9 @@ img, svg { display: block; }
 }
 
 .timeline-item:hover .timeline-content {
-  border-color: rgba(212,160,48,0.2);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2), 0 0 12px var(--accent-glow);
-  background: rgba(212,160,48,0.02);
+  border-color: rgba(212,160,48,0.25);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.25), 0 0 12px var(--accent-glow);
+  background: rgba(212,160,48,0.03);
 }
 
 .timeline-year {
@@ -2070,64 +2088,6 @@ img, svg { display: block; }
 @keyframes pulse-glow {
   0% { box-shadow: 0 0 0 0 var(--accent-glow); }
   100% { box-shadow: 0 0 15px 5px var(--accent-glow-strong); }
-}
-
-.ql-accordion {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.ql-accordion .ql-btn {
-  border: none;
-  background: transparent;
-  border-radius: 0;
-  justify-content: flex-start;
-}
-
-.ql-accordion .ql-btn:hover {
-  transform: none;
-  background: rgba(255,255,255,0.02);
-}
-
-.ql-chevron {
-  width: 20px;
-  height: 20px;
-  margin-left: auto;
-  transition: transform 0.3s ease;
-}
-
-.ql-accordion-trigger[aria-expanded="true"] .ql-chevron {
-  transform: rotate(180deg);
-}
-
-.ql-accordion-content {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-}
-
-.ql-accordion-content ul {
-  padding: 0 16px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.ql-accordion-content a {
-  display: block;
-  padding: 12px;
-  background: var(--glass);
-  border-radius: var(--radius-sm);
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  transition: var(--transition);
-}
-
-.ql-accordion-content a:hover {
-  background: rgba(255,255,255,0.08);
-  color: var(--accent);
 }
 
 .ql-secondary {

@@ -13,6 +13,7 @@
       'nav.home': 'Home',
       'nav.about': 'Über mich',
       'nav.gallery': 'Einblicke',
+      'nav.builds': 'PC Builds',
       'nav.explore': 'Entdecken',
       'nav.projects': 'Projekte',
       'nav.milestones': 'Journey',
@@ -62,6 +63,16 @@
       'platforms.instagram.cta': 'Auf Instagram folgen →',
       'platforms.tiktok.cta': 'Auf TikTok folgen →',
       'platforms.threads.cta': 'Auf Threads folgen →',
+
+      // PC Builds (teaser)
+      'builds.eyebrow': 'PC Builds',
+      'builds.title': 'Gaming PCs für jedes Budget',
+      'builds.lead': 'Vom günstigen eSports-Einsteiger bis zur kompromisslosen 4K-Maschine: handverlesene, aufeinander abgestimmte PC-Builds mit direkten Kauflinks zu jeder Komponente — inklusive Beschreibung, wofür sich jeder Build am besten eignet.',
+      'builds.cta': 'Alle PC-Builds ansehen',
+      'builds.tier.esports': 'eSports Starter',
+      'builds.tier.allrounder': '1440p Allrounder',
+      'builds.tier.highend': 'High-End & Streaming',
+      'builds.tier.enthusiast': '4K Powerhouse',
 
       // Explore
       'explore.title': 'Entdecken',
@@ -144,6 +155,7 @@
       'nav.home': 'Home',
       'nav.about': 'About',
       'nav.gallery': 'Gallery',
+      'nav.builds': 'PC Builds',
       'nav.explore': 'Explore',
       'nav.projects': 'Projects',
       'nav.milestones': 'Journey',
@@ -193,6 +205,16 @@
       'platforms.instagram.cta': 'Follow on Instagram →',
       'platforms.tiktok.cta': 'Follow on TikTok →',
       'platforms.threads.cta': 'Follow on Threads →',
+
+      // PC Builds (teaser)
+      'builds.eyebrow': 'PC Builds',
+      'builds.title': 'Gaming PCs for Every Budget',
+      'builds.lead': 'From an affordable eSports starter to an uncompromising 4K machine: hand-picked, well-balanced PC builds with direct purchase links for every component — including a description of what each build does best.',
+      'builds.cta': 'View all PC builds',
+      'builds.tier.esports': 'eSports Starter',
+      'builds.tier.allrounder': '1440p All-Rounder',
+      'builds.tier.highend': 'High-End & Streaming',
+      'builds.tier.enthusiast': '4K Powerhouse',
 
       // Explore
       'explore.title': 'Explore',

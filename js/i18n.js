@@ -19,8 +19,8 @@
       'nav.contact': 'Kontakt',
 
       // Hero
-      'hero.tagline': 'Tech & Gaming Creator · Nuclear Engineer',
-      'hero.bio': 'Hey, ich bin Eric — Tech & Gaming Content Creator und Ingenieur in einem Kernkraftwerk aus Hamburg. Ich teile meine Leidenschaft für Tech, PC-Builds und Gaming-Setups auf Instagram und TikTok — und arbeite nebenbei mit radioaktiven Abfällen. Ja, wirklich.',
+      'hero.tagline': 'Tech & Gaming Creator · Engineer',
+      'hero.bio': 'Hey, ich bin Eric — Tech & Gaming Content Creator und Ingenieur aus Geesthacht. Ich teile meine Leidenschaft für Tech, PC-Builds und Gaming-Setups auf Instagram und TikTok.',
 
       // Stats
       'stats.total': 'Gesamt-Follower',
@@ -34,16 +34,16 @@
 
       // About
       'about.title': 'Über mich',
-      'about.text': 'Ich bin Eric — tagsüber sorge ich dafür, dass radioaktive Abfälle in einem Kernkraftwerk sicher verarbeitet werden. Abends tauche ich in die Welt von Tech und Gaming ein und teile meine Leidenschaft mit über 185K Followern.',
-      'about.text2': 'Ja, ich arbeite buchstäblich mit radioaktivem Material — und dann gehe ich nach Hause und baue Custom PCs mit RGB-Beleuchtung. Das ist so ziemlich der krasseste Kontrast, den man sich vorstellen kann.',
+      'about.text': 'Ich bin Eric — tagsüber arbeite ich als Ingenieur. Abends tauche ich in die Welt von Tech und Gaming ein und teile meine Leidenschaft mit über 170K Followern.',
+      'about.text2': 'Ja, ich arbeite hauptberuflich als Ingenieur — und dann gehe ich nach Hause und baue Custom PCs mit RGB-Beleuchtung.',
       'about.engineering': 'Engineering',
       'about.creative': 'Kreativ',
-      'about.fact.job': 'Kernkraftwerk-Ingenieur',
+      'about.fact.job': 'Ingenieur',
       'about.fact.creator': 'Tech & Gaming Creator',
       'about.fact.age': 'Jahre alt',
       'about.fact.married': 'Verheiratet',
       'about.fact.kids': 'Stolzer Vater von zwei Kindern',
-      'about.fact.location': 'Hamburg, Deutschland',
+      'about.fact.location': 'Geesthacht, Deutschland',
       'about.family.title': 'Familie',
       'about.family.daughter': 'Tochter',
       'about.family.baby': 'Baby',
@@ -128,14 +128,14 @@
       'milestones.2025.title': 'Zweites Kind geboren',
       'milestones.2025.desc': 'Familienzuwachs — und trotzdem weiter Builds, Content und Engineering.',
       'milestones.2026.year': '2026',
-      'milestones.2026.title': '185K+ Community',
-      'milestones.2026.desc': '185.000+ Follower auf Instagram, TikTok und Threads. Die Reise geht weiter.',
+      'milestones.2026.title': '170K+ Community',
+      'milestones.2026.desc': '170.000+ Follower auf Instagram, TikTok und Threads. Die Reise geht weiter.',
 
       // Meta (for JS-driven meta desc)
-      'meta.description': 'Eric Schönke — Tech & Gaming Creator und Ingenieur aus Hamburg. 185K+ Follower. PC Builds, Gaming Setups, Nuclear Engineering.',
+      'meta.description': 'Eric Schönke — Tech & Gaming Creator und Ingenieur aus Geesthacht. 170K+ Follower. PC Builds, Gaming Setups.',
 
       // Footer
-      'footer.copy': '© 2026 festas_builds · Hamburg, Deutschland',
+      'footer.copy': '© 2026 festas_builds · Geesthacht, Deutschland',
       'footer.contact': 'Kontakt',
     },
 
@@ -150,8 +150,8 @@
       'nav.contact': 'Contact',
 
       // Hero
-      'hero.tagline': 'Tech & Gaming Creator · Nuclear Engineer',
-      'hero.bio': "Hey, I'm Eric — a tech & gaming content creator and nuclear power plant engineer from Hamburg, Germany. I share my passion for tech, PC builds, and gaming setups on Instagram and TikTok — and I work with radioactive waste on the side. Yes, really.",
+      'hero.tagline': 'Tech & Gaming Creator · Engineer',
+      'hero.bio': "Hey, I'm Eric — a tech & gaming content creator and engineer from Geesthacht, Germany. I share my passion for tech, PC builds, and gaming setups on Instagram and TikTok.",
 
       // Stats
       'stats.total': 'Total Followers',
@@ -165,16 +165,16 @@
 
       // About
       'about.title': 'About Me',
-      'about.text': "I'm Eric — by day, I make sure radioactive waste at a nuclear power plant is safely processed. By night, I dive into the world of tech and gaming, sharing my passion with 185K+ followers.",
-      'about.text2': "Yes, I literally work with radioactive material — and then I go home and build custom PCs with RGB lighting. It's probably the wildest contrast you can imagine.",
+      'about.text': "I'm Eric — by day, I work as an engineer. By night, I dive into the world of tech and gaming, sharing my passion with 170K+ followers.",
+      'about.text2': "Yes, I work full-time as an engineer — and then I go home and build custom PCs with RGB lighting.",
       'about.engineering': 'Engineering',
       'about.creative': 'Creative',
-      'about.fact.job': 'Nuclear Power Plant Engineer',
+      'about.fact.job': 'Engineer',
       'about.fact.creator': 'Tech & Gaming Creator',
       'about.fact.age': 'years old',
       'about.fact.married': 'Married',
       'about.fact.kids': 'Proud father of two',
-      'about.fact.location': 'Hamburg, Germany',
+      'about.fact.location': 'Geesthacht, Germany',
       'about.family.title': 'Family',
       'about.family.daughter': 'Daughter',
       'about.family.baby': 'Baby',
@@ -229,8 +229,8 @@
       'milestones.2025.title': 'Second Child Born',
       'milestones.2025.desc': 'Family grows again — still building, creating, and engineering.',
       'milestones.2026.year': '2026',
-      'milestones.2026.title': '185K+ Community',
-      'milestones.2026.desc': '185,000+ followers on Instagram, TikTok, and Threads. The journey continues.',
+      'milestones.2026.title': '170K+ Community',
+      'milestones.2026.desc': '170,000+ followers on Instagram, TikTok, and Threads. The journey continues.',
 
       // Contact
       'contact.title': 'Get in Touch',
@@ -263,10 +263,10 @@
       'newsletter.error': 'Something went wrong. Please try again.',
 
       // Meta
-      'meta.description': 'Eric Schönke — Tech & Gaming Creator and Engineer from Hamburg. 185K+ followers. PC Builds, Gaming Setups, Nuclear Engineering.',
+      'meta.description': 'Eric Schönke — Tech & Gaming Creator and Engineer from Geesthacht. 170K+ followers. PC Builds, Gaming Setups.',
 
       // Footer
-      'footer.copy': '© 2026 festas_builds · Hamburg, Germany',
+      'footer.copy': '© 2026 festas_builds · Geesthacht, Germany',
       'footer.contact': 'Contact',
     }
   };

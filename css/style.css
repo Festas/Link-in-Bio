@@ -2072,52 +2072,6 @@ img, svg { display: block; }
   100% { box-shadow: 0 0 15px 5px var(--accent-glow-strong); }
 }
 
-.ql-sponsor {
-  justify-content: space-between;
-  padding: 12px 16px;
-  text-align: left;
-}
-
-.ql-sponsor-text {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  margin: 0 12px;
-}
-
-.ql-sponsor-text span {
-  font-size: 0.95rem;
-}
-
-.ql-sponsor-text .ql-code {
-  font-size: 0.8rem;
-  color: var(--accent);
-  font-family: var(--font-mono);
-  margin-top: 2px;
-}
-
-.ql-copy {
-  background: var(--glass);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.ql-copy:hover {
-  color: var(--text-primary);
-  background: rgba(255,255,255,0.1);
-}
-
-.ql-copy.copied svg:not(.check-icon) { display: none; }
-.ql-copy.copied .check-icon { display: block; }
-
 .ql-accordion {
   background: var(--bg-card);
   border: 1px solid var(--border);

@@ -34,7 +34,7 @@ jobs:
           cp js/main.js "js/main.${HASH}.js"
           cp js/i18n.js "js/i18n.${HASH}.js"
           # Replace asset references in all HTML pages
-          for f in index.html impressum.html datenschutz.html builds.html; do
+          for f in *.html; do
             if [[ -f "$f" ]]; then
               sed -i "s|/css/style\.css|/css/style.${HASH}.css|g" "$f"
               sed -i "s|/js/main\.js|/js/main.${HASH}.js|g" "$f"
@@ -50,7 +50,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "index.html,datenschutz.html,impressum.html,builds.html,css/,js/,assets/,sw.js,robots.txt,sitemap.xml"
+          source: "*.html,css/,js/,assets/,sw.js,robots.txt,sitemap.xml,manifest.json"
           target: "/tmp/landing-page-deploy/site"
 
       - name: Deploy on server

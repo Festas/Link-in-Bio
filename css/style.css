@@ -2418,6 +2418,7 @@ img, svg { display: block; }
 }
 
 .build-card {
+  position: relative;
   display: grid;
   grid-template-columns: 220px 1fr;
   gap: 2rem;
@@ -2652,6 +2653,13 @@ img, svg { display: block; }
 
 .build-store-cta:hover {
   opacity: 0.75;
+}
+
+.build-card .build-store-cta::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
 }
 
 .builds-faq {

@@ -2565,6 +2565,7 @@ img, svg { display: block; }
 }
 
 .build-part {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.85rem;
@@ -2741,4 +2742,12 @@ img, svg { display: block; }
   .builds-list {
     padding-top: 4rem;
   }
+}
+
+/* Make entire build-part clickable via the link inside */
+.build-part-name::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
 }

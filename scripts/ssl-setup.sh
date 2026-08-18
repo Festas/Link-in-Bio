@@ -187,7 +187,7 @@ sudo certbot certonly --webroot -w "${ACME_WEBROOT}" --cert-name festas-builds.c
   -d rigpilot.festas-builds.com \
   -d immocalc.festas-builds.com \
   -d fire.festas-builds.com \
-  --non-interactive --agree-tos --register-unsafely-without-email --keep-until-expiring
+  --non-interactive --agree-tos --register-unsafely-without-email --expand
 
 log "Installing certbot deploy hook for safe Nginx reload..."
 sudo mkdir -p /etc/letsencrypt/renewal-hooks/deploy

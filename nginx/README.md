@@ -67,30 +67,21 @@ sudo systemctl reload nginx
 sudo apt update
 sudo apt install -y certbot python3-certbot-nginx
 
-# Obtain certificates for all domains
-sudo certbot --nginx -d festas-builds.com
-sudo certbot --nginx -d admin.festas-builds.com
-sudo certbot --nginx -d panel.festas-builds.com
-sudo certbot --nginx -d mc.festas-builds.com
-sudo certbot --nginx -d mc-map.festas-builds.com
-sudo certbot --nginx -d mc-stats.festas-builds.com
-sudo certbot --nginx -d cs.festas-builds.com
-sudo certbot --nginx -d rigpilot.festas-builds.com
-sudo certbot --nginx -d immocalc.festas-builds.com
-sudo certbot --nginx -d fire.festas-builds.com
-
-# Or obtain all certificates at once
-sudo certbot --nginx \
+# Issue/expand the shared festas-builds.com certificate (must include BlueMap SANs)
+sudo certbot certonly --webroot -w /var/www/certbot --cert-name festas-builds.com \
   -d festas-builds.com \
   -d admin.festas-builds.com \
   -d panel.festas-builds.com \
   -d mc.festas-builds.com \
   -d mc-map.festas-builds.com \
+  -d survival.festas-builds.com \
+  -d mining.festas-builds.com \
   -d mc-stats.festas-builds.com \
   -d cs.festas-builds.com \
   -d rigpilot.festas-builds.com \
   -d immocalc.festas-builds.com \
-  -d fire.festas-builds.com
+  -d fire.festas-builds.com \
+  --expand
 ```
 
 ### Auto-Renewal

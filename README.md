@@ -34,9 +34,17 @@ The server hosts several subdomains beyond the main landing page:
 | `cs.festas-builds.com` | Cosmic Survivor — browser game |
 | `panel.festas-builds.com` | Pterodactyl game server panel |
 | `mc-map.festas-builds.com` | BlueMap — Minecraft live map |
+| `survival.festas-builds.com` | BlueMap Survival — Minecraft live map |
+| `mining.festas-builds.com` | BlueMap Mining — Minecraft live map |
 | `mc-stats.festas-builds.com` | Plan — Minecraft player analytics |
 
 Nginx configs for all subdomains live in `nginx/sites-available/` and are deployed automatically on every push to `main`.
+
+BlueMap upstream assumptions for the two dedicated map domains:
+- `survival.festas-builds.com` proxies to `127.0.0.1:8100` on the target host
+- `mining.festas-builds.com` proxies to `127.0.0.1:8101` on the target host
+- DNS `A`/`AAAA` records for both domains must point to the same Nginx host
+- The shared `festas-builds.com` Let's Encrypt certificate must include both SANs
 
 ## File Structure
 

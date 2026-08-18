@@ -11,6 +11,8 @@ This directory contains Nginx server block configurations for all domains in the
 | panel.festas-builds.com | Pterodactyl Panel | PHP-FPM (FastCGI) | - |
 | mc.festas-builds.com | Minecraft Website + Console | `minecraft-web:80`, `minecraft-console:3001` | `127.0.0.1:8100`, `127.0.0.1:3001` |
 | mc-map.festas-builds.com | BlueMap (3D Map) | `minecraft-server:8100` | `127.0.0.1:8101` |
+| survival.festas-builds.com | BlueMap Survival (3D Map) | `bluemap-survival:8102` | `127.0.0.1:8102` |
+| mining.festas-builds.com | BlueMap Mining (3D Map) | `bluemap-mining:8103` | `127.0.0.1:8103` |
 | mc-stats.festas-builds.com | Plan Analytics | `minecraft-server:8804` | `127.0.0.1:8804` |
 | cs.festas-builds.com | Cosmic Survivor Game | `cosmic-survivor:80` | `127.0.0.1:8200` |
 | rigpilot.festas-builds.com | RigPilot PC Builder | `rigpilot:3000` | `127.0.0.1:3000` |

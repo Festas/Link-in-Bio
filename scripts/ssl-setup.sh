@@ -180,6 +180,8 @@ sudo certbot certonly --webroot -w "${ACME_WEBROOT}" --cert-name festas-builds.c
   -d panel.festas-builds.com \
   -d mc.festas-builds.com \
   -d mc-map.festas-builds.com \
+  -d survival.festas-builds.com \
+  -d mining.festas-builds.com \
   -d mc-stats.festas-builds.com \
   -d cs.festas-builds.com \
   -d rigpilot.festas-builds.com \

@@ -29,18 +29,20 @@ sudo cp nginx/sites-available/*.conf /etc/nginx/sites-available/
 
 # Enable all sites by creating symlinks
 cd /etc/nginx/sites-enabled
+sudo ln -sf ../sites-available/000-default-catch-all.conf .
 sudo ln -sf ../sites-available/festas-builds.com.conf .
-sudo ln -sf ../sites-available/admin.festas-builds.com.conf .
 sudo ln -sf ../sites-available/panel.festas-builds.com.conf .
 sudo ln -sf ../sites-available/mc.festas-builds.com.conf .
 sudo ln -sf ../sites-available/mc-map.festas-builds.com.conf .
 sudo ln -sf ../sites-available/mc-stats.festas-builds.com.conf .
+sudo ln -sf ../sites-available/survival.festas-builds.com.conf .
+sudo ln -sf ../sites-available/mining.festas-builds.com.conf .
 sudo ln -sf ../sites-available/cs.festas-builds.com.conf .
 sudo ln -sf ../sites-available/rigpilot.festas-builds.com.conf .
 sudo ln -sf ../sites-available/immocalc.festas-builds.com.conf .
 sudo ln -sf ../sites-available/fire.festas-builds.com.conf .
 
-# Remove default Nginx config to prevent conflicts
+# Remove default Nginx config to prevent conflicting server_name warnings
 sudo rm -f /etc/nginx/sites-enabled/default
 ```
 
@@ -202,12 +204,85 @@ curl -i -N --http1.1 \
 # Expected: 101 Switching Protocols
 ```
 
+### mc-stats.festas-builds.com (Plan Analytics) Diagnostics
+
+Plan Analytics serves server-sent events (SSE) and long-poll data endpoints.
+The vhost config uses `proxy_buffering off` and `proxy_http_version 1.1` to
+support these properly.
+
+**Step 1 — Verify the correct vhost is being matched**
+```bash
+curl -skI https://mc-stats.festas-builds.com/ | grep -i x-debug-vhost
+# Should return nothing (header removed in production).
+# To add a temporary debug header for testing:
+sudo sed -i '/server_name mc-stats.festas-builds.com;/a \    add_header X-Debug-Vhost mc-stats always;' \
+    /etc/nginx/sites-available/mc-stats.festas-builds.com.conf
+sudo nginx -t && sudo systemctl reload nginx
+curl -skI https://mc-stats.festas-builds.com/ | grep -i x-debug-vhost
+# Expected: X-Debug-Vhost: mc-stats
+# Remove the debug header after testing.
+```
+
+**Step 2 — Test the Plan upstream directly from the host**
+```bash
+curl -v http://127.0.0.1:8804/
+# Expected: HTTP 200 or 302 from Plan web server.
+# "Connection refused"  → Plan is not listening on 127.0.0.1; check container port mapping.
+# "Connection reset"    → Plan is bound only to 127.0.0.1 inside the container.
+#                         Set Internal_IP: 0.0.0.0 in plugins/plan/config.yml and restart.
+```
+
+**Step 3 — Find the Plan container and check its binding**
+```bash
+CID=$(docker ps --format '{{.ID}} {{.Ports}}' | awk '/:8804->8804/{print $1; exit}')
+docker exec "$CID" sh -lc 'grep -n "Internal_IP" plugins/plan/config.yml plugins/Plan/config.yml 2>/dev/null'
+# Expected value: 0.0.0.0
+# To fix in-place:
+docker exec "$CID" sh -lc \
+  'sed -i "s/^\([[:space:]]*Internal_IP:[[:space:]]*\).*/\10.0.0.0/" plugins/plan/config.yml'
+docker restart "$CID"
+sleep 6
+curl -v http://127.0.0.1:8804/
+```
+
+**Step 4 — Ensure the default nginx site is removed (prevents vhost routing to wrong block)**
+```bash
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+**Step 5 — End-to-end verification**
+```bash
+curl -vk https://mc-stats.festas-builds.com/
+# Expected: 200 OK with Plan HTML dashboard (no "502 Bad Gateway").
+```
+
+### Conflicting `server_name` Warnings
+
+Nginx logs `conflicting server name` warnings when multiple blocks declare
+`default_server` on the same port, or when the stock
+`/etc/nginx/sites-enabled/default` is still present alongside custom blocks.
+
+Remedy:
+```bash
+# Remove the stock default site
+sudo rm -f /etc/nginx/sites-enabled/default
+
+# Enable the repo-supplied catch-all (lexicographically first = default_server)
+sudo ln -sf /etc/nginx/sites-available/000-default-catch-all.conf \
+            /etc/nginx/sites-enabled/000-default-catch-all.conf
+
+sudo nginx -t && sudo systemctl reload nginx
+# No more "conflicting server name" warnings in error.log.
+```
+
 ### Common Issues
 
 1. **502 Bad Gateway**: The upstream service isn't running or the port mapping is incorrect
    - Check if Docker containers are running: `docker ps`
    - Verify port exposure in docker-compose.yml
    - Check if service is listening: `netstat -tlnp | grep <port>`
+   - For mc-stats specifically, follow the Plan Analytics diagnostics above
 
 2. **Certificate errors**: Certificates not found or expired
    - Run `sudo certbot renew`

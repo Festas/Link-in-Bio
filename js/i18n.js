@@ -22,6 +22,7 @@
       // Hero
       'hero.tagline': 'Tech & Gaming Creator · Engineer',
       'hero.bio': 'Hey, ich bin Eric — Tech & Gaming Content Creator und Ingenieur aus Geesthacht. Ich teile meine Leidenschaft für Tech, PC-Builds und Gaming-Setups auf Instagram und TikTok.',
+      'hero.tvbadge': '📺 Bekannt aus „Live Better for Less" (Prime Video)',
 
       // Stats
       'stats.total': 'Gesamt-Follower',
@@ -31,7 +32,7 @@
       'stats.updated': 'Stand: April 2026',
 
       // Social Proof
-      'socialproof.label': 'Bekannt aus Kooperationen mit',
+      'socialproof.label': 'Bekannt aus Kooperationen & TV',
 
       // About
       'about.title': 'Über mich',
@@ -149,9 +150,12 @@
       'milestones.2026.year': '2026',
       'milestones.2026.title': '170K+ Community',
       'milestones.2026.desc': '170.000+ Follower auf Instagram, TikTok und Threads. Die Reise geht weiter.',
+      'milestones.tv.year': 'Sept. 2026',
+      'milestones.tv.title': 'TV-Teilnahme: Live Better for Less',
+      'milestones.tv.desc': 'Mit meiner Frau für Deutschland bei „Live Better for Less" (Prime Video) — clever leben, smarter mit Geld umgehen und mehr aus dem Alltag rausholen.',
 
       // Meta (for JS-driven meta desc)
-      'meta.description': 'Eric Schönke — Tech & Gaming Creator und Ingenieur aus Geesthacht. 170K+ Follower. PC Builds, Gaming Setups.',
+      'meta.description': 'Eric Schönke — Tech & Gaming Creator und Ingenieur aus Geesthacht. 170K+ Follower. PC Builds, Gaming Setups. Bekannt aus „Live Better for Less" (Prime Video).',
 
       // Footer
       'footer.copy': '© 2026 festas_builds · Geesthacht, Deutschland',
@@ -172,6 +176,7 @@
       // Hero
       'hero.tagline': 'Tech & Gaming Creator · Engineer',
       'hero.bio': "Hey, I'm Eric — a tech & gaming content creator and engineer from Geesthacht, Germany. I share my passion for tech, PC builds, and gaming setups on Instagram and TikTok.",
+      'hero.tvbadge': '📺 As seen on „Live Better for Less" (Prime Video)',
 
       // Stats
       'stats.total': 'Total Followers',
@@ -181,7 +186,7 @@
       'stats.updated': 'Last updated: April 2026',
 
       // Social Proof
-      'socialproof.label': 'Featured collaborations with',
+      'socialproof.label': 'Featured collaborations & TV',
 
       // About
       'about.title': 'About Me',
@@ -269,6 +274,9 @@
       'milestones.2026.year': '2026',
       'milestones.2026.title': '170K+ Community',
       'milestones.2026.desc': '170,000+ followers on Instagram, TikTok, and Threads. The journey continues.',
+      'milestones.tv.year': 'Sep 2026',
+      'milestones.tv.title': 'TV Appearance: Live Better for Less',
+      'milestones.tv.desc': 'Took part with my wife representing Germany on „Live Better for Less" (Prime Video) — living smarter, spending wiser, and getting more out of everyday life.',
 
       // Contact
       'contact.title': 'Get in Touch',
@@ -301,7 +309,7 @@
       'newsletter.error': 'Something went wrong. Please try again.',
 
       // Meta
-      'meta.description': 'Eric Schönke — Tech & Gaming Creator and Engineer from Geesthacht. 170K+ followers. PC Builds, Gaming Setups.',
+      'meta.description': 'Eric Schönke — Tech & Gaming Creator and Engineer from Geesthacht. 170K+ followers. PC Builds, Gaming Setups. As seen on „Live Better for Less" (Prime Video).',
 
       // Footer
       'footer.copy': '© 2026 festas_builds · Geesthacht, Germany',

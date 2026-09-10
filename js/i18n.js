@@ -22,7 +22,7 @@
       // Hero
       'hero.tagline': 'Tech & Gaming Creator · Engineer',
       'hero.bio': 'Hey, ich bin Eric — Tech & Gaming Content Creator und Ingenieur aus Geesthacht. Ich teile meine Leidenschaft für Tech, PC-Builds und Gaming-Setups auf Instagram und TikTok.',
-      'hero.tvbadge': '📺 Live Better for Less: unsere Folge & BTS',
+      'hero.tvbadge': '📺 Unsere Folge bei „Live Better for Less“ + BTS',
 
       // Stats
       'stats.total': 'Gesamt-Follower',
@@ -152,10 +152,10 @@
       'milestones.2026.desc': '170.000+ Follower auf Instagram, TikTok und Threads. Die Reise geht weiter.',
       'milestones.tv.year': 'Sept. 2026',
       'milestones.tv.title': 'TV-Teilnahme: Live Better for Less',
-      'milestones.tv.desc': 'Mit Jenny als deutsches Paar bei „Live Better for Less" (Prime Video) — plus Behind-the-Scenes von unserer Folge auf Social Media.',
+      'milestones.tv.desc': 'Jenny und ich waren das deutsche Paar bei „Live Better for Less" (Prime Video) — die ehrliche Version und Behind-the-Scenes gibt’s auf meinen Socials.',
 
       // Meta (for JS-driven meta desc)
-      'meta.description': 'Eric Schönke — Tech & Gaming Creator und Ingenieur aus Geesthacht. 170K+ Follower. PC Builds, Gaming Setups und Behind-the-Scenes zu „Live Better for Less“.',
+      'meta.description': 'Eric Schönke — Tech & Gaming Creator und Ingenieur aus Geesthacht. 170K+ Follower. PC Builds, Gaming Setups und ehrliche Behind-the-Scenes zu „Live Better for Less“.',
 
       // Footer
       'footer.copy': '© 2026 festas_builds · Geesthacht, Deutschland',
@@ -176,7 +176,7 @@
       // Hero
       'hero.tagline': 'Tech & Gaming Creator · Engineer',
       'hero.bio': "Hey, I'm Eric — a tech & gaming content creator and engineer from Geesthacht, Germany. I share my passion for tech, PC builds, and gaming setups on Instagram and TikTok.",
-      'hero.tvbadge': '📺 Live Better for Less: our episode & BTS',
+      'hero.tvbadge': '📺 Our “Live Better for Less” episode + BTS',
 
       // Stats
       'stats.total': 'Total Followers',
@@ -276,7 +276,7 @@
       'milestones.2026.desc': '170,000+ followers on Instagram, TikTok, and Threads. The journey continues.',
       'milestones.tv.year': 'Sep 2026',
       'milestones.tv.title': 'TV Appearance: Live Better for Less',
-      'milestones.tv.desc': 'Took part with Jenny as the German couple on „Live Better for Less" (Prime Video) — plus behind-the-scenes from our episode on social media.',
+      'milestones.tv.desc': 'Jenny and I were the German couple on „Live Better for Less" (Prime Video) — the honest version and behind-the-scenes are on my social channels.',
 
       // Contact
       'contact.title': 'Get in Touch',
@@ -309,7 +309,7 @@
       'newsletter.error': 'Something went wrong. Please try again.',
 
       // Meta
-      'meta.description': 'Eric Schönke — Tech & Gaming Creator and Engineer from Geesthacht. 170K+ followers. PC Builds, gaming setups, and behind-the-scenes from „Live Better for Less“.',
+      'meta.description': 'Eric Schönke — Tech & Gaming Creator and Engineer from Geesthacht. 170K+ followers. PC builds, gaming setups, and honest behind-the-scenes from „Live Better for Less“.',
 
       // Footer
       'footer.copy': '© 2026 festas_builds · Geesthacht, Germany',
